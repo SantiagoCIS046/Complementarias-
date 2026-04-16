@@ -1,0 +1,24 @@
+# =============================================
+# CODEOWNERS - Propietarios de código por zona
+# =============================================
+# Cada línea define qué desarrollador(es) son responsables
+# de revisar y aprobar cambios en esa ruta.
+
+# 🤝 ZONA COMPARTIDA (Todos deben revisar)
+/src/core/                  @dev1 @dev2 @dev3
+
+# 🟢 DEV 1: Seguridad, Usuarios y Configuración
+/src/modules/auth/          @dev1
+/src/modules/users/         @dev1
+/src/modules/system-config/ @dev1
+
+# 🔵 DEV 2: Etapas Productivas, Empresas y Documentos
+/src/modules/productive-stages/ @dev2
+/src/modules/companies/         @dev2
+/src/modules/documents/         @dev2
+
+# 🟡 DEV 3: Bitácoras, Seguimientos, Horas y Novedades
+/src/modules/bitacoras/     @dev3
+/src/modules/trackings/     @dev3
+/src/modules/hours/         @dev3
+/src/modules/novelties/     @dev3

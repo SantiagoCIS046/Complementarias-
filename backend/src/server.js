@@ -3,8 +3,11 @@
 // =============================================
 const app = require('./app');
 const { PORT } = require('./core/config/env');
+const connectDB = require('./core/config/db');
+
+// Conectar a la base de datos
+connectDB();
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📋 Entorno: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🚀 Servidor REPFORA activo en puerto ${PORT}`);
 });

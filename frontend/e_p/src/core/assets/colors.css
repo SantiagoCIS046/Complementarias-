@@ -1,0 +1,34 @@
+/* =============================================
+   colors.css - Paleta de colores SENA / RepFora
+   🤝 ZONA COMPARTIDA
+   ============================================= */
+
+:root {
+  /* — Colores primarios SENA — */
+  --color-sena-green:       #39A900;
+  --color-sena-green-dark:  #2d8500;
+  --color-sena-green-light: #e8f7e1;
+
+  /* — Neutros — */
+  --color-white:      #ffffff;
+  --color-gray-50:    #f9fafb;
+  --color-gray-100:   #f3f4f6;
+  --color-gray-200:   #e5e7eb;
+  --color-gray-400:   #9ca3af;
+  --color-gray-600:   #4b5563;
+  --color-gray-800:   #1f2937;
+  --color-black:      #111827;
+
+  /* — Estados — */
+  --color-success:  #16a34a;
+  --color-warning:  #d97706;
+  --color-error:    #dc2626;
+  --color-info:     #2563eb;
+
+  /* — Layout — */
+  --sidebar-width:    250px;
+  --topbar-height:    64px;
+  --border-radius:    8px;
+  --shadow-sm:        0 1px 3px rgba(0,0,0,.1);
+  --shadow-md:        0 4px 12px rgba(0,0,0,.15);
+}

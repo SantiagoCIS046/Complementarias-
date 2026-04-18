@@ -1,11 +1,12 @@
-// auth.routes.js   ?? DEV 1 | Autenticacion y seguridad
 const express = require('express');
 const router = express.Router();
-const { verifyToken } = require('../../core/middlewares/auth.middleware');
-const { checkRole }   = require('../../core/middlewares/roles.middleware');
-const controller      = require('./auth.controller');
+const authController = require('./auth.controller');
+const { protect } = require('../../core/middlewares/auth.middleware');
 
-// Ejemplo de ruta protegida
-// router.get('/', verifyToken, controller.getAll);
+// Ruta de login (Pública)
+router.post('/login', authController.login);
+
+// Ruta de cambio de contraseña (Privada)
+router.post('/change-password', protect, authController.changePassword);
 
 module.exports = router;

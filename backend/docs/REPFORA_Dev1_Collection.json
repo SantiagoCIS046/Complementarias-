@@ -1,0 +1,164 @@
+{
+	"info": {
+		"_postman_id": "repfora-dev1-infra",
+		"name": "REPFORA - Entrega Oficial (Dev1)",
+		"description": "Colección oficial de rutas de infraestructura, seguridad y gestión de usuarios para el sistema RepFora.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Módulo Autenticación (AUTH)",
+			"item": [
+				{
+					"name": "Login (Éxito)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@gmail.com\",\n    \"password\": \"admin123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login (Error - Clave Incorrecta)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@gmail.com\",\n    \"password\": \"CLAVE_ERRONEA\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "login"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Gestión de Usuarios (USERS)",
+			"item": [
+				{
+					"name": "Importar Aprendices (Excel)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{JWT_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/users/import",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "users", "import"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sugerir Reemplazo Instructor",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{JWT_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/users/reassign/suggestions/:instructorId",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "users", "reassign", "suggestions", ":instructorId"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Notificaciones",
+			"item": [
+				{
+					"name": "Ver mis Notificaciones",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{JWT_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/notifications",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "notifications"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "JWT_TOKEN",
+			"value": "pega_tu_token_aqui",
+			"type": "string"
+		}
+	]
+}

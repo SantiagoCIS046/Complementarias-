@@ -131,10 +131,23 @@ Cada carpeta de módulo tiene un sufijo que indica quién es el dueño del códi
 
 ---
 
+## 🛡️ INFRAESTRUCTURA Y SEGURIDAD - FINALIZADO
+
+### 📁 `src/app.js`
+- **Helmet**: Capa de protección para cabeceras HTTP.
+- **Rate Limit**: Bloqueo automático de IPs tras 100 peticiones en 15 minutos (anti DDOS).
+- **Manejador de Errores**: Middleware maestro que captura fallos técnicos y los reporta en detalle en consola y JSON.
+
+### 📁 `docs/`
+- **Colección Postman**: Archivo JSON con todas las rutas de Dev1 para integración frontend.
+
+---
+
 ## 📝 HISTORIAL DE CAMBIOS (Bitácora de Avances)
 
 | Fecha | Acción | Detalle |
 |---|---|---|
+| 2026-04-18 | ✅ **Infraestructura** | Helmet, Rate Limit y Manejador Global de Errores detallado. |
 | 2026-04-18 | ✅ **Notificaciones** | Sistema dual (Interno + Email) con auto-visto y auditoría integrada. |
 | 2026-04-18 | ✅ **Gestión Usuarios** | Importación masiva desde Excel y Lógica de Reasignación Inteligente por carga. |
 | 2026-04-18 | ✅ **SystemConfig** | Implementado Script de Seed y ConfigHelper con caché. |

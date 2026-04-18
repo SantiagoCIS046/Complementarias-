@@ -2,8 +2,28 @@
 // app.js - Inicialización de Express
 // =============================================
 const express = require('express');
-const cors    = require('cors');
-const app     = express();
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const globalErrorHandler = require('./core/middlewares/error.middleware');
+
+const app = express();
+
+// --- 🛡️ Seguridad Global ---
+app.use(helmet()); // Protege cabeceras HTTP
+
+// Limitador de peticiones (100 cada 15 min)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
+  message: {
+    status: 'error',
+    message: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
 
 // --- Middlewares globales ---
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
@@ -26,5 +46,8 @@ app.use('/api/novelties',         require('./modules/novelties-dev3/novelties.ro
 
 // --- Ruta de salud ---
 app.get('/api/health', (_req, res) => res.json({ status: 'OK', timestamp: new Date() }));
+
+// --- 🚨 Manejador de Errores Global (Debe ser el último en registrarse) ---
+app.use(globalErrorHandler);
 
 module.exports = app;

@@ -9,7 +9,18 @@ const auditLogSchema = new mongoose.Schema({
   action: {
     type: String,
     required: true,
-    enum: ['LOGIN_SUCCESS', 'LOGIN_FAILED', 'ACCOUNT_LOCKED', 'LOGOUT', 'USER_CREATED', 'USER_UPDATED', 'CONFIG_CHANGED'],
+    enum: [
+      'LOGIN_SUCCESS', 
+      'LOGIN_FAILED', 
+      'ACCOUNT_LOCKED', 
+      'LOGOUT', 
+      'USER_CREATED', 
+      'USER_UPDATED', 
+      'CONFIG_CHANGED',
+      'INSTRUCTOR_REASSIGNED',
+      'NOTIFICATION_VIEWED',
+      'SERVER_ERROR'
+    ],
     trim: true
   },
   module: {

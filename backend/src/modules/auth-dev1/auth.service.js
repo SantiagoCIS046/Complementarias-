@@ -2,6 +2,7 @@ const User = require('../users-dev1/models/user.model');
 const { generateToken } = require('../../core/utils/jwt');
 const { logAction } = require('../../core/utils/logger');
 const configHelper = require('../../core/utils/configHelper');
+const { ESTADO_USUARIO } = require('../../core/utils/enums');
 
 /**
  * Lógica de inicio de sesión
@@ -10,7 +11,7 @@ const configHelper = require('../../core/utils/configHelper');
  * @param {Object} metadata - IP y UserAgent
  */
 const login = async (email, password, metadata = {}) => {
-  const { ipAddress, userAgent } = metadata;
+  const { ip, userAgent } = metadata; // Estandarizamos a 'ip'
 
   // 1. Obtener parámetros de configuración (ej: intentos permitidos)
   const maxAttempts = await configHelper.get('MAX_LOGIN_ATTEMPTS', 5);
@@ -23,20 +24,20 @@ const login = async (email, password, metadata = {}) => {
       action: 'LOGIN_FAILED',
       module: 'AUTH',
       details: { email, reason: 'CORREO_NO_REGISTRADO' },
-      ipAddress,
+      ip,
       userAgent
     });
     throw new Error('CORREO_NO_REGISTRADO');
   }
 
   // 2. Verificar si está bloqueado
-  if (user.status === 'blocked') {
+  if (user.status === ESTADO_USUARIO.BLOQUEADO) {
     await logAction({
       user: user._id,
       action: 'LOGIN_FAILED',
       module: 'AUTH',
       details: { email, reason: 'CUENTA_BLOQUEADA' },
-      ipAddress,
+      ip,
       userAgent
     });
     throw new Error('CUENTA_BLOQUEADA');
@@ -51,7 +52,7 @@ const login = async (email, password, metadata = {}) => {
     
     // Bloquear si llega al límite configurado (ej: 5 intentos)
     if (user.loginAttempts >= maxAttempts) {
-      user.status = 'blocked';
+      user.status = ESTADO_USUARIO.BLOQUEADO;
       await user.save();
       
       await logAction({
@@ -59,7 +60,7 @@ const login = async (email, password, metadata = {}) => {
         action: 'ACCOUNT_LOCKED',
         module: 'AUTH',
         details: { email, attempts: user.loginAttempts, limit: maxAttempts },
-        ipAddress,
+        ip,
         userAgent
       });
       throw new Error('CUENTA_BLOQUEADA');
@@ -72,7 +73,7 @@ const login = async (email, password, metadata = {}) => {
       action: 'LOGIN_FAILED',
       module: 'AUTH',
       details: { email, attempts: user.loginAttempts },
-      ipAddress,
+      ip,
       userAgent
     });
     throw new Error('CREDENCIALES_INVALIDAS');

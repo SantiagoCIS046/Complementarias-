@@ -90,6 +90,25 @@ Cada carpeta de módulo tiene un sufijo que indica quién es el dueño del códi
 
 ---
 
+## 👥 GESTIÓN OPERATIVA DE USUARIOS (USERS) - FINALIZADO
+
+### 📁 `src/modules/users-dev1/users.service.js`
+> Herramientas de administración masiva y reasignación.
+
+#### 1. Parser de Importación Masiva (Excel)
+- **Columnas Requeridas**: `Cedula`, `nombre`, `Correo`, `Programa` e `Instructor`.
+- **Lógica**: 
+    - Crea usuarios en estado **APRENDIZ**.
+    - La contraseña inicial es automáticamente su número de **Cédula**.
+    - Si el usuario ya existe, el sistema actualiza sus datos en lugar de duplicarlos.
+
+#### 2. Reasignación Inteligente (Sugeridor)
+- **Escenario**: Cuando un instructor termina contrato (`CONTRACT_ENDED`).
+- **Criterio de Búsqueda**: El sistema filtra instructores del **mismo Programa** (ej. ADSO con ADSO).
+- **Criterio de Selección**: Sugiere al instructor con la **menor carga de aprendices** para equilibrar las labores.
+
+---
+
 ## 🔒 NÚCLEO DE SEGURIDAD (AUTH) - FINALIZADO
 
 | Característica | Detalle |

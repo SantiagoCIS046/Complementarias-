@@ -1,93 +1,117 @@
 # 📋 REPORTE DEL PROYECTO — RepFora Backend
 
 > **Proyecto:** Sistema de seguimiento de Etapas Productivas — SENA  
-> **Stack:** Node.js + Express + Mongoose (MongoDB Atlas)  
+> **Stack de Desarrollo:** Node.js + Express + Mongoose (MongoDB Atlas)  
+> **Evolución Tecnológica:** Migrado de Prisma/PostgreSQL a MongoDB el 17/04/2026.  
 > **Última actualización:** 2026-04-18
 
 ---
 
-## 📦 INSTALACIONES
+## 📦 INSTALACIONES Y DEPENDENCIAS
 
-### Dependencias de Producción (`dependencies`)
-
-| Paquete | Versión | Para qué sirve |
+### 🛠️ Tecnologías Base
+| Paquete | Versión | Función |
 |---|---|---|
-| `express` | ^4.18.2 | Framework HTTP principal del servidor |
-| `cors` | ^2.8.5 | Permite peticiones cross-origin desde el frontend |
-| `dotenv` | ^16.6.1 | Lee las variables de entorno del archivo `.env` |
-| `jsonwebtoken` | ^9.0.0 | Genera y verifica tokens JWT para autenticación |
-| `bcryptjs` | ^2.4.3 | Encripta y compara contraseñas de usuarios |
-| `mongoose` | ^9.4.1 | ODM para modelado y conexión a MongoDB |
-| `mongodb` | ^7.1.1 | Driver oficial de MongoDB |
-| `pdfkit` | ^0.13.0 | Generación de archivos PDF |
+| `express` | ^4.18.2 | Framework principal para el servidor HTTP |
+| `dotenv` | ^16.6.1 | Manejo de variables de entorno y secretos (.env) |
+| `cors` | ^2.8.5 | Seguridad para permitir conexiones desde el Frontend |
 
-> **Nota:** Se migró de Prisma/PostgreSQL a Mongoose/MongoDB Atlas para mayor flexibilidad en los datos.
+### 🔐 Seguridad y Autenticación
+| Paquete | Función |
+|---|---|
+| `jsonwebtoken` | Generación y validación de tokens de sesión segura (JWT) |
+| `bcryptjs` | Cifrado de alto nivel para contraseñas (Hashing) |
+
+### 💾 Almacenamiento (Base de Datos)
+- **Original:** `prisma` + `@prisma/client` + `PostgreSQL` (Infraestructura inicial).
+- **Actual:** `mongoose` + `mongodb` (Implementación en la nube con Atlas).
 
 ---
 
-## ⚙️ NÚCLEO DE SEGURIDAD (AUTH) - FINALIZADO
+## 📁 ESTRUCTURA DEL EXPLORER (Arquitectura Modular)
 
-### 📁 `src/modules/auth-dev1/`
-> Gestión de acceso, seguridad y sesiones.
+El proyecto está organizado para que cada desarrollador tenga su propio espacio de trabajo sin causar conflictos en el código de los demás.
+
+### 🌳 Mapa de Carpetas
+```
+backend/
+├── src/
+│   ├── core/                       # 🤝 ZONA COMPARTIDA (Utilidades globales)
+│   │   ├── config/                 # Conexión a DB y Variables de Entorno
+│   │   ├── middlewares/            # Seguros de puerta (Auth y Roles)
+│   │   └── utils/                  # Herramientas (PDF, Fechas, JWT, Logger)
+│   ├── modules/                    # 🚧 ZONA DE DESARROLLO (Módulos por Dev)
+│   │   ├── auth-dev1/              # Núcleo de Seguridad
+│   │   ├── users-dev1/             # Gestión de Usuarios
+│   │   ├── system-config-dev1/     # Parámetros Globales
+│   │   ├── productive-stages-dev2/ # Etapas Productivas
+│   │   ├── companies-dev2/         # Gestión de Empresas
+│   │   ├── bitacoras-dev3/         # Auditoría y Bitácoras
+│   │   └── ...                     # Otros módulos de Dev 2 y Dev 3
+│   ├── app.js                      # Centralizador de Rutas
+│   └── server.js                   # Motor de arranque del sistema
+├── .env                            # Archivo de secretos (NO COMPARTIR)
+└── REPORTE.md                      # Diario y Manual del Proyecto
+```
+
+### 📂 ¿Para qué sirve cada zona?
+- **`core/config`**: Aquí se define cómo el sistema se comunica con MongoDB Atlas.
+- **`core/middlewares`**: Aquí reside el "guardián" del sistema. Revisa que el usuario tenga un token válido.
+- **`core/utils`**: Funciones que todos usamos, como el `configHelper` para leer parámetros rápidos de la memoria RAM.
+
+---
+
+## 👥 ROLES Y RESPONSABILIDADES
+
+Cada carpeta de módulo tiene un sufijo que indica quién es el dueño del código:
+
+| Desarrollador | Color sugerido | Módulos a su cargo |
+|---|---|---|
+| **DESARROLLADOR 1** | 🟢 Verde | `auth-dev1`, `users-dev1`, `system-config-dev1` |
+| **DESARROLLADOR 2** | 🔵 Azul | `productive-stages-dev2`, `companies-dev2`, `documents-dev2` |
+| **DESARROLLADOR 3** | 🟡 Amarillo | `bitacoras-dev3`, `trackings-dev3`, `hours-dev3`, `novelties-dev3` |
+
+---
+
+## ⚙️ CONFIGURACIÓN GLOBAL (SYSTEMCONFIG) - FINALIZADO
+
+### 📁 `src/core/utils/configHelper.js`
+> Optimización mediante caché en memoria.
+
+- **Caché (RAM)**: Guarda los parámetros (ej: intentos permitidos) para respuesta instantánea.
+- **Preload**: El servidor carga toda la configuración al encenderse para no molestar a la base de datos después.
+
+### 📁 `src/core/scripts/seed.js`
+> El "Génesis" del sistema (Semilla).
+
+- **Propósito**: Permite que el sistema inicie con un administrador real.
+- **Admin**: Crea a `admin@gmail.com` (Clave inicial: `admin123456`).
+- **Configuración**: Define los **5 intentos de login** y tiempos de bloqueo del sistema.
+
+---
+
+## 🔒 NÚCLEO DE SEGURIDAD (AUTH) - FINALIZADO
 
 | Característica | Detalle |
 |---|---|
-| **Cifrado** | Las contraseñas se guardan de forma ilegible usando `bcryptjs` con 10 salt rounds. |
-| **Bloqueo** | Si un usuario falla la contraseña **5 veces**, la cuenta cambia a `status: blocked`. |
-| **Primer Ingreso** | El sistema detecta si es el primer login (`isFirstLogin: true`) para obligar al cambio de clave. |
-| **Auditoría** | Cada login exitoso, fallido o bloqueo se registra con **IP y Navegador**. |
+| **Protección** | Toda ruta privada exige un Token JWT válido. |
+| **Bloqueo Inteligente**| Si un usuario falla 5 veces (valor configurable), su cuenta se bloquea. |
+| **Primer Ingreso** | El sistema obliga al cambio de clave en la primera entrada. |
+| **Bitácora (IP/Nav)** | Se registra la **IP y el Navegador** en cada inicio de sesión por seguridad. |
 
 ---
 
-## 🗂️ MODELOS ACTIVOS
-
-### 📁 `src/modules/users-dev1/models/user.model.js`
-> Molde principal de los usuarios del sistema.
-
-| Campo | Tipo | Privacidad | Descripción |
-|---|---|---|---|
-| `nationalId` | String | Único | Cédula del aprendiz o funcionario |
-| `email` | String | Único | Correo electrónico de contacto |
-| `password` | String | Cifrado | Clave de acceso (no visible en consultas) |
-| `role` | Enum | admin... | `admin`, `aprendiz`, `instructor`, `coordinador` |
-| `status` | Enum | active... | `active`, `inactive`, `blocked` |
-
-### 📁 `src/modules/bitacoras-dev3/models/audit-log.model.js`
-> Registro de auditoría (quién hizo qué y desde dónde).
-
-- **Registra**: Acciones (`LOGIN_SUCCESS`, `ACCOUNT_LOCKED`), Módulo, Detalles, **Dirección IP** y **UserAgent**.
-
----
-
-## 🛠️ UTILIDADES Y MIDDLEWARES
-
-### 📁 `src/core/utils/`
-- **`jwt.js`**: Generación y verificación de tokens de sesión.
-- **`logger.js`**: Función centralizada para grabar logs en la base de datos de auditoría.
-
-### 📁 `src/core/middlewares/`
-- **`auth.middleware.js`**: Middleware `protect` que verifica el token en cada petición privada.
-- **`roles.middleware.js`**: Middleware `checkRole` para restringir acceso según el rol del usuario.
-
----
-
-## 📝 HISTORIAL DE CAMBIOS
+## 📝 HISTORIAL DE CAMBIOS (Bitácora de Avances)
 
 | Fecha | Acción | Detalle |
 |---|---|---|
-| 2026-04-18 | ✅ **Auth Finalizado** | Login, Bloqueo de 5 intentos, Cambio de contraseña y JWT listos |
-| 2026-04-18 | ✅ **Bitácora Activa** | Sistema de auditoría grabando IP y Navegador en cada acción crítica |
-| 2026-04-17 | ✅ **Migración BD** | Se cambió a MongoDB Atlas con Mongoose |
-| 2026-04-16 | ✅ **Estructura** | Organización modular del proyecto por desarrolladores |
+| 2026-04-18 | ✅ **SystemConfig** | Implementado Script de Seed y ConfigHelper con caché. |
+| 2026-04-18 | ✅ **Auth Finalizado** | Se terminaron las rutas, servicios y protección por token. |
+| 2026-04-18 | ✅ **Auditoría IP** | Se integró el seguimiento de IP y Navegador en las bitácoras. |
+| 2026-04-17 | ✅ **Migración Atlas** | El proyecto ahora funciona nativamente con MongoDB Atlas. |
+| 2026-04-16 | ✅ **Estructura Modular** | Se organizaron las carpetas para los 3 desarrolladores. |
+| 2026-04-16 | ✅ **Capa de Base** | Inicialización del proyecto con Express y Nodemon. |
 
 ---
 
-> 📌 **Nota:** Este archivo se actualiza con cada hito alcanzado por el equipo de desarrollo.
-arpetas del backend según la arquitectura modular |
-| 2026-04-16 | ✅ Archivos base generados | Cada módulo tiene su `routes.js`, `controller.js` y `service.js` con el dueño marcado |
-| 2026-04-16 | ✅ Carpetas renombradas | Se agregó el sufijo `-dev1 / -dev2 / -dev3` a cada carpeta de módulo |
-| 2026-04-16 | ✅ `npm install` ejecutado | 180 paquetes instalados, 0 vulnerabilidades |
-
----
-
-> 📌 **Nota:** Este archivo se actualiza con cada cambio significativo del proyecto.
+> 📌 **Nota de Integridad:** Este documento es el cerebro del proyecto RepFora. Está estrictamente prohibido borrar información de avances anteriores. Todo nuevo desarrollo debe ser anexado para mantener la trazabilidad histórica exigida por el SENA.

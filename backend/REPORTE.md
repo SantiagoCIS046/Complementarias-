@@ -114,4 +114,14 @@ Cada carpeta de módulo tiene un sufijo que indica quién es el dueño del códi
 
 ---
 
-> 📌 **Nota de Integridad:** Este documento es el cerebro del proyecto RepFora. Está estrictamente prohibido borrar información de avances anteriores. Todo nuevo desarrollo debe ser anexado para mantener la trazabilidad histórica exigida por el SENA.
+## 🛡️ PROTOCOLO DE INTEGRIDAD DEL REPORTE
+
+Para garantizar la trazabilidad exigida por el SENA, este documento sigue un protocolo de **SOLO ADICIÓN**:
+
+1.  **Inmutabilidad**: Está prohibido eliminar o simplificar secciones de hitos ya alcanzados.
+2.  **Crecimiento Vertical**: Los nuevos desarrollos se anexan como nuevas secciones o filas en las tablas de historial.
+3.  **Trazabilidad**: Si una tecnología es reemplazada (ej. Prisma por Mongoose), se debe mantener la documentación de la tecnología anterior con una nota explicativa del cambio.
+
+---
+
+> 📌 **Nota Final:** Este documento es el cerebro del proyecto RepFora. Su integridad es responsabilidad de todos los desarrolladores.

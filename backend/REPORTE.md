@@ -109,6 +109,17 @@ Cada carpeta de módulo tiene un sufijo que indica quién es el dueño del códi
 
 ---
 
+## 🔔 MÓDULO DE NOTIFICACIONES (NOTIFICATIONS) - FINALIZADO
+
+### 📁 `src/modules/notifications-service/notifications.service.js`
+> Centro de comunicaciones de "Doble Impacto".
+
+- **Doble Vía**: Cada vez que ocurre un evento, el sistema guarda la notificación en la **Base de Datos** (para la campanita interna) y envía un **Correo Electrónico** al usuario.
+- **Auto-Visto**: El sistema detecta cuando el usuario abre una notificación específica y la marca como **"Leída"** automáticamente en la base de datos.
+- **Registro Total**: Cada vez que un usuario visualiza una notificación, se genera un registro en la bitácora de auditoría.
+
+---
+
 ## 🔒 NÚCLEO DE SEGURIDAD (AUTH) - FINALIZADO
 
 | Característica | Detalle |
@@ -124,6 +135,7 @@ Cada carpeta de módulo tiene un sufijo que indica quién es el dueño del códi
 
 | Fecha | Acción | Detalle |
 |---|---|---|
+| 2026-04-18 | ✅ **Notificaciones** | Sistema dual (Interno + Email) con auto-visto y auditoría integrada. |
 | 2026-04-18 | ✅ **Gestión Usuarios** | Importación masiva desde Excel y Lógica de Reasignación Inteligente por carga. |
 | 2026-04-18 | ✅ **SystemConfig** | Implementado Script de Seed y ConfigHelper con caché. |
 | 2026-04-18 | ✅ **Auth Finalizado** | Se terminaron las rutas, servicios y protección por token. |

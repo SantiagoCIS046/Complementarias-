@@ -90,7 +90,7 @@ const login = async (email, password, metadata = {}) => {
     action: 'LOGIN_SUCCESS',
     module: 'AUTH',
     details: { email },
-    ipAddress,
+    ip,
     userAgent
   });
 

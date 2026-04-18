@@ -11,8 +11,8 @@ app.use(express.json());
 
 // --- Rutas de módulos ---
 app.use('/api/auth',              require('./modules/auth-dev1/auth.routes'));
-/*
 app.use('/api/users',             require('./modules/users-dev1/users.routes'));
+/*
 app.use('/api/system-config',     require('./modules/system-config-dev1/system-config.routes'));
 app.use('/api/productive-stages', require('./modules/productive-stages-dev2/productive-stages.routes'));
 app.use('/api/companies',         require('./modules/companies-dev2/companies.routes'));

@@ -105,6 +105,7 @@ Cada carpeta de módulo tiene un sufijo que indica quién es el dueño del códi
 
 | Fecha | Acción | Detalle |
 |---|---|---|
+| 2026-04-18 | ✅ **Gestión Usuarios** | Importación masiva desde Excel y Lógica de Reasignación Inteligente por carga. |
 | 2026-04-18 | ✅ **SystemConfig** | Implementado Script de Seed y ConfigHelper con caché. |
 | 2026-04-18 | ✅ **Auth Finalizado** | Se terminaron las rutas, servicios y protección por token. |
 | 2026-04-18 | ✅ **Auditoría IP** | Se integró el seguimiento de IP y Navegador en las bitácoras. |

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { ROLES, ESTADO_USUARIO, ESTADO_CONTRATO } = require('../../../core/utils/enums');
 
 const userSchema = new mongoose.Schema({
   nationalId: {
@@ -27,14 +28,35 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'aprendiz', 'instructor', 'coordinador'],
-    default: 'aprendiz'
+    enum: Object.values(ROLES),
+    default: ROLES.APRENDIZ
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'blocked'],
-    default: 'active'
+    enum: Object.values(ESTADO_USUARIO),
+    default: ESTADO_USUARIO.ACTIVO
   },
+  // Relaciones y campos específicos del SENA
+  instructor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  program: {
+    type: String, // ej: 'ADSO', 'COCINA', 'RECURSOS HUMANOS'
+    trim: true,
+    uppercase: true
+  },
+  ficha: {
+    type: String,
+    trim: true
+  },
+  contractStatus: {
+    type: String,
+    enum: Object.values(ESTADO_CONTRATO),
+    default: ESTADO_CONTRATO.ACTIVO
+  },
+  // Seguimiento de seguridad
   loginAttempts: {
     type: Number,
     default: 0
@@ -47,7 +69,7 @@ const userSchema = new mongoose.Schema({
     type: Date
   }
 }, {
-  timestamps: true // Crea automatically createdAt y updatedAt
+  timestamps: true
 });
 
 // Middleware para cifrar la contraseña antes de guardar

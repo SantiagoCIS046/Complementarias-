@@ -1,6 +1,7 @@
 const User = require('../users-dev1/models/user.model');
 const { generateToken } = require('../../core/utils/jwt');
 const { logAction } = require('../../core/utils/logger');
+const configHelper = require('../../core/utils/configHelper');
 
 /**
  * Lógica de inicio de sesión
@@ -11,7 +12,10 @@ const { logAction } = require('../../core/utils/logger');
 const login = async (email, password, metadata = {}) => {
   const { ipAddress, userAgent } = metadata;
 
-  // 1. Buscar usuario
+  // 1. Obtener parámetros de configuración (ej: intentos permitidos)
+  const maxAttempts = await configHelper.get('MAX_LOGIN_ATTEMPTS', 5);
+
+  // 2. Buscar usuario
   const user = await User.findOne({ email });
   if (!user) {
     // Registrar intento fallido (usuario no existe)
@@ -45,8 +49,8 @@ const login = async (email, password, metadata = {}) => {
     // Incrementar intentos fallidos
     user.loginAttempts += 1;
     
-    // Bloquear si llega a 5 intentos
-    if (user.loginAttempts >= 5) {
+    // Bloquear si llega al límite configurado (ej: 5 intentos)
+    if (user.loginAttempts >= maxAttempts) {
       user.status = 'blocked';
       await user.save();
       
@@ -54,7 +58,7 @@ const login = async (email, password, metadata = {}) => {
         user: user._id,
         action: 'ACCOUNT_LOCKED',
         module: 'AUTH',
-        details: { email, attempts: user.loginAttempts },
+        details: { email, attempts: user.loginAttempts, limit: maxAttempts },
         ipAddress,
         userAgent
       });

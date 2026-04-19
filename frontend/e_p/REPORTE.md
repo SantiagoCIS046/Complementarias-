@@ -181,6 +181,21 @@ frontend/e_p/
 
 ---
 
+### `admin-auth-dev1/views/Login.vue` — 🟢 DEV 1 (EN PROGRESO)
+
+| Característica | Detalle |
+|---|---|
+| **Diseño** | Estética profesional, minimalista (Blanco/Gris) con panel dividido. |
+| **Identidad** | Integración de `logoSena.png` y `sena_institution.png` de fondo. |
+| **Glassmorphism** | Efectos de desenfoque y transparencia en tarjeta y panel lateral. |
+| **Seguridad de UI** | Lógica de bloqueo tras 5 intentos fallidos con visualizador de puntos (🟢/🟡). |
+| **UX** | Botón con spinner de carga, inputs con íconos vectoriales y borde de enfoque. |
+| **Optimización** | Solución técnica para el fondo azul de autofill del navegador. |
+| **SEO** | Configuración de título descriptivo y favicon institucional en `index.html`. |
+
+
+---
+
 ### `ep-management-dev2/services/ep.service.js` — 🔵 DEV 2
 
 | Función | Método | Endpoint | Descripción |
@@ -219,10 +234,8 @@ frontend/e_p/
 
 | Fecha | Acción | Detalle |
 |---|---|---|
+| 2026-04-19 | ✅ Implementación de Login | Rediseño profesional, panel dividido, assets SENA y lógica de bloqueo por intentos. |
 | 2026-04-16 | ✅ Estructura creada | Carpetas y archivos base del frontend Vue 3 + Vite |
-| 2026-04-16 | ✅ Core compartido | `colors.css`, layouts, router, store |
-| 2026-04-16 | ✅ Componentes UI | `BaseButton`, `BaseInput`, `StatusBadge` |
-| 2026-04-16 | ✅ Módulos scaffold | Vistas y servicios base con dueño marcado por DEV |
 
 ---
 

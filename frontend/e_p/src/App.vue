@@ -1,7 +1,7 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import Login from './modules/admin-auth-dev1/views/Login.vue'
 </script>
 
 <template>
-  <HelloWorld />
+  <Login />
 </template>

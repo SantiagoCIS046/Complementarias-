@@ -17,12 +17,6 @@
             </svg>
             <span>Gestión de Usuarios</span>
           </a>
-          <a href="#" class="nav-item">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-            <span>Configuración</span>
-          </a>
         </div>
       </nav>
 
@@ -43,7 +37,6 @@
         <div class="topbar-left">
           <nav class="top-nav">
             <a href="#" class="top-nav-item active">Gestión de Usuarios</a>
-            <a href="#" class="top-nav-item">Configuración del Sistema</a>
           </nav>
         </div>
         
@@ -55,37 +48,39 @@
       </header>
 
       <div class="page-body">
+        <!-- Bootstrap-style Alert -->
+        <Transition name="fade">
+          <div v-if="alertBox.show" class="alert-bootstrap" :class="alertBox.type">
+            <div class="alert-content">
+              <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>{{ alertBox.message }}</span>
+            </div>
+            <button class="alert-close" @click="alertBox.show = false">&times;</button>
+          </div>
+        </Transition>
+
         <header class="page-header">
           <div class="header-info">
             <h1 class="page-title">Gestión de Usuarios</h1>
             <p class="page-description">Supervise el estado de la red institucional y administre accesos.</p>
           </div>
           <div class="header-actions">
-            <button class="btn btn-primary" @click="triggerImport" :disabled="importState.isProcessing">
+            <button class="btn btn-export" @click="handleExport">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; margin-right: 8px;">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              {{ importState.isProcessing ? 'Procesando...' : 'Importación Masiva' }}
+              Exportar
             </button>
             <input type="file" ref="fileInput" accept=".xlsx,.csv" style="display:none" @change="handleFileUpload" />
           </div>
         </header>
 
         <div class="dashboard-grid">
-          <!-- Columna Izquierda: Acciones Rápidas -->
-          <div class="left-col">
-            <!-- Upload Area (Default state) -->
-            <div class="card upload-card" v-if="!importState.isProcessing && importState.errors.length === 0 && !importState.result">
-              <div class="upload-icon-wrapper">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-              </div>
-              <div class="upload-text">
-                <h3>Importación</h3>
-                <p>Arrastre el archivo aquí<br>XLSX o CSV</p>
-              </div>
-            </div>
+            <!-- Columna Izquierda: Acciones Rápidas -->
+            <div class="left-col">
+              <!-- El espacio se mantiene para otros estados o futuras acciones -->
 
             <!-- Processing State -->
             <div class="card status-card" v-if="importState.isProcessing">
@@ -330,6 +325,50 @@
         </div>
       </div>
     </div>
+
+    <!-- ═══════ MODAL: Seleccionar Formato de Exportación ═══════ -->
+    <div class="modal-overlay" v-if="exportModal.show" @click.self="exportModal.show = false">
+      <div class="modal-card modal-sm">
+        <div class="modal-head">
+          <h2>Seleccionar Formato</h2>
+          <button class="modal-close" @click="exportModal.show = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="format-intro">Seleccione el formato de salida para el listado de <strong>{{ exportModal.target }}</strong>:</p>
+          <div class="format-grid">
+            <button class="format-card excel" @click="executeExport('Excel')">
+              <div class="format-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2v7H8z"/><path d="M14 13h2v7h-2z"/><path d="M11 13h2v7h-2z"/></svg>
+              </div>
+              <div class="format-info">
+                <h3>Microsoft Excel</h3>
+                <p>Ideal para análisis de datos y filtrado avanzado.</p>
+              </div>
+            </button>
+
+            <button class="format-card pdf" @click="executeExport('PDF')">
+              <div class="format-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 3 3 3-3"/></svg>
+              </div>
+              <div class="format-info">
+                <h3>Documento PDF</h3>
+                <p>Formato estándar para impresión y lectura segura.</p>
+              </div>
+            </button>
+
+            <button class="format-card text" @click="executeExport('Texto')">
+              <div class="format-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+              </div>
+              <div class="format-info">
+                <h3>Archivo de Texto</h3>
+                <p>Exportación rápida en texto plano legible.</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -340,6 +379,8 @@ import { useAuthStore } from '../../../core/store/auth.store';
 import { usersService } from '../services/users.service';
 import { authService } from '../services/auth.service';
 import axios from 'axios';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -351,6 +392,12 @@ const currentFilter = ref('TODOS');
 const searchQuery = ref('');
 const pagination = ref({ total: 0, page: 1, limit: 10, totalPages: 1 });
 const stats = ref({ instructors: 0, aprendices: 0 });
+
+// Alert state (Bootstrap style)
+const alertBox = ref({ show: false, message: '', type: 'success' });
+
+// Export Modal state
+const exportModal = ref({ show: false, target: '' });
 
 // ── Cargar Usuarios ──────────────────────────────────
 const fetchUsers = async () => {
@@ -490,6 +537,119 @@ const executeDelete = async () => {
   } finally {
     deleteModal.value.deleting = false;
   }
+};
+
+const handleExport = () => {
+  let target = '';
+  switch (currentFilter.value) {
+    case 'ADMIN': target = 'Administradores'; break;
+    case 'INSTRUCTOR': target = 'Instructores'; break;
+    case 'APRENDIZ': target = 'Aprendices'; break;
+    case 'EMPRESA': target = 'Empresas'; break;
+    default: target = 'todos los usuarios';
+  }
+  
+  exportModal.value = { show: true, target };
+};
+
+const executeExport = (format) => {
+  exportModal.value.show = false;
+  
+  // Clonar y ordenar datos alfabéticamente por nombre
+  const data = [...users.value].sort((a, b) => a.name.localeCompare(b.name));
+
+  if (!data || data.length === 0) {
+    alertBox.value = { show: true, message: 'No hay datos para exportar.', type: 'danger' };
+    return;
+  }
+
+  const fileName = `Exportacion_${exportModal.value.target.replace(/ /g, '_')}_${new Date().toLocaleDateString()}`;
+
+  try {
+    if (format === 'Excel') {
+      // Exportar como CSV con BOM para soporte de tildes/UTF-8 en Excel
+      const headers = ['Nombre', 'Email', 'Documento', 'Rol', 'Estado'];
+      const rows = data.map(u => [
+        `"${u.name}"`, 
+        `"${u.email}"`, 
+        `"${u.documento}"`, 
+        `"${u.role}"`, 
+        `"${u.status}"`
+      ].join(';')); // Usamos punto y coma para mejor compatibilidad en Excel español
+      
+      const csvContent = "\uFEFF" + [headers.join(';'), ...rows].join('\n');
+      downloadFile(csvContent, `${fileName}.csv`, 'text/csv;charset=utf-8;');
+    } 
+    else if (format === 'Texto') {
+      // Reporte de texto profesional con estructura de tabla
+      let txt = `╔══════════════════════════════════════════════════════════════════════════╗\n`;
+      txt += `║                REPORTE INSTITUCIONAL DE USUARIOS - REPFORA               ║\n`;
+      txt += `╠══════════════════════════════════════════════════════════════════════════╣\n`;
+      txt += `║ Categoría: ${exportModal.value.target.padEnd(61)}║\n`;
+      txt += `║ Fecha: ${new Date().toLocaleString().padEnd(65)}║\n`;
+      txt += `╠══════════════════════════════════════════════════════════════════════════╣\n\n`;
+      
+      txt += `${'NOMBRE'.padEnd(30)} | ${'DOCUMENTO'.padEnd(15)} | ${'ROL'.padEnd(12)} | ${'ESTADO'}\n`;
+      txt += `${'-'.repeat(80)}\n`;
+      
+      data.forEach(u => {
+        txt += `${u.name.substring(0, 28).padEnd(30)} | ${u.documento.padEnd(15)} | ${u.role.padEnd(12)} | ${u.status}\n`;
+        txt += `   Email: ${u.email}\n`;
+        txt += `${'-'.repeat(80)}\n`;
+      });
+      
+      downloadFile(txt, `${fileName}.txt`, 'text/plain;charset=utf-8;');
+    }
+    else if (format === 'PDF') {
+      alertBox.value = { show: true, message: 'Generando documento PDF de alta calidad...', type: 'success' };
+      
+      const doc = new jsPDF();
+      
+      // Título y Metadatos
+      doc.setFontSize(18);
+      doc.setTextColor(57, 169, 0); // Verde SENA
+      doc.text('REPORTE INSTITUCIONAL DE USUARIOS', 14, 22);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Categoría: ${exportModal.value.target}`, 14, 30);
+      doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, 14, 35);
+      doc.text('Plataforma: REPFORA - SENA', 14, 40);
+
+      // Tabla de datos
+      const tableColumn = ["Nombre", "Email", "Documento", "Rol", "Estado"];
+      const tableRows = data.map(u => [u.name, u.email, u.documento, u.role, u.status]);
+
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 45,
+        theme: 'striped',
+        headStyles: { fillStyle: 'dark', fillColor: [57, 169, 0], textColor: [255, 255, 255] },
+        alternateRowStyles: { fillColor: [240, 253, 244] },
+        styles: { fontSize: 9, cellPadding: 3 }
+      });
+
+      doc.save(`${fileName}.pdf`);
+    }
+
+    alertBox.value = { show: true, message: `¡Éxito! Reporte ordenado y guardado correctamente.`, type: 'success' };
+  } catch (err) {
+    alertBox.value = { show: true, message: 'Error al procesar la exportación.', type: 'danger' };
+  }
+
+  setTimeout(() => alertBox.value.show = false, 4000);
+};
+
+const downloadFile = (content, fileName, contentType) => {
+  const blob = new Blob([content], { type: contentType });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 // ── Importación Masiva Real ──────────────────────────
@@ -677,21 +837,131 @@ const handleLogout = () => {
 
 .btn-primary { background: #39a900; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; }
 .btn-primary:hover { background: #2e8b00; }
+.btn-export { 
+  background: #f0fdf4; 
+  color: #39a900; 
+  border: 1px solid #bbf7d0; 
+  padding: 10px 20px; 
+  border-radius: 8px; 
+  font-weight: 700; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(57, 169, 0, 0.05);
+}
+.btn-export:hover { 
+  background: #39a900; 
+  color: #fff;
+  border-color: #39a900;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px -4px rgba(57, 169, 0, 0.25);
+}
+.btn-export svg {
+  transition: transform 0.3s ease;
+}
+.btn-export:hover svg {
+  transform: translateY(2px);
+}
 .btn-danger { background: #dc2626; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+/* Bootstrap Style Alert */
+.alert-bootstrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  animation: slideIn 0.3s ease-out;
+}
+.alert-bootstrap.success {
+  background-color: #d1e7dd;
+  color: #0f5132;
+  border-color: #badbcc;
+}
+.alert-bootstrap.danger {
+  background-color: #f8d7da;
+  color: #842029;
+  border-color: #f5c2c7;
+}
+.alert-content { display: flex; align-items: center; gap: 12px; }
+.alert-icon { width: 18px; height: 18px; }
+.alert-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.alert-close:hover { opacity: 1; }
+
+@keyframes slideIn {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s, transform 0.3s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-10px); }
+
+/* Export Modal Refined */
+.format-intro { font-size: 0.9rem; color: #64748b; margin-bottom: 20px; line-height: 1.5; }
+.format-grid { display: flex; flex-direction: column; gap: 12px; }
+.format-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+}
+.format-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.format-icon svg { width: 22px; height: 22px; }
+.format-info h3 { font-size: 0.95rem; font-weight: 700; margin: 0 0 2px 0; color: #1e293b; }
+.format-info p { font-size: 0.75rem; color: #94a3b8; margin: 0; }
+
+.format-card:hover {
+  border-color: #cbd5e1;
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.format-card.excel:hover { border-color: #39a900; background: #f0fdf4; }
+.format-card.excel:hover .format-icon { background: #39a900; color: #fff; }
+
+.format-card.pdf:hover { border-color: #ef4444; background: #fef2f2; }
+.format-card.pdf:hover .format-icon { background: #ef4444; color: #fff; }
+
+.format-card.text:hover { border-color: #3b82f6; background: #eff6ff; }
+.format-card.text:hover .format-icon { background: #3b82f6; color: #fff; }
+
 .btn-danger:hover { background: #b91c1c; }
 
 /* Dashboard Grid */
-.dashboard-grid { display: grid; grid-template-columns: 280px 1fr; gap: 24px; margin-bottom: 24px; }
+.dashboard-grid { display: flex; flex-direction: column; gap: 24px; margin-bottom: 24px; }
 
 .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; }
 
-/* Upload Card Default */
-.upload-card { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px 16px; border: 2px dashed #cbd5e1; background: #f8fafc; }
-.upload-icon-wrapper { width: 48px; height: 48px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: #64748b; }
-.upload-icon-wrapper svg { width: 24px; }
-.upload-text h3 { font-size: 0.95rem; font-weight: 800; margin: 0 0 4px 0; color: #1e293b; }
-.upload-text p { font-size: 0.75rem; color: #64748b; margin: 0; line-height: 1.4; }
-
+/* States cards (Processing, Success, Error) */
 .card-header-sm { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .status-label { font-size: 0.65rem; font-weight: 800; color: #39a900; }
 .progress-bar { height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }

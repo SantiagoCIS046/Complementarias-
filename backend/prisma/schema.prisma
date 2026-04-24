@@ -6,24 +6,24 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("MONGO_URI")
 }
 
 // Modelos básicos para RepFora
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   password  String
   name      String?
-  role      String   @default("APRENDIZ") // ADMIN, INSTRUCTOR, APRENDIZ, EMPRESA
+  role      String   @default("APRENDIZ")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Company {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   nit       String   @unique
   address   String?
@@ -32,8 +32,8 @@ model Company {
 }
 
 model ProductiveStage {
-  id          Int      @id @default(autoincrement())
-  apprenticeId Int
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  apprenticeId String   @db.ObjectId
   status      String   @default("POR_INICIAR")
   startDate   DateTime?
   endDate     DateTime?
@@ -41,8 +41,8 @@ model ProductiveStage {
 }
 
 model Bitacora {
-  id        Int      @id @default(autoincrement())
-  stageId   Int
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  stageId   String   @db.ObjectId
   number    Int
   content   String?
   status    String   @default("PENDIENTE")

@@ -204,6 +204,53 @@ router.get('/ruta', verifyToken, checkRole(['ADMIN', 'INSTRUCTOR']), handler);
 
 ---
 
+## ⚙️ FUNCIONES DEL MÓDULO AUTH — 🟢 DEV 1
+
+### 📁 `src/modules/auth-dev1/User.model.js`
+> Modelo de Mongoose para el usuario del sistema.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `email` | `String` | Correo único, requerido, en minúsculas |
+| `password` | `String` | Contraseña encriptada con bcrypt |
+| `name` | `String` | Nombre del usuario |
+| `role` | `String` | Rol del sistema: `ADMIN`, `INSTRUCTOR`, `APRENDIZ`, `EMPRESA` |
+| `timestamps` | auto | `createdAt` y `updatedAt` generados automáticamente |
+
+---
+
+### 📁 `src/modules/auth-dev1/auth.service.js`
+> Lógica de autenticación con bcryptjs y JWT.
+
+| Función | Parámetros | Retorna | Descripción |
+|---|---|---|---|
+| `login` | `(email, password)` | `{ user, token }` | Verifica credenciales y genera token JWT |
+| `register` | `(userData)` | `user` | Crea nuevo usuario con contraseña encriptada |
+
+---
+
+### 📁 `src/modules/auth-dev1/auth.controller.js`
+> Controladores HTTP para autenticación.
+
+| Función | Método | Ruta | Descripción |
+|---|---|---|---|
+| `login` | `POST` | `/api/auth/login` | Autentica al usuario y devuelve token JWT |
+| `register` | `POST` | `/api/auth/register` | Registra un nuevo usuario |
+
+---
+
+### 📁 `seed.js`
+> Script para crear el usuario administrador inicial en MongoDB.
+
+| Acción | Detalle |
+|---|---|
+| Crea/actualiza admin | Email: `admin@repfora.com` / Pass: `admin123` / Rol: `ADMIN` |
+| Conexión | Usa `MONGO_URI` del `.env` con Mongoose |
+
+> **Uso:** `node seed.js` (ejecutar una sola vez desde `/backend`)
+
+---
+
 ## 📝 HISTORIAL DE CAMBIOS
 
 | Fecha | Acción | Detalle |
@@ -212,6 +259,10 @@ router.get('/ruta', verifyToken, checkRole(['ADMIN', 'INSTRUCTOR']), handler);
 | 2026-04-16 | ✅ Archivos base generados | Cada módulo tiene su `routes.js`, `controller.js` y `service.js` con el dueño marcado |
 | 2026-04-16 | ✅ Carpetas renombradas | Se agregó el sufijo `-dev1 / -dev2 / -dev3` a cada carpeta de módulo |
 | 2026-04-16 | ✅ `npm install` ejecutado | 180 paquetes instalados, 0 vulnerabilidades |
+| 2026-04-23 | ✅ Prisma configurado | Se creó `prisma/schema.prisma` con modelos base y se configuró para MongoDB Atlas |
+| 2026-04-23 | ✅ Auth implementado | Se programó login/register con JWT y bcrypt en `auth-dev1` |
+| 2026-04-23 | ✅ Modelo User creado | `User.model.js` con Mongoose para gestión de usuarios |
+| 2026-04-23 | ✅ Seed ejecutado | Usuario administrador creado en MongoDB Atlas (`admin@repfora.com`) |
 
 ---
 

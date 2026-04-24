@@ -79,6 +79,16 @@
           </div>
         </transition>
 
+        <!-- Error Message -->
+        <transition name="fade">
+          <div v-if="errorMsg" class="error-alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {{ errorMsg }}
+          </div>
+        </transition>
+
         <!-- Bloqueado -->
         <transition name="fade">
           <div v-if="locked" class="locked-alert">
@@ -126,21 +136,46 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../../../core/store/auth.store'
+import { authService } from '../services/auth.service'
+import AuthLayout from '../../../core/layouts/AuthLayout.vue'
 
-const form     = ref({ email: '', password: '' })
-const showPass = ref(false)
-const loading  = ref(false)
-const attempts = ref(0)
-const locked   = ref(false)
+const router    = useRouter()
+const authStore = useAuthStore()
+
+const form      = ref({ email: '', password: '' })
+const showPass  = ref(false)
+const loading   = ref(false)
+const attempts  = ref(0)
+const locked    = ref(false)
+const errorMsg  = ref('')
 
 async function handleLogin() {
-  if (locked.value) return
+  if (locked.value || loading.value) return
+  
+  errorMsg.value = ''
   loading.value = true
-  setTimeout(() => {
-    loading.value = false
+
+  try {
+    const response = await authService.login(form.value)
+    
+    // Guardar en el store
+    authStore.login(response.data)
+    
+    // Redirigir al dashboard
+    router.push('/dashboard')
+  } catch (error) {
+    console.error('Login error:', error)
     attempts.value = Math.min(attempts.value + 1, 5)
-    if (attempts.value >= 5) locked.value = true
-  }, 1400)
+    if (attempts.value >= 5) {
+      locked.value = true
+    } else {
+      errorMsg.value = error.response?.data?.message || 'Error al iniciar sesión'
+    }
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -360,8 +395,7 @@ async function handleLogin() {
   color: #92400e;
 }
 
-/* BLOQUEADO */
-.locked-alert {
+.locked-alert, .error-alert {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -374,7 +408,7 @@ async function handleLogin() {
   margin-bottom: 14px;
   font-weight: 500;
 }
-.locked-alert svg { width: 16px; height: 16px; flex-shrink: 0; }
+.locked-alert svg, .error-alert svg { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* ══════════════════════════════════════════
    BOTÓN

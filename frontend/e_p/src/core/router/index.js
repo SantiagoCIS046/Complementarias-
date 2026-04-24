@@ -12,10 +12,16 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/dashboard',
+    name: 'DashboardAdmin',
+    component: () => import('../../modules/admin-auth-dev1/views/DashboardAdmin.vue'),
+    meta: { requiresAuth: false, roles: ['ADMIN'] },
+  },
+  {
     path: '/usuarios',
     name: 'UserManagement',
-    component: () => import('../../modules/admin-auth-dev1/views/UserManagement.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN'] },
+    component: () => import('../../modules/admin-auth-dev1/views/DashboardAdmin.vue'),
+    meta: { requiresAuth: false, roles: ['ADMIN'] },
   },
 
   // ── 🔵 DEV 2: EP Management ─────────────────────────

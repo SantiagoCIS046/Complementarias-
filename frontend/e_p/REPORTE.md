@@ -230,12 +230,68 @@ frontend/e_p/
 
 ---
 
+## ⚙️ FUNCIONES NUEVAS — 🟢 DEV 1 (2026-04-23)
+
+---
+
+### `admin-auth-dev1/views/DashboardAdmin.vue` — 🟢 DEV 1
+
+| Característica | Detalle |
+|---|---|
+| **Diseño** | Vista premium de Gestión de Usuarios con sidebar, topbar y tabla profesional |
+| **Sidebar** | Navegación con íconos SVG, estado activo verde SENA y links de soporte/cerrar sesión |
+| **Importación Masiva** | Panel con zona drag & drop y barra de progreso animada |
+| **Resumen de Errores** | Tarjetas con códigos de error (R-42, R-89) y detalles de línea |
+| **Tabla de Miembros** | Tabla con avatares, badges de roles (ADMIN/INSTRUCTOR/APRENDIZ) y estados con puntos de color |
+| **Estadísticas** | 3 tarjetas inferiores con indicadores y bordes de color por categoría |
+
+---
+
+### `src/main.js` — 🤝 ZONA COMPARTIDA
+
+| Cambio | Detalle |
+|---|---|
+| `createPinia()` | Pinia registrada en la app para estado global |
+| `router` | Vue Router registrado para habilitar la navegación entre páginas |
+
+---
+
+### `src/App.vue` — 🤝 ZONA COMPARTIDA
+
+| Cambio | Detalle |
+|---|---|
+| `<router-view />` | Reemplazó el componente Login cableado directamente, ahora el Router controla qué vista mostrar |
+
+---
+
+### `admin-auth-dev1/services/auth.service.js` — 🟢 DEV 1
+
+| Cambio | Detalle |
+|---|---|
+| Backticks corregidos | Los template literals de las URLs de Axios fueron corregidos |
+
+---
+
+### `admin-auth-dev1/views/Login.vue` — 🟢 DEV 1
+
+| Cambio | Detalle |
+|---|---|
+| Conexión real | `handleLogin` ahora llama a `authService.login()` con Axios |
+| Estado global | Guarda `user` y `token` en `auth.store` (Pinia) tras login exitoso |
+| Redirección | Navega automáticamente a `/dashboard` tras autenticarse |
+| Manejo de errores | Muestra mensaje de error real del backend y cuenta intentos fallidos |
+
+---
+
 ## 📝 HISTORIAL DE CAMBIOS
 
 | Fecha | Acción | Detalle |
 |---|---|---|
-| 2026-04-19 | ✅ Implementación de Login | Rediseño profesional, panel dividido, assets SENA y lógica de bloqueo por intentos. |
 | 2026-04-16 | ✅ Estructura creada | Carpetas y archivos base del frontend Vue 3 + Vite |
+| 2026-04-19 | ✅ Implementación de Login | Rediseño profesional, panel dividido, assets SENA y lógica de bloqueo por intentos |
+| 2026-04-23 | ✅ DashboardAdmin creado | Vista premium de Gestión de Usuarios con diseño Enterprise/SaaS |
+| 2026-04-23 | ✅ Vue Router y Pinia | Instalados y registrados en `main.js`. `App.vue` actualizado con `<router-view />` |
+| 2026-04-23 | ✅ Login conectado al backend | Autenticación real con JWT, redirección al Dashboard y manejo de errores |
 
 ---
 

@@ -1,5 +1,5 @@
 // notifications.js 🔔 DEV 1 | Utilidad Global de Notificaciones
-const Notification = require('../modules/system-config-dev1/Notification.model');
+const Notification = require('../../modules/system-config-dev1/Notification.model');
 
 /**
  * Envía una notificación a un usuario específico

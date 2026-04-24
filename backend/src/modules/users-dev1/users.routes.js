@@ -1,4 +1,4 @@
-// users.routes.js 🟢 DEV 1 | Rutas Protegidas
+// users.routes.js 🟢 DEV 1 | Rutas CRUD Protegidas
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -8,16 +8,16 @@ const { protect, authorize } = require('../../core/middlewares/auth.middleware')
 // Configuración de Multer para recibir archivos en memoria (buffer)
 const upload = multer({ storage: multer.memoryStorage() });
 
-/**
- * RUTA: Importación masiva
- * Solo accesible para ADMIN
- */
-router.post(
-  '/import',
-  protect,
-  authorize('ADMIN'),
-  upload.single('file'), // 'file' es el nombre del campo en el FormData
-  controller.importUsers
-);
+// Todas las rutas requieren autenticación y rol ADMIN
+router.use(protect, authorize('ADMIN'));
+
+// CRUD
+router.get('/', controller.getAll);
+router.get('/:id', controller.getById);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.remove);
+
+// Importación masiva
+router.post('/import', upload.single('file'), controller.importUsers);
 
 module.exports = router;

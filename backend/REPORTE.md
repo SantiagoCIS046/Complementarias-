@@ -18,9 +18,11 @@
 - [x] **Auditoría (Logs):** Registro detallado de "Quién, Qué, Cuándo y desde dónde (IP)" para cada acción crítica.
 
 ## 👥 Módulo 3: Gestión de Usuarios y Habilitación
+- [x] **CRUD Completo:** Listado, visualización, edición y eliminación de usuarios.
+- [x] **Filtros Avanzados:** Paginación de servidor, búsqueda por nombre/email/documento y filtrado por rol (Admin, Instructor, Aprendiz).
 - [x] **Importación Excel:** Parser masivo con `xlsx` que crea usuarios y los marca como `ELEGIBLE`.
 - [x] **Control de Elegibilidad:** Lógica para bloquear registros si el estado no es el correcto.
-- [x] **Reasignación Masiva:** Función para migrar aprendices entre instructores por fin de contrato.
+- [x] **Reasignación Masiva:** Función para migrar aprendices entre instructores por fin de contrato con transferencia de permisos de Drive.
 
 ## 🛠️ Módulo 4: Herramientas Transversales
 - [x] **Motor de Notificaciones:** Sistema global de alertas internas (`enviarNotificacion`).

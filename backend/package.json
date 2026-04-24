@@ -8,16 +8,22 @@
     "dev": "nodemon src/server.js",
     "lint": "eslint src/**/*.js"
   },
-  "keywords": ["sena", "etapa-productiva", "repfora"],
+  "keywords": [
+    "sena",
+    "etapa-productiva",
+    "repfora"
+  ],
   "author": "RepFora Team",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
+    "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
+    "mongodb": "^7.1.1",
+    "mongoose": "^9.4.1",
     "pdfkit": "^0.13.0"
   },
   "devDependencies": {

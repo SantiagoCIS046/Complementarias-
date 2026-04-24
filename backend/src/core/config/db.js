@@ -1,8 +1,17 @@
-// =============================================
-// db.js - Conexión a la base de datos (Prisma)
-// =============================================
-const { PrismaClient } = require('@prisma/client');
+const mongoose = require('mongoose');
+require('dotenv').config();
 
-const prisma = new PrismaClient();
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI);
+    console.log(`-----------------------------------------`);
+    console.log(`✅ CONEXIÓN EXITOSA: ${conn.connection.host}`);
+    console.log(`📂 Base de datos: REPFORA_DB`);
+    console.log(`-----------------------------------------`);
+  } catch (error) {
+    console.error(`❌ ERROR DE CONEXIÓN: ${error.message}`);
+    process.exit(1); 
+  }
+};
 
-module.exports = prisma;
+module.exports = connectDB;

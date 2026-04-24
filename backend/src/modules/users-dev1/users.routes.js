@@ -1,11 +1,23 @@
-// users.routes.js   ?? DEV 1 | Instructores y Aprendices
+// users.routes.js 🟢 DEV 1 | Rutas Protegidas
 const express = require('express');
 const router = express.Router();
-const { verifyToken } = require('../../core/middlewares/auth.middleware');
-const { checkRole }   = require('../../core/middlewares/roles.middleware');
-const controller      = require('./users.controller');
+const multer = require('multer');
+const controller = require('./users.controller');
+const { protect, authorize } = require('../../core/middlewares/auth.middleware');
 
-// Ejemplo de ruta protegida
-// router.get('/', verifyToken, controller.getAll);
+// Configuración de Multer para recibir archivos en memoria (buffer)
+const upload = multer({ storage: multer.memoryStorage() });
+
+/**
+ * RUTA: Importación masiva
+ * Solo accesible para ADMIN
+ */
+router.post(
+  '/import',
+  protect,
+  authorize('ADMIN'),
+  upload.single('file'), // 'file' es el nombre del campo en el FormData
+  controller.importUsers
+);
 
 module.exports = router;

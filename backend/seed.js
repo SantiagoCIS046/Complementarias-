@@ -1,41 +1,40 @@
-// seed.js - Crear datos iniciales en la base de datos (Mongoose)
+// seed.js - DEV 1 | Agregando usuario de prueba personal
 const mongoose = require('mongoose');
 const bcrypt   = require('bcryptjs');
 require('dotenv').config();
 
-// Definir el schema inline para no tener dependencias circulares
-const userSchema = new mongoose.Schema({
-  email:    { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  name:     String,
-  role:     { type: String, default: 'APRENDIZ' },
-}, { timestamps: true });
-
-const User = mongoose.model('User', userSchema);
+const User = require('./src/modules/auth-dev1/User.model');
+const SystemConfig = require('./src/modules/system-config-dev1/SystemConfig.model');
 
 async function main() {
-  console.log('🌱 Iniciando seed...');
+  console.log('🌱 Actualizando usuarios...');
   await mongoose.connect(process.env.MONGO_URI);
-  console.log('✅ Conectado a MongoDB');
 
   const hashedPassword = await bcrypt.hash('admin123', 10);
 
-  const admin = await User.findOneAndUpdate(
+  // 1. Super Admin original
+  await User.findOneAndUpdate(
     { email: 'admin@repfora.com' },
-    {
-      email: 'admin@repfora.com',
-      password: hashedPassword,
-      name: 'Administrador RepFora',
-      role: 'ADMIN'
-    },
-    { upsert: true, new: true }
+    { documento: '12345678', password: hashedPassword, name: 'Super Admin', role: 'ADMIN', status: 'ACTIVO', isFirstLogin: false },
+    { upsert: true }
   );
 
-  console.log('✅ Usuario Administrador creado/actualizado:', admin.email);
+  // 2. TU USUARIO PARA PRUEBAS (SANTIAGO)
+  await User.findOneAndUpdate(
+    { email: 'santiagocisneros046@gmail.com' },
+    { 
+      documento: '1100976876', 
+      password: hashedPassword, 
+      name: 'Santiago Cisneros', 
+      role: 'ADMIN', 
+      status: 'ACTIVO',
+      isFirstLogin: false 
+    },
+    { upsert: true }
+  );
+
+  console.log('✅ Usuarios listos para pruebas');
   await mongoose.disconnect();
 }
 
-main().catch((e) => {
-  console.error('❌ Error en el seed:', e);
-  process.exit(1);
-});
+main().catch(err => { console.error(err); process.exit(1); });

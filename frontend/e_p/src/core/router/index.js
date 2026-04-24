@@ -12,6 +12,12 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/reset-password/:token',
+    name: 'ResetPassword',
+    component: () => import('../../modules/admin-auth-dev1/views/ResetPassword.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/dashboard',
     name: 'DashboardAdmin',
     component: () => import('../../modules/admin-auth-dev1/views/DashboardAdmin.vue'),

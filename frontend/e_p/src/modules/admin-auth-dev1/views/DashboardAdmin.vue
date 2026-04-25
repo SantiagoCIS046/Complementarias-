@@ -307,13 +307,25 @@
           <button class="modal-close" @click="showPasswordModal = false">&times;</button>
         </div>
         <div class="modal-body">
-          <div class="field-sm">
+          <div class="field-sm relative">
             <label>Nueva contraseña</label>
-            <input type="password" v-model="newPassword" placeholder="Mínimo 6 caracteres" />
+            <div class="input-with-icon">
+              <input :type="showNewPass ? 'text' : 'password'" v-model="newPassword" placeholder="Mínimo 6 caracteres" />
+              <button class="icon-btn" @click="showNewPass = !showNewPass">
+                <svg v-if="!showNewPass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
           </div>
-          <div class="field-sm">
+          <div class="field-sm relative">
             <label>Confirmar contraseña</label>
-            <input type="password" v-model="confirmPassword" />
+            <div class="input-with-icon">
+              <input :type="showConfirmPass ? 'text' : 'password'" v-model="confirmPassword" />
+              <button class="icon-btn" @click="showConfirmPass = !showConfirmPass">
+                <svg v-if="!showConfirmPass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
           </div>
           <p v-if="passwordMsg" :class="passwordMsg.type === 'error' ? 'error-msg' : 'success-msg'">{{ passwordMsg.text }}</p>
         </div>
@@ -693,6 +705,8 @@ const handleFileUpload = async (e) => {
 
 // ── Cambiar Contraseña ───────────────────────────────
 const showPasswordModal = ref(false);
+const showNewPass = ref(false);
+const showConfirmPass = ref(false);
 const newPassword = ref('');
 const confirmPassword = ref('');
 const changingPassword = ref(false);
@@ -886,6 +900,26 @@ const handleLogout = () => {
   color: #842029;
   border-color: #f5c2c7;
 }
+
+/* Icons for password toggle */
+.input-with-icon { position: relative; }
+.input-with-icon .icon-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+.input-with-icon .icon-btn:hover { color: #39a900; }
+.input-with-icon .icon-btn svg { width: 18px; height: 18px; }
+
 .alert-content { display: flex; align-items: center; gap: 12px; }
 .alert-icon { width: 18px; height: 18px; }
 .alert-close {

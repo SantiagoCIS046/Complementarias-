@@ -69,7 +69,12 @@
       </button>
 
       <transition name="fade">
-        <div v-if="errorMsg" class="error-alert">{{ errorMsg }}</div>
+        <div v-if="errorMsg" class="error-alert">
+          <p>{{ errorMsg }}</p>
+          <button v-if="errorMsg.includes('expirado') || errorMsg.includes('inválido')" class="back-btn" @click="router.push('/login')">
+            Volver al Login
+          </button>
+        </div>
       </transition>
       <transition name="fade">
         <div v-if="successMsg" class="success-alert">{{ successMsg }}</div>
@@ -165,7 +170,9 @@ async function handleReset() {
 
 .submit-btn { width: 100%; padding: 14px; background: #39a900; color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: 0.3s; }
 .submit-btn:hover { background: #2e8b00; transform: translateY(-2px); box-shadow: 0 10px 15px rgba(57, 169, 0, 0.2); }
-.error-alert { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-top: 15px; text-align: center; }
+.error-alert { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-top: 15px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.back-btn { background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.75rem; transition: 0.2s; }
+.back-btn:hover { background: #b91c1c; }
 .success-alert { background: #f0fdf4; color: #166534; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-top: 15px; text-align: center; }
 .spin-ring { width: 16px; height: 16px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -1,9 +1,11 @@
-// companies.service.js   ?? DEV 2 | Gestion de Empresas
-const prisma = require('../../core/config/db');
+// companies.service.js   ðŸ”µ DEV 2 | Gestion de Empresas
+const Company = require('./Company.model');
 
+/**
+ * Listar todas las empresas
+ */
 const getAll = async () => {
-  // TODO: Implementar lógica del módulo companies
-  return [];
+  return await Company.find().sort({ razonSocial: 1 });
 };
 
 module.exports = { getAll };

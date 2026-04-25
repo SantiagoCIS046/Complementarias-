@@ -1,129 +1,78 @@
-// users.service.js 🟢 DEV 1 | CRUD Completo de Usuarios
-const bcrypt = require('bcryptjs');
-const User = require('../auth-dev1/User.model');
-const xlsx = require('xlsx');
+﻿// users.service.js   DEV 1 | Instructores y Aprendices
+// =============================================
+// Logica de negocio para gestion de usuarios.
+// =============================================
+
+const User = require('./user.model');
 
 /**
- * Listar usuarios con paginación, filtro por rol y búsqueda
+ * Listar todos los usuarios (con filtros opcionales).
  */
-const getAllUsers = async (query = {}) => {
-  const { page = 1, limit = 10, role, search } = query;
-  const filter = {};
+const getAll = async (filtros = {}) => {
+  const query = {};
 
-  if (role && role !== 'TODOS') {
-    filter.role = role;
-  }
-
-  if (search && search.trim() !== '') {
-    const q = search.trim();
-    filter.$or = [
-      { name: { $regex: q, $options: 'i' } },
-      { email: { $regex: q, $options: 'i' } },
-      { documento: { $regex: q, $options: 'i' } }
+  if (filtros.role)     query.role = filtros.role;
+  if (filtros.activo !== undefined) query.activo = filtros.activo;
+  if (filtros.busqueda) {
+    query.$or = [
+      { name:  { $regex: filtros.busqueda, $options: 'i' } },
+      { email: { $regex: filtros.busqueda, $options: 'i' } },
+      { documento: { $regex: filtros.busqueda, $options: 'i' } },
     ];
   }
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-  const total = await User.countDocuments(filter);
-  const users = await User.find(filter)
-    .select('-password -resetPasswordToken -resetPasswordExpires -__v')
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(parseInt(limit));
-
-  return {
-    users,
-    pagination: {
-      total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(total / parseInt(limit))
-    }
-  };
+  const usuarios = await User.find(query).sort({ name: 1 });
+  return usuarios;
 };
 
 /**
- * Obtener un usuario por ID
+ * Obtener un usuario por su ID.
  */
-const getUserById = async (id) => {
-  const user = await User.findById(id)
-    .select('-password -resetPasswordToken -resetPasswordExpires -__v');
-  if (!user) throw new Error('Usuario no encontrado');
-  return user;
+const getById = async (id) => {
+  const usuario = await User.findById(id);
+  if (!usuario) {
+    throw new Error('Usuario no encontrado.');
+  }
+  return usuario;
 };
 
 /**
- * Actualizar un usuario
+ * Actualizar datos de un usuario.
  */
-const updateUser = async (id, data) => {
-  // No permitir actualizar password por esta vía
+const actualizar = async (id, data) => {
+  // No permitir cambiar el password por esta via
   delete data.password;
 
-  const user = await User.findByIdAndUpdate(id, data, { new: true, runValidators: true })
-    .select('-password -resetPasswordToken -resetPasswordExpires -__v');
-  if (!user) throw new Error('Usuario no encontrado');
-  return user;
-};
+  const usuario = await User.findByIdAndUpdate(id, data, {
+    new: true,
+    runValidators: true,
+  });
 
-/**
- * Eliminar un usuario
- */
-const deleteUser = async (id) => {
-  const user = await User.findByIdAndDelete(id);
-  if (!user) throw new Error('Usuario no encontrado');
-  return { message: 'Usuario eliminado correctamente' };
-};
-
-/**
- * Importar usuarios desde archivo Excel/CSV
- */
-const importarDesdeExcel = async (buffer) => {
-  const workbook = xlsx.read(buffer, { type: 'buffer' });
-  const sheetName = workbook.SheetNames[0];
-  const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-  const results = { creados: 0, errores: [] };
-
-  for (const row of data) {
-    try {
-      if (!row.email || !row.documento) {
-        results.errores.push({ fila: row, error: 'Campos incompletos' });
-        continue;
-      }
-      const hashedPassword = await bcrypt.hash(row.documento.toString(), 10);
-      await User.create({
-        documento: row.documento.toString(),
-        email: row.email.toLowerCase(),
-        password: hashedPassword,
-        name: row.nombre || 'Sin Nombre',
-        role: row.rol || 'APRENDIZ',
-        status: 'ELEGIBLE'
-      });
-      results.creados++;
-    } catch (error) {
-      results.errores.push({ fila: row, error: error.message });
-    }
+  if (!usuario) {
+    throw new Error('Usuario no encontrado.');
   }
-  return results;
+  return usuario;
 };
 
 /**
- * Reasignación de aprendices por fin de contrato de instructor
+ * Desactivar un usuario (soft delete).
  */
-const { transferPermissions } = require('../../core/utils/googleDrive');
-const { enviarNotificacion } = require('../../core/utils/notifications');
+const desactivar = async (id) => {
+  const usuario = await User.findByIdAndUpdate(
+    id,
+    { activo: false },
+    { new: true }
+  );
 
-const reasignarAprendices = async (instructorViejo, instructorNuevo, aprendicesIds) => {
-  try {
-    for (const id of aprendicesIds) {
-      const folderId = 'ID_DE_CARPETA_DE_PRUEBA';
-      await transferPermissions(folderId, instructorViejo.email, instructorNuevo.email);
-      await enviarNotificacion(id, `Tu instructor ha sido cambiado a ${instructorNuevo.name}`);
-    }
-    return { success: true, message: 'Reasignación y migración de Drive completada' };
-  } catch (error) {
-    console.error('❌ Error en reasignación:', error);
-    throw error;
+  if (!usuario) {
+    throw new Error('Usuario no encontrado.');
   }
+  return usuario;
 };
 
-module.exports = { getAllUsers, getUserById, updateUser, deleteUser, importarDesdeExcel, reasignarAprendices };
+module.exports = {
+  getAll,
+  getById,
+  actualizar,
+  desactivar,
+};

@@ -1,137 +1,112 @@
-// auth.service.js   🟢 DEV 1 | Seguridad con Seguimiento Total
-const bcrypt = require('bcryptjs');
-const jwt    = require('jsonwebtoken');
-const crypto = require('crypto');
-const User   = require('./User.model');
-const { registrarAuditoria } = require('../../core/utils/audit');
+// auth.service.js   🟢 DEV 1 | Autenticacion y seguridad
+// =============================================
+// Lógica de negocio para registro y login.
+// Usa JWT para generar tokens de sesión.
+// =============================================
+
+const jwt  = require('jsonwebtoken');
+const User = require('../users-dev1/user.model');
 const { JWT_SECRET, JWT_EXPIRES_IN } = require('../../core/config/env');
 
-const MAX_ATTEMPTS = 5;
-const LOCK_TIME = 2 * 60 * 1000;
-
 /**
- * Login con Seguimiento en Consola y DB
+ * Registrar un nuevo usuario.
  */
-const login = async (email, password, ip) => {
-  const user = await User.findOne({ email: email.toLowerCase() });
-  
-  // LOG DE INTENTO (Consola)
-  console.log(`\n🔑 INTENTO DE LOGIN: [${email}] | Clave usada: [${password}]`);
-
-  if (!user) {
-    await registrarAuditoria({
-      accion: 'LOGIN_FAILED',
-      detalle: `Usuario no encontrado: ${email} | Intento con clave: ${password}`,
-      ip
-    });
-    throw new Error('Credenciales inválidas');
+const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa }) => {
+  // Verificar que no exista el email
+  const existe = await User.findOne({ email });
+  if (existe) {
+    throw new Error('Ya existe un usuario registrado con el email: ' + email);
   }
 
-  if (user.isLocked) {
-    throw new Error('Cuenta bloqueada temporalmente');
+  const usuario = await User.create({
+    name,
+    email,
+    password,
+    role: role || 'APRENDIZ',
+    documento,
+    telefono,
+    ficha,
+    programa,
+  });
+
+  // Generar token
+  const token = generarToken(usuario);
+
+  return {
+    usuario: {
+      _id:   usuario._id,
+      name:  usuario.name,
+      email: usuario.email,
+      role:  usuario.role,
+    },
+    token,
+  };
+};
+
+/**
+ * Login de usuario.
+ */
+const login = async ({ email, password }) => {
+  // Buscar usuario (incluyendo el campo password que tiene select: false)
+  const usuario = await User.findOne({ email }).select('+password');
+  if (!usuario) {
+    throw new Error('Credenciales inválidas.');
   }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (!isMatch) {
-    user.loginAttempts += 1;
-    if (user.loginAttempts >= MAX_ATTEMPTS) user.lockUntil = Date.now() + LOCK_TIME;
-    await user.save();
-    
-    await registrarAuditoria({
-      usuarioId: user._id,
-      accion: 'LOGIN_FAILED',
-      detalle: `Contraseña incorrecta para ${email} | Usó: ${password}`,
-      ip
-    });
-    throw new Error('Credenciales inválidas');
+  // Verificar contraseña
+  const passwordValido = await usuario.comparePassword(password);
+  if (!passwordValido) {
+    throw new Error('Credenciales inválidas.');
   }
 
-  // Éxito
-  user.loginAttempts = 0;
-  user.lockUntil = undefined;
-  await user.save();
+  // Verificar que esté activo
+  if (!usuario.activo) {
+    throw new Error('Tu cuenta está desactivada. Contacta al administrador.');
+  }
 
-  await registrarAuditoria({
-    usuarioId: user._id,
-    accion: 'LOGIN_SUCCESS',
-    detalle: `Ingreso exitoso al sistema: ${email}`,
-    ip
-  });
+  // Generar token
+  const token = generarToken(usuario);
 
-  const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-  return { user, token };
+  return {
+    usuario: {
+      _id:   usuario._id,
+      name:  usuario.name,
+      email: usuario.email,
+      role:  usuario.role,
+    },
+    token,
+  };
 };
 
 /**
- * Recuperación con Seguimiento
+ * Obtener perfil del usuario autenticado.
  */
-const generateResetToken = async (email, ip) => {
-  const user = await User.findOne({ email: email.toLowerCase() });
-  
-  await registrarAuditoria({
-    accion: 'FORGOT_PASSWORD_REQUEST',
-    detalle: `Solicitud de recuperación para: ${email}`,
-    ip
-  });
-
-  if (!user) throw new Error('Enlace enviado si el correo existe');
-
-  const resetToken = crypto.randomBytes(20).toString('hex');
-  user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-  user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
-  await user.save();
-
-  return resetToken;
+const getPerfil = async (userId) => {
+  const usuario = await User.findById(userId);
+  if (!usuario) {
+    throw new Error('Usuario no encontrado.');
+  }
+  return usuario;
 };
 
 /**
- * Reset con Seguimiento de Nueva Clave
+ * Generar JWT.
  */
-const resetPassword = async (token, newPassword, ip) => {
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-  const user = await User.findOne({
-    resetPasswordToken: hashedToken,
-    resetPasswordExpires: { $gt: Date.now() }
-  });
-
-  if (!user) throw new Error('Token inválido');
-
-  user.password = await bcrypt.hash(newPassword, 10);
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpires = undefined;
-  user.isFirstLogin = false;
-  await user.save();
-
-  await registrarAuditoria({
-    usuarioId: user._id,
-    accion: 'PASSWORD_RESET_SUCCESS',
-    detalle: `Cambio de contraseña exitoso para ${user.email} | Nueva clave: ${newPassword}`,
-    ip
-  });
-
-  return { message: 'Contraseña actualizada' };
+const generarToken = (usuario) => {
+  return jwt.sign(
+    {
+      _id:   usuario._id,
+      name:  usuario.name,
+      email: usuario.email,
+      role:  usuario.role,
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
 };
 
-/**
- * Cambio de contraseña (Para primer ingreso o perfil)
- */
-const updatePassword = async (userId, newPassword, ip) => {
-  const user = await User.findById(userId);
-  if (!user) throw new Error('Usuario no encontrado');
-
-  user.password = await bcrypt.hash(newPassword, 10);
-  user.isFirstLogin = false; // Ya no es su primer ingreso
-  await user.save();
-
-  await registrarAuditoria({
-    usuarioId: user._id,
-    accion: 'PASSWORD_UPDATE',
-    detalle: `El usuario ${user.email} cambió su contraseña manualmente.`,
-    ip
-  });
-
-  return { message: 'Contraseña actualizada correctamente' };
+module.exports = {
+  registrar,
+  login,
+  getPerfil,
 };
-
-module.exports = { login, generateResetToken, resetPassword, updatePassword };

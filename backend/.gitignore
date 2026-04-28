@@ -3,6 +3,9 @@
 .env.local
 .env.*.local
 
+# Credenciales Google Drive (NUNCA subir al repo)
+credentials/*.json
+
 # Dependencias
 node_modules/
 

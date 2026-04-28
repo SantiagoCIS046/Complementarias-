@@ -1229,15 +1229,33 @@ const handleLogout = () => {
 .page-title { font-size: 1.4rem; font-weight: 800; margin: 0; }
 .page-description { font-size: 0.8rem; color: #64748b; }
 
-.btn-primary { background: #39a900; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; }
+.btn-primary { 
+  background: #39a900; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; 
+  font-weight: 700; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; 
+}
 .btn-primary:hover { background: #2e8b00; }
+
+.btn-primary-sena {
+  background: #39a900; color: #fff; border: none; padding: 8px 14px; border-radius: 8px;
+  font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center;
+  transition: all 0.2s;
+}
+
+.btn-export-outline {
+  background: #fff; color: #1e293b; border: 1px solid #e2e8f0; padding: 8px 14px; border-radius: 8px;
+  font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center;
+  transition: all 0.2s;
+}
+.btn-export-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+
 .btn-export { 
   background: #f0fdf4; 
   color: #39a900; 
   border: 1px solid #bbf7d0; 
-  padding: 10px 20px; 
+  padding: 8px 14px; 
   border-radius: 8px; 
   font-weight: 700; 
+  font-size: 0.75rem;
   cursor: pointer; 
   display: flex; 
   align-items: center; 
@@ -1248,16 +1266,9 @@ const handleLogout = () => {
   background: #39a900; 
   color: #fff;
   border-color: #39a900;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px -4px rgba(57, 169, 0, 0.25);
+  transform: translateY(-1px);
 }
-.btn-export svg {
-  transition: transform 0.3s ease;
-}
-.btn-export:hover svg {
-  transform: translateY(2px);
-}
-.btn-danger { background: #dc2626; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+.btn-danger { background: #dc2626; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.75rem; cursor: pointer; }
 /* Bootstrap Style Alert */
 .alert-bootstrap {
   display: flex;

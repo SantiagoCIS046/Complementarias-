@@ -118,12 +118,12 @@ router.beforeEach((to) => {
     return { name: 'Login' };
   }
 
-  // 3. Redirigir si ya está logueado
+  // 3. Redirigir si ya está logueado e intenta ir al Login
   if (to.name === 'Login' && isActuallyLoggedIn) {
     return { name: 'Dashboard' }
   }
 
-  ui.startLoading(800)
+  // Navegación permitida (Sin cargador automático aquí)
 })
 
 export default router

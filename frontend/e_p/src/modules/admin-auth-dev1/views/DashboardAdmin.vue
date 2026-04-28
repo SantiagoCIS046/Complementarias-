@@ -187,10 +187,10 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="user in users" :key="user._id">
+                  <tr v-for="user in users.filter(u => u && u._id)" :key="user._id">
                     <td>
                       <div class="user-cell">
-                        <div class="avatar" :class="getAvatarColor(user.role)">{{ getInitials(user.name) }}</div>
+                        <div v-if="user" class="avatar" :class="getAvatarColor(user.role)">{{ getInitials(user.name) }}</div>
                         <div class="user-info">
                           <p class="u-name">{{ user.name }}</p>
                           <p class="u-email">{{ user.email }}</p>
@@ -624,10 +624,22 @@ const handleAddUser = async () => {
     
   } catch (err) {
     console.error('Error al crear usuario:', err);
-    alertBox.value = { show: true, message: err.response?.data?.message || 'Error al crear el usuario.', type: 'danger' };
+    // Extraer el mensaje real del servidor si existe
+    const serverMsg = err.response?.data?.message || err.message;
+    let finalMsg = 'Error al crear el usuario.';
+
+    if (serverMsg.includes('duplicate key')) {
+      finalMsg = 'Error: El correo o documento ya está registrado en el sistema.';
+    } else if (serverMsg.includes('characters')) {
+      finalMsg = 'Error: El documento debe tener al menos 6 dígitos.';
+    } else {
+      finalMsg = serverMsg;
+    }
+
+    alertBox.value = { show: true, message: finalMsg, type: 'danger' };
     setTimeout(() => {
       if (alertBox.value) alertBox.value.show = false;
-    }, 5000);
+    }, 6000);
   } finally {
     isSubmitting.value = false;
     uiStore.hideLoader();

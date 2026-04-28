@@ -48,9 +48,9 @@
       </header>
 
       <div class="page-body">
-        <!-- Bootstrap-style Alert -->
+        <!-- Alerta Global Flotante (Bootstrap Style) -->
         <Transition name="fade">
-          <div v-if="alertBox.show" class="alert-bootstrap" :class="alertBox.type">
+          <div v-if="alertBox.show" class="alert-bootstrap-global" :class="alertBox.type">
             <div class="alert-content">
               <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -568,6 +568,17 @@ const emailWarning = computed(() => {
 const handleAddUser = async () => {
   if (!newUserForm.value.documento || !newUserForm.value.name || !newUserForm.value.email) {
     alertBox.value = { show: true, message: 'Por favor complete todos los campos obligatorios.', type: 'danger' };
+    setTimeout(() => alertBox.value.show = false, 5000);
+    return;
+  }
+
+  // Validación de seguridad SENA: El documento (password) debe tener al menos 6 caracteres
+  if (newUserForm.value.documento.toString().length < 6) {
+    alertBox.value = { 
+      show: true, 
+      message: 'El número de documento debe tener al menos 6 dígitos (será la clave inicial).', 
+      type: 'danger' 
+    };
     setTimeout(() => alertBox.value.show = false, 5000);
     return;
   }
@@ -1282,27 +1293,29 @@ const handleLogout = () => {
   transform: translateY(-1px);
 }
 .btn-danger { background: #dc2626; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.75rem; cursor: pointer; }
-/* Bootstrap Style Alert */
-.alert-bootstrap {
+/* Alertas Globales Flotantes */
+.alert-bootstrap-global {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999; /* Por encima de todo, incluso modales */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  font-weight: 600;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 700;
   border: 1px solid transparent;
-  animation: slideIn 0.3s ease-out;
+  min-width: 320px;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
+  animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.alert-bootstrap.success {
-  background-color: #d1e7dd;
-  color: #0f5132;
-  border-color: #badbcc;
-}
-.alert-bootstrap.danger {
-  background-color: #f8d7da;
-  color: #842029;
-  border-color: #f5c2c7;
+.alert-bootstrap-global.success { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+.alert-bootstrap-global.danger { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 /* Icons for password toggle */

@@ -56,7 +56,7 @@ const routes = [
     path: '/seguimiento',
     name: 'TrackingCalendar',
     component: () => import('../../modules/operation-tracking-dev3/views/TrackingCalendar.vue'),
-    meta: { requiresAuth: true, roles: ['INSTRUCTOR'] },
+    meta: { requiresAuth: true, roles: ['INSTRUCTOR', 'APRENDIZ'] },
   },
 
   // ── Redirección por defecto ──────────────────────────

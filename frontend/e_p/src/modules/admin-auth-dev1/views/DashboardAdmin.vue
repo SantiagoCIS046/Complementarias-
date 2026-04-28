@@ -62,10 +62,31 @@
         </Transition>
 
         <header class="page-header">
-          <div class="header-info">
-            <h1 class="page-title">Gestión de Usuarios</h1>
-            <p class="page-description">Supervise el estado de la red institucional y administre accesos.</p>
+          <div class="header-left-group">
+            <div class="header-info">
+              <h1 class="page-title">Gestión de Usuarios</h1>
+              <p class="page-description">Supervise el estado de la red institucional y administre accesos.</p>
+            </div>
+
+            <div class="stats-row header-stats">
+              <div class="stat-box border-green">
+                <p>TOTAL USUARIOS</p>
+                <h2>{{ pagination.total }}</h2>
+                <small>Basado en registros actuales</small>
+              </div>
+              <div class="stat-box border-pink">
+                <p>INSTRUCTORES</p>
+                <h2>{{ stats.instructors }}</h2>
+                <small>Usuarios con rol instructor</small>
+              </div>
+              <div class="stat-box border-dark">
+                <p>APRENDICES</p>
+                <h2>{{ stats.aprendices }}</h2>
+                <small>Usuarios con rol aprendiz</small>
+              </div>
+            </div>
           </div>
+
           <div class="header-actions">
             <button class="btn btn-export-outline" @click="handleExport">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; margin-right: 8px;">
@@ -221,24 +242,7 @@
           </div>
         </div>
 
-        <!-- Fila Inferior: Estadísticas -->
-        <div class="stats-row">
-          <div class="stat-box border-green">
-            <p>TOTAL USUARIOS</p>
-            <h2>{{ pagination.total }}</h2>
-            <small>Basado en registros actuales</small>
-          </div>
-          <div class="stat-box border-pink">
-            <p>INSTRUCTORES</p>
-            <h2>{{ stats.instructors }}</h2>
-            <small>Usuarios con rol instructor</small>
-          </div>
-          <div class="stat-box border-dark">
-            <p>APRENDICES</p>
-            <h2>{{ stats.aprendices }}</h2>
-            <small>Usuarios con rol aprendiz</small>
-          </div>
-        </div>
+        <!-- Las estadísticas fueron movidas a la cabecera -->
       </div>
     </main>
 
@@ -1450,16 +1454,17 @@ const handleLogout = () => {
 .act-btn.delete { color: #ef4444; }
 .act-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; }
 
-/* Stats Row */
+/* Header & Stats */
+.header-left-group { display: flex; align-items: center; gap: 40px; }
+.header-stats.stats-row { gap: 16px; margin-bottom: 0; }
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-.stat-box { background: #fff; padding: 16px 20px; border-radius: 12px; border-left: 4px solid; border-bottom: 1px solid #e2e8f0; }
+.stat-box { background: #fff; padding: 12px 16px; border-radius: 12px; border-left: 4px solid; border: 1px solid #e2e8f0; border-left-width: 4px; }
 .border-green { border-left-color: #39a900; }
 .border-pink { border-left-color: #db2777; }
 .border-dark { border-left-color: #1e293b; }
-.stat-box p { font-size: 0.7rem; font-weight: 800; color: #64748b; margin-bottom: 8px; }
-.stat-box h2 { font-size: 1.8rem; margin: 0; font-weight: 800; }
-.stat-box small { font-size: 0.7rem; color: #22c55e; font-weight: 600; }
-
+.stat-box p { font-size: 0.65rem; font-weight: 800; color: #64748b; margin-bottom: 4px; }
+.stat-box h2 { font-size: 1.4rem; margin: 0 0 2px 0; font-weight: 800; }
+.stat-box small { font-size: 0.65rem; color: #22c55e; font-weight: 600; }
 /* ═══ Modales ═══ */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px);

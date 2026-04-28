@@ -5,7 +5,7 @@ const { JWT_SECRET } = require('../config/env');
 /**
  * Verifica que el usuario tenga un token válido
  */
-const protect = async (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   let token;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -39,4 +39,4 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+module.exports = { verifyToken, authorize };

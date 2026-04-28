@@ -6,7 +6,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const controller = require('./users.controller');
-const { protect, authorize } = require('../../core/middlewares/auth.middleware');
+const { verifyToken } = require('../../core/middlewares/auth.middleware');
+const { checkRole }   = require('../../core/middlewares/roles.middleware');
 
 // Todas las rutas de usuarios requieren autenticación y rol ADMIN
 router.use(verifyToken);

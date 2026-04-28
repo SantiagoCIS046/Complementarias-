@@ -120,7 +120,15 @@ router.beforeEach((to) => {
 
   // 3. Redirigir si ya está logueado e intenta ir al Login
   if (to.name === 'Login' && isActuallyLoggedIn) {
-    return { name: 'Dashboard' }
+    if (userRole === 'ADMIN') return { name: 'Dashboard' }
+    if (userRole === 'INSTRUCTOR') return { name: 'EPRegister' }
+    if (userRole === 'APRENDIZ') return { name: 'BitacorasReview' }
+    
+    // Si tiene token pero no hay rol válido (estado corrupto), limpiar y permitir ir al Login
+    localStorage.removeItem('repfora_token')
+    localStorage.removeItem('repfora_user')
+    if (auth.logout) auth.logout() // Si existe la acción en pinia
+    return true // Continúa hacia el Login
   }
 
   // Navegación permitida (Sin cargador automático aquí)

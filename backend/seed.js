@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const bcrypt   = require('bcryptjs');
 require('dotenv').config();
 
-const User = require('./src/modules/auth-dev1/User.model');
+const User = require('./src/modules/users-dev1/user.model');
 const SystemConfig = require('./src/modules/system-config-dev1/SystemConfig.model');
 
 async function main() {
@@ -15,7 +15,7 @@ async function main() {
   // 1. Super Admin original
   await User.findOneAndUpdate(
     { email: 'admin@repfora.com' },
-    { documento: '12345678', password: hashedPassword, name: 'Super Admin', role: 'ADMIN', status: 'ACTIVO', isFirstLogin: false },
+    { documento: '00000001', password: hashedPassword, name: 'Super Admin', role: 'ADMIN', status: 'ACTIVO', isFirstLogin: false },
     { upsert: true }
   );
 

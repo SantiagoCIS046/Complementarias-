@@ -86,7 +86,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
+import { authService } from '../services/auth.service'
 
 const route    = useRoute()
 const router   = useRouter()
@@ -109,16 +109,21 @@ async function handleReset() {
   }
 
   errorMsg.value = ''
+  successMsg.value = ''
   loading.value = true
-  const token = route.params.token
-  const API = import.meta.env.VITE_API_URL
+  
+  // El token viene de la URL: /reset-password?token=ABC123...
+  const token = route.query.token || route.params.token
 
   try {
-    await axios.post(`${API}/auth/reset-password/${token}`, { password: password.value })
-    successMsg.value = '¡Contraseña actualizada! Redirigiendo...'
+    const res = await authService.resetPassword({ 
+      token, 
+      newPassword: password.value 
+    })
+    successMsg.value = res.data?.message || '¡Contraseña actualizada! Redirigiendo...'
     setTimeout(() => { router.push('/login') }, 3000)
   } catch (err) {
-    errorMsg.value = 'El enlace ha expirado o es inválido.'
+    errorMsg.value = err.response?.data?.message || 'El enlace ha expirado o es inválido.'
   } finally {
     loading.value = false
   }

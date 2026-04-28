@@ -154,8 +154,17 @@ async function handleLogin() {
   loading.value = true
   try {
     const res = await authService.login(form.value)
+    
+    // 1. Guardar en el Store (Pinia)
     authStore.login(res.data)
-    router.push('/dashboard')
+    
+    // 2. Pequeña pausa para asegurar que el estado se guardó
+    successMsg.value = '¡Acceso concedido! Entrando...'
+    
+    setTimeout(async () => {
+      await router.push({ name: 'Dashboard' })
+    }, 100)
+
   } catch (err) {
     errorMsg.value = err.response?.data?.message || 'Credenciales incorrectas'
   } finally {

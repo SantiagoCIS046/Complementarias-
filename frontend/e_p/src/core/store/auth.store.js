@@ -5,7 +5,8 @@ import { ref, computed } from 'vue'
 
 export const useAuthStore = defineStore('auth', () => {
   // ── State ──────────────────────────────────────────
-  const user  = ref(JSON.parse(localStorage.getItem('repfora_user'))  || null)
+  const storedUser = localStorage.getItem('repfora_user')
+  const user  = ref((storedUser && storedUser !== 'undefined') ? JSON.parse(storedUser) : null)
   const token = ref(localStorage.getItem('repfora_token') || null)
 
   // ── Getters ────────────────────────────────────────
@@ -19,9 +20,10 @@ export const useAuthStore = defineStore('auth', () => {
    * @param {{ user: object, token: string }} payload
    */
   function login(payload) {
-    user.value  = payload.user
+    const userData = payload.user || payload.usuario
+    user.value  = userData
     token.value = payload.token
-    localStorage.setItem('repfora_user',  JSON.stringify(payload.user))
+    localStorage.setItem('repfora_user',  JSON.stringify(userData))
     localStorage.setItem('repfora_token', payload.token)
   }
 

@@ -388,6 +388,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../core/store/auth.store';
+import { useUiStore } from '../../../core/store/ui.store';
 import { usersService } from '../services/users.service';
 import { authService } from '../services/auth.service';
 import axios from 'axios';
@@ -396,6 +397,7 @@ import 'jspdf-autotable';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const uiStore = useUiStore();
 
 // ── Estado Principal ──────────────────────────────────
 const users = ref([]);
@@ -413,6 +415,7 @@ const exportModal = ref({ show: false, target: '' });
 
 // ── Cargar Usuarios ──────────────────────────────────
 const fetchUsers = async () => {
+  uiStore.startLoading(2000); // Muestra el cargador global por 2 segundos
   isLoading.value = true;
   try {
     const params = {

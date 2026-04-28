@@ -135,10 +135,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../core/store/auth.store'
+import { useUiStore } from '../../../core/store/ui.store'
 import { authService } from '../services/auth.service'
 
 const router    = useRouter()
 const authStore = useAuthStore()
+const uiStore   = useUiStore()
 
 const form          = ref({ email: '', password: '' })
 const recoveryEmail = ref('')
@@ -152,6 +154,7 @@ async function handleLogin() {
   errorMsg.value = ''
   successMsg.value = ''
   loading.value = true
+  uiStore.startLoading(3000) // Cargador global por 3 segundos
   try {
     const res = await authService.login(form.value)
     

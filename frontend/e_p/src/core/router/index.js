@@ -2,6 +2,7 @@
 // 🤝 ZONA COMPARTIDA
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../store/auth.store'
+import { useUiStore } from '../store/ui.store'
 
 const routes = [
   // ── 🟢 DEV 1: Auth & Dashboard ───────────────────────
@@ -71,6 +72,10 @@ const router = createRouter({
 // Guard de navegación global inteligente y robusto
 router.beforeEach((to) => {
   const auth = useAuthStore()
+  const ui = useUiStore()
+  
+  // Activar cargador global al navegar
+  ui.startLoading(1500)
   
   // Verificación ultra-rápida (Store o LocalStorage)
   const isActuallyLoggedIn = auth.isLoggedIn || !!localStorage.getItem('repfora_token')

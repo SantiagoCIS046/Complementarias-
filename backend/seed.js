@@ -22,14 +22,23 @@ async function main() {
   // 2. TU USUARIO PARA PRUEBAS (SANTIAGO)
   await User.findOneAndUpdate(
     { email: 'santiagocisneros046@gmail.com' },
-    { 
-      documento: '1100976876', 
-      password: hashedPassword, 
-      name: 'Santiago Cisneros', 
-      role: 'ADMIN', 
-      status: 'ACTIVO',
-      isFirstLogin: false 
-    },
+    { documento: '1100976876', password: hashedPassword, name: 'Santiago Cisneros', role: 'ADMIN', status: 'ACTIVO', isFirstLogin: false },
+    { upsert: true }
+  );
+
+  // 3. NUEVO INSTRUCTOR
+  const instructorPass = await bcrypt.hash('mancilla123', 10);
+  await User.findOneAndUpdate(
+    { email: 'mancilla@gmail.com' },
+    { documento: '88888888', password: instructorPass, name: 'Instructor Mancilla', role: 'INSTRUCTOR', status: 'ACTIVO' },
+    { upsert: true }
+  );
+
+  // 4. NUEVO APRENDIZ
+  const aprendizPass = await bcrypt.hash('martin123', 10);
+  await User.findOneAndUpdate(
+    { email: 'martin@gmail.com' },
+    { documento: '99999999', password: aprendizPass, name: 'Aprendiz Martin', role: 'APRENDIZ', status: 'ACTIVO' },
     { upsert: true }
   );
 

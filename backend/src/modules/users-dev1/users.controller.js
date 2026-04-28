@@ -82,7 +82,7 @@ const eliminar = async (req, res) => {
     const data = await service.desactivar(req.params.id);
     res.json({
       success: true,
-      message: 'Usuario desactivado exitosamente.',
+      message: 'Usuario eliminado permanentemente del sistema.',
       data,
     });
   } catch (error) {

@@ -1,4 +1,4 @@
-﻿// users.service.js   DEV 1 | Instructores y Aprendices
+// users.service.js   DEV 1 | Instructores y Aprendices
 // =============================================
 // Logica de negocio para gestion de usuarios.
 // =============================================
@@ -55,14 +55,10 @@ const actualizar = async (id, data) => {
 };
 
 /**
- * Desactivar un usuario (soft delete).
+ * Eliminar permanentemente un usuario (Hard delete).
  */
 const desactivar = async (id) => {
-  const usuario = await User.findByIdAndUpdate(
-    id,
-    { activo: false },
-    { new: true }
-  );
+  const usuario = await User.findByIdAndDelete(id);
 
   if (!usuario) {
     throw new Error('Usuario no encontrado.');

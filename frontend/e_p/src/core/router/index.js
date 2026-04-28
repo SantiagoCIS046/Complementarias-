@@ -64,13 +64,18 @@ const routes = [
     path: '/', 
     redirect: () => {
       const token = localStorage.getItem('repfora_token');
-      const user = JSON.parse(localStorage.getItem('repfora_user') || '{}');
-      if (!token) return '/login';
+      const userData = localStorage.getItem('repfora_user');
       
-      // Redirección inicial según el rol
-      if (user.role === 'ADMIN') return '/dashboard';
-      if (user.role === 'INSTRUCTOR') return '/etapas';
-      return '/bitacoras'; // Default para Aprendices
+      if (!token || !userData || userData === 'undefined') return '/login';
+      
+      try {
+        const user = JSON.parse(userData);
+        if (user.role === 'ADMIN') return '/dashboard';
+        if (user.role === 'INSTRUCTOR') return '/etapas';
+        return '/bitacoras';
+      } catch (e) {
+        return '/login';
+      }
     }
   },
   { path: '/:pathMatch(.*)*', redirect: '/login' },
@@ -86,24 +91,34 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
   const ui = useUiStore()
   
-  const isActuallyLoggedIn = !!auth.token || !!localStorage.getItem('repfora_token')
-  const userRole = auth.user?.role || JSON.parse(localStorage.getItem('repfora_user') || '{}').role
+  const token = auth.token || localStorage.getItem('repfora_token')
+  const isActuallyLoggedIn = !!token
+
+  let userRole = auth.user?.role
+  if (!userRole) {
+    try {
+      const storedUser = localStorage.getItem('repfora_user')
+      if (storedUser && storedUser !== 'undefined') {
+        userRole = JSON.parse(storedUser).role
+      }
+    } catch (e) {
+      userRole = null
+    }
+  }
 
   // 1. Verificación de Autenticación
   if (to.meta.requiresAuth && !isActuallyLoggedIn) {
     return { name: 'Login' }
   }
 
-  // 2. Verificación de ROLES (Solo Admins entran a todo)
+  // 2. Verificación de ROLES
   if (to.meta.roles && !to.meta.roles.includes(userRole)) {
-    console.warn(`Acceso denegado para el rol: ${userRole}`);
-    // Redirigir a su área permitida si intenta entrar donde no debe
     if (userRole === 'INSTRUCTOR') return { name: 'EPRegister' };
     if (userRole === 'APRENDIZ') return { name: 'BitacorasReview' };
     return { name: 'Login' };
   }
 
-  // 3. Ya logueado no entra al Login
+  // 3. Redirigir si ya está logueado
   if (to.name === 'Login' && isActuallyLoggedIn) {
     return { name: 'Dashboard' }
   }

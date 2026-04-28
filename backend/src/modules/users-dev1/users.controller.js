@@ -20,8 +20,13 @@ const getAll = async (req, res) => {
     const data = await service.getAll(filtros);
     res.json({
       success: true,
-      count: data.length,
-      data,
+      users: data,
+      pagination: {
+        total: data.length,
+        page: 1,
+        limit: 10,
+        totalPages: Math.ceil(data.length / 10) || 1
+      }
     });
   } catch (error) {
     res.status(500).json({

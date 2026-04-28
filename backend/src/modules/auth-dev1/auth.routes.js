@@ -43,4 +43,11 @@ router.post('/forgot-password', controller.forgotPassword);
  */
 router.post('/reset-password', controller.resetPassword);
 
+/**
+ * @route   POST /api/auth/change-password
+ * @desc    Cambiar la contraseña del usuario actual
+ * @access  Private
+ */
+router.post('/change-password', verifyToken, controller.changePassword);
+
 module.exports = router;

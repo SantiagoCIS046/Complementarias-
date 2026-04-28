@@ -116,8 +116,8 @@ frontend/e_p/
 | `/usuarios` | `UserManagement.vue` | `ADMIN` | DEV 1 |
 | `/etapas` | `EPRegister.vue` | `ADMIN, INSTRUCTOR` | DEV 2 |
 | `/empresas` | `CompanyList.vue` | `ADMIN, INSTRUCTOR` | DEV 2 |
-| `/bitacoras` | `BitacorasReview.vue` | `INSTRUCTOR, APRENDIZ` | DEV 3 |
-| `/seguimiento` | `TrackingCalendar.vue` | `INSTRUCTOR` | DEV 3 |
+| `/bitacoras` | `BitacorasReview.vue` | `ADMIN, INSTRUCTOR, APRENDIZ` | DEV 3 |
+| `/seguimiento` | `TrackingCalendar.vue` | `ADMIN, INSTRUCTOR` | DEV 3 |
 
 > **Guard global:** Si `requiresAuth: true` y el usuario no está logueado, redirige a `/login`.
 
@@ -223,6 +223,9 @@ frontend/e_p/
 | 2026-04-16 | ✅ Core compartido | `colors.css`, layouts, router, store |
 | 2026-04-16 | ✅ Componentes UI | `BaseButton`, `BaseInput`, `StatusBadge` |
 | 2026-04-16 | ✅ Módulos scaffold | Vistas y servicios base con dueño marcado por DEV |
+| 2026-04-28 | ✅ Dashboard Premium | Rediseño de UI administrativa, carga inmediata y estados visuales SENA. |
+| 2026-04-28 | ✅ Seguridad & RBAC | Implementación de Guard de navegación por roles (ADMIN acceso total). |
+| 2026-04-28 | ✅ Integración API | Sincronización real con base de datos y corrección de servicios de usuario. |
 
 ---
 

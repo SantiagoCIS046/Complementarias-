@@ -6,4 +6,8 @@ export const authService = {
   login:          (credentials) => axios.post(`${API}/auth/login`, credentials),
   forgotPassword: (email)       => axios.post(`${API}/auth/forgot-password`, { email }),
   resetPassword:  (data)        => axios.post(`${API}/auth/reset-password`, data),
+  changePassword: (password, token) => axios.post(`${API}/auth/change-password`, { password }, {
+    headers: { Authorization: `Bearer ${token}` }
+  }),
+  registrar:      (data)        => axios.post(`${API}/auth/register`, data),
 }

@@ -50,17 +50,29 @@ const routes = [
     path: '/bitacoras',
     name: 'BitacorasReview',
     component: () => import('../../modules/operation-tracking-dev3/views/BitacorasReview.vue'),
-    meta: { requiresAuth: true, roles: ['INSTRUCTOR', 'APRENDIZ'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
   {
     path: '/seguimiento',
     name: 'TrackingCalendar',
     component: () => import('../../modules/operation-tracking-dev3/views/TrackingCalendar.vue'),
-    meta: { requiresAuth: true, roles: ['INSTRUCTOR', 'APRENDIZ'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
 
-  // ── Redirección por defecto ──────────────────────────
-  { path: '/', redirect: '/login' },
+  // ── Redirección Inteligente ──────────────────────────
+  { 
+    path: '/', 
+    redirect: () => {
+      const token = localStorage.getItem('repfora_token');
+      const user = JSON.parse(localStorage.getItem('repfora_user') || '{}');
+      if (!token) return '/login';
+      
+      // Redirección inicial según el rol
+      if (user.role === 'ADMIN') return '/dashboard';
+      if (user.role === 'INSTRUCTOR') return '/etapas';
+      return '/bitacoras'; // Default para Aprendices
+    }
+  },
   { path: '/:pathMatch(.*)*', redirect: '/login' },
 ]
 
@@ -69,31 +81,34 @@ const router = createRouter({
   routes,
 })
 
-// Guard de navegación global inteligente y robusto
+// Guard de navegación con validación de ROLES
 router.beforeEach((to) => {
   const auth = useAuthStore()
   const ui = useUiStore()
   
-  // Activar cargador global al navegar
-  ui.startLoading(1500)
-  
-  // Verificación ultra-rápida (Store o LocalStorage)
-  const isActuallyLoggedIn = auth.isLoggedIn || !!localStorage.getItem('repfora_token')
+  const isActuallyLoggedIn = !!auth.token || !!localStorage.getItem('repfora_token')
+  const userRole = auth.user?.role || JSON.parse(localStorage.getItem('repfora_user') || '{}').role
 
-  // 1. Si el usuario ya está logueado e intenta ir al Login, mandarlo al Dashboard
-  if (to.name === 'Login' && isActuallyLoggedIn) {
-    return { name: 'Dashboard' }
-  }
-
-  // 2. Si la ruta requiere auth y no está logueado, mandarlo al Login
+  // 1. Verificación de Autenticación
   if (to.meta.requiresAuth && !isActuallyLoggedIn) {
     return { name: 'Login' }
   }
 
-  // 3. Si va a la raíz (/) y está logueado, mandarlo al Dashboard
-  if (to.path === '/' && isActuallyLoggedIn) {
+  // 2. Verificación de ROLES (Solo Admins entran a todo)
+  if (to.meta.roles && !to.meta.roles.includes(userRole)) {
+    console.warn(`Acceso denegado para el rol: ${userRole}`);
+    // Redirigir a su área permitida si intenta entrar donde no debe
+    if (userRole === 'INSTRUCTOR') return { name: 'EPRegister' };
+    if (userRole === 'APRENDIZ') return { name: 'BitacorasReview' };
+    return { name: 'Login' };
+  }
+
+  // 3. Ya logueado no entra al Login
+  if (to.name === 'Login' && isActuallyLoggedIn) {
     return { name: 'Dashboard' }
   }
+
+  ui.startLoading(800)
 })
 
 export default router

@@ -186,10 +186,30 @@ const resetPassword = async ({ token, newPassword }) => {
   return { message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
 };
 
+/**
+ * Cambiar la contraseña del usuario autenticado.
+ */
+const changePassword = async (userId, newPassword) => {
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('La contraseña debe tener al menos 6 caracteres.');
+  }
+
+  const usuario = await User.findById(userId);
+  if (!usuario) {
+    throw new Error('Usuario no encontrado.');
+  }
+
+  usuario.password = newPassword;
+  await usuario.save();
+
+  return { message: 'Contraseña actualizada exitosamente.' };
+};
+
 module.exports = {
   registrar,
   login,
   getPerfil,
   forgotPassword,
   resetPassword,
+  changePassword,
 };

@@ -159,13 +159,13 @@ async function handleLogin() {
     const res = await authService.login(form.value)
     
     // 1. Guardar en el Store (Pinia)
-    authStore.login(res.data)
+    authStore.login(res.data.data) // <--- Aquí estaba el error (res.data vs res.data.data)
     
     // 2. Pequeña pausa para asegurar que el estado se guardó
     successMsg.value = '¡Acceso concedido! Entrando...'
     
     setTimeout(async () => {
-      await router.push({ name: 'Dashboard' })
+      await router.push('/') // <--- El router se encargará de enviarlo a su Dashboard
     }, 100)
 
   } catch (err) {

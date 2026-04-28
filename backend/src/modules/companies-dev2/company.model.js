@@ -1,54 +1,33 @@
-// company.model.js   🔵 DEV 2 | Modelo de Empresa
+// Company.model.js 🔵 DEV 2 | Esquema de Empresas (Mongoose)
 const mongoose = require('mongoose');
 
-const companySchema = new mongoose.Schema(
-  {
-    nit: {
-      type: String,
-      required: [true, 'El NIT es obligatorio'],
-      unique: true,
-      trim: true,
+const companySchema = new mongoose.Schema({
+    nit: { 
+        type: String, 
+        required: true, 
+        unique: true, 
+        trim: true 
     },
-    razonSocial: {
-      type: String,
-      required: [true, 'La razón social es obligatoria'],
-      trim: true,
+    razonSocial: { 
+        type: String, 
+        required: true, 
+        trim: true 
     },
-    direccion: {
-      type: String,
-      trim: true,
+    direccion: { 
+        type: String, 
+        trim: true 
     },
-    telefono: {
-      type: String,
-      trim: true,
+    telefono: { 
+        type: String 
     },
-    emailContacto: {
-      type: String,
-      trim: true,
-      lowercase: true,
+    emailContacto: { 
+        type: String, 
+        lowercase: true 
     },
-    jefeInmediato: {
-      type: String,
-      trim: true,
-    },
-    telefonoJefe: {
-      type: String,
-      trim: true,
-    },
-    emailJefe: {
-      type: String,
-      trim: true,
-      lowercase: true,
-    },
-    activa: {
-      type: Boolean,
-      default: true,
-    },
-  },
-  {
-    timestamps: true, // createdAt, updatedAt automáticos
-    versionKey: false,
-  }
-);
+    createdAt: { 
+        type: Date, 
+        default: Date.now 
+    }
+});
 
 module.exports = mongoose.model('Company', companySchema);

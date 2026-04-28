@@ -586,12 +586,25 @@ const handleAddUser = async () => {
 
     const res = await authService.registrar(userData);
     
-    // Actualizar tabla local
-    users.value.unshift(res.data.usuario);
-    pagination.value.total++;
-    
-    showAddUserModal.value = false;
-    alertBox.value = { show: true, message: '¡Usuario creado con éxito! La clave inicial es su número de documento.', type: 'success' };
+    // 1. Extraer el usuario de la capa correcta (res.data.data.usuario)
+    const nuevoUsuario = res.data?.data?.usuario || res.data?.usuario;
+
+    if (nuevoUsuario) {
+      // 2. Actualizar tabla local
+      users.value.unshift(nuevoUsuario);
+      pagination.value.total++;
+      
+      // 3. Cerrar modal y limpiar formulario
+      showAddUserModal.value = false;
+      newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ' };
+
+      // 4. Mostrar alerta de éxito
+      alertBox.value = { 
+        show: true, 
+        message: '¡Usuario creado con éxito! La clave inicial es su número de documento.', 
+        type: 'success' 
+      };
+    }
     
     // Ocultar alerta automáticamente después de 5 segundos
     setTimeout(() => {

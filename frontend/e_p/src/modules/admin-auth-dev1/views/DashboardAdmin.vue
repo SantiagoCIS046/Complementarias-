@@ -1466,10 +1466,17 @@ const handleLogout = () => {
 .act-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; }
 
 /* Header & Stats */
-.header-left-group { display: flex; align-items: center; gap: 40px; }
+.header-left-group { display: flex; align-items: center; gap: 40px; flex: 1; }
 .header-stats.stats-row { gap: 16px; margin-bottom: 0; }
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-.stat-box { background: #fff; padding: 12px 16px; border-radius: 12px; border-left: 4px solid; border: 1px solid #e2e8f0; border-left-width: 4px; }
+.stat-box { background: #fff; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 4px solid; }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 60px; /* Espacio extra para alejar los botones */
+}
 .border-green { border-left-color: #39a900; }
 .border-pink { border-left-color: #db2777; }
 .border-dark { border-left-color: #1e293b; }

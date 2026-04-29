@@ -120,7 +120,7 @@
 
     <!-- PANEL DERECHO -->
     <div class="right-panel">
-      <img src="/sena_institution.png" alt="SENA" class="sena-bg" />
+      <img src="https://edoingenieria.com/wp-content/uploads/2023/08/Sena_-sangil.jpg" alt="SENA" class="sena-bg" />
       <div class="right-overlay">
         <div class="right-badge">SENA Colombia</div>
         <h2 class="right-title">Gestión de Etapa<br/>Productiva</h2>

@@ -79,16 +79,19 @@ const routes = [
       const token = localStorage.getItem('repfora_token');
       const userData = localStorage.getItem('repfora_user');
       
-      if (!token || !userData || userData === 'undefined') return '/login';
+      // SI NO HAY TOKEN, SIEMPRE AL LOGIN
+      if (!token || !userData || userData === 'undefined') {
+        return { name: 'Login' };
+      }
       
       try {
         const user = JSON.parse(userData);
-        if (user.role === 'ADMIN') return '/dashboard';
-        if (user.role === 'INSTRUCTOR') return '/seguimiento-ep';
-        if (user.role === 'APRENDIZ') return '/seguimiento-ep';
-        return '/login';
+        if (user.role === 'ADMIN') return { name: 'Dashboard' };
+        if (user.role === 'INSTRUCTOR') return { name: 'EPDashboard' };
+        if (user.role === 'APRENDIZ') return { name: 'EPDashboard' };
+        return { name: 'Login' };
       } catch (e) {
-        return '/login';
+        return { name: 'Login' };
       }
     }
   },
@@ -134,15 +137,9 @@ router.beforeEach((to) => {
 
   // 3. Redirigir si ya está logueado e intenta ir al Login
   if (to.name === 'Login' && isActuallyLoggedIn) {
-<<<<<<< Updated upstream
-    if (userRole === 'ADMIN') return { name: 'EPDashboard' }
-    if (userRole === 'INSTRUCTOR') return { name: 'EPRegister' }
-    if (userRole === 'APRENDIZ') return { name: 'BitacorasReview' }
-=======
     if (userRole === 'ADMIN') return { name: 'Dashboard' }
     if (userRole === 'INSTRUCTOR') return { name: 'EPDashboard' }
     if (userRole === 'APRENDIZ') return { name: 'EPDashboard' }
->>>>>>> Stashed changes
     
     // Si tiene token pero no hay rol válido (estado corrupto), limpiar y permitir ir al Login
     localStorage.removeItem('repfora_token')

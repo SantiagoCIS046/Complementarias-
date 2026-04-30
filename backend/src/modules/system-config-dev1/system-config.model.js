@@ -1,8 +1,4 @@
-// system-config.model.js   🟢 DEV 1 | Modelo de Configuracion Global
-// =============================================
-// Almacena pares clave-valor para configuración
-// del sistema (ej: plazo máximo de registro, etc.)
-// =============================================
+// system-config.model.js  DEV 1 | Modelo de Configuración del Sistema
 const mongoose = require('mongoose');
 
 const systemConfigSchema = new mongoose.Schema(

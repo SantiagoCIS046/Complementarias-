@@ -63,11 +63,25 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // --- Seguridad y Bloqueos (DEV 1) ---
     status: {
       type: String,
       enum: ['ACTIVO', 'INACTIVO', 'ELEGIBLE', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO', 'EN CURSO', 'FINALIZADA', 'RENOVACION'],
       default: 'ACTIVO',
     },
+    loginAttempts: { 
+      type: Number, 
+      required: true, 
+      default: 0 
+    },
+    lockUntil: { 
+      type: Date 
+    },
+    isFirstLogin: { 
+      type: Boolean, 
+      default: true 
+    },
+    // Recuperación de Contraseña
     resetPasswordToken: {
       type: String,
       default: null,
@@ -75,13 +89,20 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpires: {
       type: Date,
       default: null,
-    },
+    }
   },
   {
     timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
   }
 );
+
+// --- Virtual para saber si el usuario está bloqueado ---
+userSchema.virtual('isLocked').get(function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+});
 
 // --- Middleware: hashear contraseña antes de guardar ---
 userSchema.pre('save', async function () {

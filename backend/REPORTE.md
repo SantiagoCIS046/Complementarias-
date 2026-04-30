@@ -28,6 +28,8 @@
 - [x] **Motor de Notificaciones:** Sistema global de alertas internas (`enviarNotificacion`).
 - [x] **Generador de Radicados:** Motor secuencial inteligente (REP-001, REP-002).
 - [x] **Migración Google Drive:** Integración con API de Drive para transferir permisos de carpetas automáticamente.
+- [x] **Cambio de Contraseña:** Endpoint seguro implementado para actualización de claves desde el perfil del administrador.
+- [x] **Sincronización de API:** Estandarización de respuestas para compatibilidad total con el panel de administración (campos `users` y `pagination`).
 
 ---
 

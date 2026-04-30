@@ -120,7 +120,7 @@
 
     <!-- PANEL DERECHO -->
     <div class="right-panel">
-      <img src="/sena_institution.png" alt="SENA" class="sena-bg" />
+      <img src="https://edoingenieria.com/wp-content/uploads/2023/08/Sena_-sangil.jpg" alt="SENA" class="sena-bg" />
       <div class="right-overlay">
         <div class="right-badge">SENA Colombia</div>
         <h2 class="right-title">Gestión de Etapa<br/>Productiva</h2>
@@ -135,10 +135,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../core/store/auth.store'
+import { useUiStore } from '../../../core/store/ui.store'
 import { authService } from '../services/auth.service'
 
 const router    = useRouter()
 const authStore = useAuthStore()
+const uiStore   = useUiStore()
 
 const form          = ref({ email: '', password: '' })
 const recoveryEmail = ref('')
@@ -152,10 +154,20 @@ async function handleLogin() {
   errorMsg.value = ''
   successMsg.value = ''
   loading.value = true
+  uiStore.startLoading(3000) // Cargador global por 3 segundos
   try {
     const res = await authService.login(form.value)
-    authStore.login(res.data)
-    router.push('/dashboard')
+    
+    // 1. Guardar en el Store (Pinia)
+    authStore.login(res.data.data) // <--- Aquí estaba el error (res.data vs res.data.data)
+    
+    // 2. Pequeña pausa para asegurar que el estado se guardó
+    successMsg.value = '¡Acceso concedido! Entrando...'
+    
+    setTimeout(async () => {
+      await router.push('/') // <--- El router se encargará de enviarlo a su Dashboard
+    }, 100)
+
   } catch (err) {
     errorMsg.value = err.response?.data?.message || 'Credenciales incorrectas'
   } finally {

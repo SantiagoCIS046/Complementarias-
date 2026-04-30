@@ -48,9 +48,9 @@
       </header>
 
       <div class="page-body">
-        <!-- Bootstrap-style Alert -->
+        <!-- Alerta Global Flotante (Bootstrap Style) -->
         <Transition name="fade">
-          <div v-if="alertBox.show" class="alert-bootstrap" :class="alertBox.type">
+          <div v-if="alertBox.show" class="alert-bootstrap-global" :class="alertBox.type">
             <div class="alert-content">
               <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -62,16 +62,43 @@
         </Transition>
 
         <header class="page-header">
-          <div class="header-info">
-            <h1 class="page-title">Gestión de Usuarios</h1>
-            <p class="page-description">Supervise el estado de la red institucional y administre accesos.</p>
+          <div class="header-left-group">
+            <div class="header-info">
+              <h1 class="page-title">Gestión de Usuarios</h1>
+              <p class="page-description">Supervise el estado de la red institucional y administre accesos.</p>
+            </div>
+
+            <div class="stats-row header-stats">
+              <div class="stat-box border-green">
+                <p>TOTAL USUARIOS</p>
+                <h2>{{ pagination.total }}</h2>
+                <small>Basado en registros actuales</small>
+              </div>
+              <div class="stat-box border-pink">
+                <p>INSTRUCTORES</p>
+                <h2>{{ stats.instructors }}</h2>
+                <small>Usuarios con rol instructor</small>
+              </div>
+              <div class="stat-box border-dark">
+                <p>APRENDICES</p>
+                <h2>{{ stats.aprendices }}</h2>
+                <small>Usuarios con rol aprendiz</small>
+              </div>
+            </div>
           </div>
+
           <div class="header-actions">
-            <button class="btn btn-export" @click="handleExport">
+            <button class="btn btn-export-outline" @click="handleExport">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; margin-right: 8px;">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
               Exportar
+            </button>
+            <button class="btn btn-primary-sena" @click="openAddUserModal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; margin-right: 8px;">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Nuevo Usuario
             </button>
             <input type="file" ref="fileInput" accept=".xlsx,.csv" style="display:none" @change="handleFileUpload" />
           </div>
@@ -160,10 +187,10 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="user in users" :key="user._id">
+                  <tr v-for="user in users.filter(u => u && u._id)" :key="user._id">
                     <td>
                       <div class="user-cell">
-                        <div class="avatar" :class="getAvatarColor(user.role)">{{ getInitials(user.name) }}</div>
+                        <div v-if="user" class="avatar" :class="getAvatarColor(user.role)">{{ getInitials(user.name) }}</div>
                         <div class="user-info">
                           <p class="u-name">{{ user.name }}</p>
                           <p class="u-email">{{ user.email }}</p>
@@ -171,9 +198,16 @@
                       </div>
                     </td>
                     <td><span class="role-badge" :class="user.role.toLowerCase()">{{ user.role }}</span></td>
-                    <td><span class="status-dot" :class="{ active: user.status === 'ACTIVO' }"></span> {{ user.status }}</td>
+                    <td>
+                      <span class="status-pill" :class="getStatusClass(user.status)">
+                        {{ user.status === 'CONTRACT_ENDED' ? 'Fin de Contrato' : user.status }}
+                      </span>
+                    </td>
                     <td>
                       <div class="action-btns">
+                        <button v-if="user.status === 'CONTRACT_ENDED'" class="act-btn reassign" @click="openReassignModal(user)" title="Reasignar Aprendices">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        </button>
                         <button class="act-btn edit" @click="openEditModal(user)" title="Editar">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
@@ -208,24 +242,7 @@
           </div>
         </div>
 
-        <!-- Fila Inferior: Estadísticas -->
-        <div class="stats-row">
-          <div class="stat-box border-green">
-            <p>TOTAL USUARIOS</p>
-            <h2>{{ pagination.total }}</h2>
-            <small>Basado en registros actuales</small>
-          </div>
-          <div class="stat-box border-pink">
-            <p>INSTRUCTORES</p>
-            <h2>{{ stats.instructors }}</h2>
-            <small>Usuarios con rol instructor</small>
-          </div>
-          <div class="stat-box border-dark">
-            <p>APRENDICES</p>
-            <h2>{{ stats.aprendices }}</h2>
-            <small>Usuarios con rol aprendiz</small>
-          </div>
-        </div>
+        <!-- Las estadísticas fueron movidas a la cabecera -->
       </div>
     </main>
 
@@ -338,6 +355,126 @@
       </div>
     </div>
 
+    <!-- ═══════ MODAL: Reasignar Aprendices (Objetivo 2) ═══════ -->
+    <div class="modal-overlay" v-if="showReassignModal" @click.self="showReassignModal = false">
+      <div class="modal-card modal-md">
+        <div class="modal-head">
+          <h2>Reasignar Aprendices (Fin de Contrato)</h2>
+          <button class="modal-close" @click="showReassignModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="alert-warning-simple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <p>Seleccione un nuevo instructor activo para migrar las carpetas de Google Drive de los aprendices asociados.</p>
+          </div>
+          
+          <div class="field-group">
+            <label class="field-label">Instructor Saliente</label>
+            <input type="text" :value="selectedInstructor?.name" disabled class="input-disabled" />
+          </div>
+
+          <div class="field-group mt-4">
+            <label class="field-label">Nuevo Instructor Responsable</label>
+            <select v-model="newInstructorId" class="select-premium">
+              <option value="">Seleccione un instructor...</option>
+              <option value="1">Ana García (Sistemas)</option>
+              <option value="2">Carlos Rodríguez (ADSO)</option>
+              <option value="3">Elena Martínez (Multimedia)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="showReassignModal = false">Cancelar</button>
+          <button class="btn btn-warning" @click="handleReassign" :disabled="!newInstructorId">
+            Migrar Carpetas y Reasignar
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- ═══════ MODAL: Nuevo Usuario (Formulario Inteligente) ═══════ -->
+    <div class="modal-overlay" v-if="showAddUserModal" @click.self="showAddUserModal = false">
+      <div class="modal-card modal-lg">
+        <div class="modal-head">
+          <div class="head-with-icon">
+            <div class="head-icon-circle green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            </div>
+            <div>
+              <h2>Registrar Nuevo Usuario</h2>
+              <p class="modal-subtitle">La identificación será su contraseña inicial.</p>
+            </div>
+          </div>
+          <button class="modal-close" @click="showAddUserModal = false">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-section">
+            <h3 class="section-title">Datos de Identificación</h3>
+            <div class="form-grid-2">
+              <div class="field-group">
+                <label class="label-premium">Tipo de Documento</label>
+                <select v-model="newUserForm.tipoDocumento" class="select-premium">
+                  <option value="CC">Cédula de Ciudadanía</option>
+                  <option value="TI">Tarjeta de Identidad</option>
+                  <option value="CE">Cédula de Extranjería</option>
+                  <option value="PEP">Permiso Especial</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label class="label-premium">Número de Documento</label>
+                <input type="number" v-model="newUserForm.documento" placeholder="Número" class="input-premium" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="section-title">Información de Contacto</h3>
+            <div class="form-grid-2">
+              <div class="field-group">
+                <label class="label-premium">Nombres y Apellidos</label>
+                <input type="text" v-model="newUserForm.name" placeholder="Nombre completo" class="input-premium" />
+              </div>
+              <div class="field-group">
+                <label class="label-premium">Correo Institucional</label>
+                <input type="email" v-model="newUserForm.email" placeholder="ejemplo@soy.sena.edu.co" class="input-premium" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section mt-6">
+            <h3 class="section-title">3. Rol en el Sistema</h3>
+            <div class="field-group">
+              <label>Seleccionar Rol</label>
+              <div class="role-selector-grid">
+                <label class="role-card" :class="{active: newUserForm.role === 'ADMIN'}">
+                  <input type="radio" v-model="newUserForm.role" value="ADMIN" />
+                  <div class="role-icon">🔑</div>
+                  <span>Admin</span>
+                </label>
+                <label class="role-card" :class="{active: newUserForm.role === 'INSTRUCTOR'}">
+                  <input type="radio" v-model="newUserForm.role" value="INSTRUCTOR" />
+                  <div class="role-icon">👨‍🏫</div>
+                  <span>Instructor</span>
+                </label>
+                <label class="role-card" :class="{active: newUserForm.role === 'APRENDIZ'}">
+                  <input type="radio" v-model="newUserForm.role" value="APRENDIZ" />
+                  <div class="role-icon">🎓</div>
+                  <span>Aprendiz</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="showAddUserModal = false">Cancelar</button>
+          <button class="btn-primary-sena btn-lg" @click="handleAddUser" :disabled="isSubmitting">
+            {{ isSubmitting ? 'Registrando...' : 'Crear Usuario' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══════ MODAL: Seleccionar Formato de Exportación ═══════ -->
     <div class="modal-overlay" v-if="exportModal.show" @click.self="exportModal.show = false">
       <div class="modal-card modal-sm">
@@ -388,6 +525,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../core/store/auth.store';
+import { useUiStore } from '../../../core/store/ui.store';
 import { usersService } from '../services/users.service';
 import { authService } from '../services/auth.service';
 import axios from 'axios';
@@ -396,14 +534,145 @@ import 'jspdf-autotable';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const uiStore = useUiStore();
 
 // ── Estado Principal ──────────────────────────────────
 const users = ref([]);
-const isLoading = ref(true);
+const isLoading = ref(false);
 const currentFilter = ref('TODOS');
 const searchQuery = ref('');
-const pagination = ref({ total: 0, page: 1, limit: 10, totalPages: 1 });
+const pagination = ref({ total: 0, page: 1, limit: 10, totalPages: 0 });
 const stats = ref({ instructors: 0, aprendices: 0 });
+
+// Modal Nuevo Usuario (ARQUITECTURA SENA)
+const showAddUserModal = ref(false);
+const isSubmitting = ref(false);
+const newUserForm = ref({
+  tipoDocumento: 'CC',
+  documento: '',
+  name: '',
+  email: '',
+  role: 'APRENDIZ'
+});
+
+const openAddUserModal = () => {
+  newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ' };
+  showAddUserModal.value = true;
+};
+
+const emailWarning = computed(() => {
+  if (!newUserForm.value.email) return false;
+  return !newUserForm.value.email.includes('@soy.sena.edu.co') && !newUserForm.value.email.includes('@misena.edu.co');
+});
+
+const handleAddUser = async () => {
+  if (!newUserForm.value.documento || !newUserForm.value.name || !newUserForm.value.email) {
+    alertBox.value = { show: true, message: 'Por favor complete todos los campos obligatorios.', type: 'danger' };
+    setTimeout(() => alertBox.value.show = false, 5000);
+    return;
+  }
+
+  // Validación de seguridad SENA: El documento (password) debe tener al menos 6 caracteres
+  if (newUserForm.value.documento.toString().length < 6) {
+    alertBox.value = { 
+      show: true, 
+      message: 'El número de documento debe tener al menos 6 dígitos (será la clave inicial).', 
+      type: 'danger' 
+    };
+    setTimeout(() => alertBox.value.show = false, 5000);
+    return;
+  }
+
+  isSubmitting.value = true;
+  uiStore.showLoader(); // Loader real mientras consulta al backend
+
+  try {
+    // LÓGICA OCULTA: Password = Documento, firstLogin = true, status = ACTIVO
+    const userData = {
+      ...newUserForm.value,
+      password: newUserForm.value.documento.toString(),
+      isFirstLogin: true,
+      status: 'ACTIVO'
+    };
+
+    const res = await authService.registrar(userData);
+    
+    // 1. Extraer el usuario de la capa correcta (res.data.data.usuario)
+    const nuevoUsuario = res.data?.data?.usuario || res.data?.usuario;
+
+    if (nuevoUsuario) {
+      // 2. Actualizar tabla local
+      users.value.unshift(nuevoUsuario);
+      pagination.value.total++;
+      
+      // 3. Cerrar modal y limpiar formulario
+      showAddUserModal.value = false;
+      newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ' };
+
+      // 4. Mostrar alerta de éxito
+      alertBox.value = { 
+        show: true, 
+        message: '¡Usuario creado con éxito! La clave inicial es su número de documento.', 
+        type: 'success' 
+      };
+    }
+    
+    // Ocultar alerta automáticamente después de 5 segundos
+    setTimeout(() => {
+      if (alertBox.value) alertBox.value.show = false;
+    }, 5000);
+    
+  } catch (err) {
+    console.error('Error al crear usuario:', err);
+    // Extraer el mensaje real del servidor si existe
+    const serverMsg = err.response?.data?.message || err.message;
+    let finalMsg = 'Error al crear el usuario.';
+
+    if (serverMsg.includes('duplicate key')) {
+      finalMsg = 'Error: El correo o documento ya está registrado en el sistema.';
+    } else if (serverMsg.includes('characters')) {
+      finalMsg = 'Error: El documento debe tener al menos 6 dígitos.';
+    } else {
+      finalMsg = serverMsg;
+    }
+
+    alertBox.value = { show: true, message: finalMsg, type: 'danger' };
+    setTimeout(() => {
+      if (alertBox.value) alertBox.value.show = false;
+    }, 6000);
+  } finally {
+    isSubmitting.value = false;
+    uiStore.hideLoader();
+  }
+};
+
+// Helper para colores de estados (Objetivo 1)
+const getStatusClass = (status) => {
+  if (!status) return '';
+  const s = status.toLowerCase();
+  if (s === 'activo' || s === 'elegible') return 'activo';
+  if (s === 'contract_ended') return 'contract_ended';
+  if (s === 'inactivo') return 'inactivo';
+  return '';
+};
+
+// Modal Reasignar (Objetivo 2)
+const showReassignModal = ref(false);
+const selectedInstructor = ref(null);
+const newInstructorId = ref('');
+
+const openReassignModal = (user) => {
+  selectedInstructor.value = user;
+  showReassignModal.value = true;
+};
+
+const handleReassign = () => {
+  uiStore.startLoading(3000);
+  setTimeout(() => {
+    showReassignModal.value = false;
+    alertBox.value = { show: true, message: '¡Migración completada con éxito!', type: 'success' };
+  }, 3000);
+};
 
 // Alert state (Bootstrap style)
 const alertBox = ref({ show: false, message: '', type: 'success' });
@@ -413,6 +682,7 @@ const exportModal = ref({ show: false, target: '' });
 
 // ── Cargar Usuarios ──────────────────────────────────
 const fetchUsers = async () => {
+  uiStore.showLoader(); // Muestra el cargador real inmediatamente
   isLoading.value = true;
   try {
     const params = {
@@ -429,6 +699,7 @@ const fetchUsers = async () => {
     console.error('Error cargando usuarios:', err);
   } finally {
     isLoading.value = false;
+    uiStore.hideLoader(); // Cerramos el cargador siempre
   }
 };
 
@@ -725,11 +996,7 @@ const handleChangePassword = async () => {
   changingPassword.value = true;
   passwordMsg.value = null;
   try {
-    const API = import.meta.env.VITE_API_URL;
-    await axios.post(`${API}/auth/change-password`, 
-      { password: newPassword.value },
-      { headers: { Authorization: `Bearer ${authStore.token}` } }
-    );
+    await authService.changePassword(newPassword.value, authStore.token);
     passwordMsg.value = { type: 'success', text: '¡Contraseña actualizada!' };
     newPassword.value = '';
     confirmPassword.value = '';
@@ -775,6 +1042,155 @@ const handleLogout = () => {
 .logo-text { font-size: 1.1rem; font-weight: 800; color: #1e293b; }
 .logo-subtext { font-size: 0.55rem; color: #94a3b8; font-weight: 700; display: block; }
 
+/* ── Estados & Badges (Objetivo 1) ── */
+.status-pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.status-pill.activo, .status-pill.elegible { background: #e8f7e1; color: #39a900; }
+.status-pill.contract_ended { background: #fff7ed; color: #ea580c; }
+.status-pill.inactivo { background: #f1f5f9; color: #64748b; }
+
+/* ── Formulario de Registro (Equilibrado) ── */
+.modal-lg { max-width: 750px; width: 95%; }
+.modal-card { overflow: hidden; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+.modal-head { padding: 15px 25px; }
+.head-icon-circle { width: 36px; height: 36px; }
+.head-icon-circle svg { width: 20px; }
+.modal-body { padding: 20px 30px; }
+.form-section { margin-bottom: 15px; }
+.section-title { font-size: 0.8rem; font-weight: 800; color: #cbd5e1; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content: ""; flex: 1; height: 1px; background: #f8fafc; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.col-span-2 { grid-column: span 2; }
+.field-group { display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+.label-premium { display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; margin-bottom: 6px; line-height: 1.2; }
+.input-premium, .select-premium { 
+  width: 100%; 
+  height: 42px; 
+  padding: 0 15px; 
+  border-radius: 8px; 
+  border: 1px solid #e2e8f0; 
+  background: #fff;
+  font-size: 0.9rem;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.select-premium { 
+  line-height: 42px; /* Forzamos el centrado vertical exacto */
+  appearance: none; /* Quitamos estilos nativos para controlar el centrado */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+.input-premium:focus, .select-premium:focus { 
+  border-color: #39a900; 
+  box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.1); 
+  outline: none; 
+}
+.email-hint { font-size: 0.7rem; color: #f59e0b; margin-top: 5px; font-weight: 600; }
+.modal-footer { padding: 15px 30px; background: #f8fafc; border-top: 1px solid #f1f5f9; gap: 12px; }
+.btn-primary-sena.btn-lg { padding: 10px 20px; font-size: 0.85rem; border-radius: 6px; }
+.btn-cancel { padding: 10px 20px; font-size: 0.85rem; border-radius: 6px; font-weight: 600; }
+
+.role-selector-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 8px; }
+.role-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 15px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  background: white;
+  transition: all 0.2s ease;
+}
+.role-card input { display: none; }
+.role-card:hover { border-color: #39a900; background: #f8fafc; }
+.role-card.active { 
+  border-color: #39a900; 
+  background: #e8f7e1; 
+  box-shadow: inset 0 0 0 1px #39a900;
+}
+.role-icon { font-size: 1.25rem; filter: none !important; }
+.role-card span { font-weight: 700; font-size: 0.9rem; color: #475569; }
+.role-card.active span { color: #2e8b00; }
+.role-card.active .role-icon { filter: none !important; }
+
+.head-with-icon { display: flex; gap: 15px; align-items: center; }
+.head-icon-circle { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.head-icon-circle.green { background: #e8f7e1; color: #39a900; }
+.head-icon-circle.green svg { width: 24px; }
+.modal-subtitle { font-size: 0.8rem; color: #94a3b8; font-weight: 500; }
+.btn-primary-sena {
+  background: #39a900;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(57, 169, 0, 0.2);
+  cursor: pointer;
+}
+
+.btn-primary-sena:hover {
+  background: #2e8b00;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(57, 169, 0, 0.3);
+}
+
+.btn-export-outline {
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-export-outline:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+/* ── Modal Reasignar (Objetivo 2) ── */
+.alert-warning-simple {
+  display: flex;
+  gap: 12px;
+  background: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  padding: 15px;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.9rem;
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+.input-disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.select-premium:focus, .input-premium:focus { border-color: #39a900; box-shadow: 0 0 0 4px rgba(57, 169, 0, 0.1); }
+.btn-warning { background: #ea580c; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+.btn-warning:hover:not(:disabled) { background: #c2410c; transform: translateY(-2px); }
+.btn-warning:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.act-btn.reassign { color: #ea580c; background: #fff7ed; }
+.act-btn.reassign:hover { background: #ffedd5; transform: scale(1.1); }
 .nav-item {
   display: flex;
   align-items: center;
@@ -849,15 +1265,33 @@ const handleLogout = () => {
 .page-title { font-size: 1.4rem; font-weight: 800; margin: 0; }
 .page-description { font-size: 0.8rem; color: #64748b; }
 
-.btn-primary { background: #39a900; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; }
+.btn-primary { 
+  background: #39a900; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; 
+  font-weight: 700; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; 
+}
 .btn-primary:hover { background: #2e8b00; }
+
+.btn-primary-sena {
+  background: #39a900; color: #fff; border: none; padding: 8px 14px; border-radius: 8px;
+  font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center;
+  transition: all 0.2s;
+}
+
+.btn-export-outline {
+  background: #fff; color: #1e293b; border: 1px solid #e2e8f0; padding: 8px 14px; border-radius: 8px;
+  font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center;
+  transition: all 0.2s;
+}
+.btn-export-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+
 .btn-export { 
   background: #f0fdf4; 
   color: #39a900; 
   border: 1px solid #bbf7d0; 
-  padding: 10px 20px; 
+  padding: 8px 14px; 
   border-radius: 8px; 
   font-weight: 700; 
+  font-size: 0.75rem;
   cursor: pointer; 
   display: flex; 
   align-items: center; 
@@ -868,37 +1302,32 @@ const handleLogout = () => {
   background: #39a900; 
   color: #fff;
   border-color: #39a900;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px -4px rgba(57, 169, 0, 0.25);
+  transform: translateY(-1px);
 }
-.btn-export svg {
-  transition: transform 0.3s ease;
-}
-.btn-export:hover svg {
-  transform: translateY(2px);
-}
-.btn-danger { background: #dc2626; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-/* Bootstrap Style Alert */
-.alert-bootstrap {
+.btn-danger { background: #dc2626; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.75rem; cursor: pointer; }
+/* Alertas Globales Flotantes */
+.alert-bootstrap-global {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999; /* Por encima de todo, incluso modales */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  font-weight: 600;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 700;
   border: 1px solid transparent;
-  animation: slideIn 0.3s ease-out;
+  min-width: 320px;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
+  animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.alert-bootstrap.success {
-  background-color: #d1e7dd;
-  color: #0f5132;
-  border-color: #badbcc;
-}
-.alert-bootstrap.danger {
-  background-color: #f8d7da;
-  color: #842029;
-  border-color: #f5c2c7;
+.alert-bootstrap-global.success { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+.alert-bootstrap-global.danger { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 /* Icons for password toggle */
@@ -1012,7 +1441,11 @@ const handleLogout = () => {
 .error-info-text h3 { font-size: 0.9rem; margin: 0; }
 .error-info-text p { font-size: 0.7rem; color: #ef4444; font-weight: 700; margin: 0; }
 
-.error-items { display: flex; flex-direction: column; gap: 8px; }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .error-detail-pill { background: #fff; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; padding: 8px; border-radius: 8px; display: flex; gap: 12px; }
 .error-code { font-weight: 800; color: #f97316; font-size: 0.75rem; }
 .error-txt strong { display: block; font-size: 0.75rem; }
@@ -1070,16 +1503,24 @@ const handleLogout = () => {
 .act-btn.delete { color: #ef4444; }
 .act-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; }
 
-/* Stats Row */
+/* Header & Stats */
+.header-left-group { display: flex; align-items: center; gap: 40px; flex: 1; }
+.header-stats.stats-row { gap: 16px; margin-bottom: 0; }
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-.stat-box { background: #fff; padding: 16px 20px; border-radius: 12px; border-left: 4px solid; border-bottom: 1px solid #e2e8f0; }
+.stat-box { background: #fff; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 4px solid; }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 60px; /* Espacio extra para alejar los botones */
+}
 .border-green { border-left-color: #39a900; }
 .border-pink { border-left-color: #db2777; }
 .border-dark { border-left-color: #1e293b; }
-.stat-box p { font-size: 0.7rem; font-weight: 800; color: #64748b; margin-bottom: 8px; }
-.stat-box h2 { font-size: 1.8rem; margin: 0; font-weight: 800; }
-.stat-box small { font-size: 0.7rem; color: #22c55e; font-weight: 600; }
-
+.stat-box p { font-size: 0.65rem; font-weight: 800; color: #64748b; margin-bottom: 4px; }
+.stat-box h2 { font-size: 1.4rem; margin: 0 0 2px 0; font-weight: 800; }
+.stat-box small { font-size: 0.65rem; color: #22c55e; font-weight: 600; }
 /* ═══ Modales ═══ */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px);

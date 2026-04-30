@@ -61,8 +61,47 @@ const getPerfil = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/auth/forgot-password
+ */
+const forgotPassword = async (req, res) => {
+  try {
+    const data = await service.forgotPassword(req.body);
+    res.json({ success: true, ...data });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * POST /api/auth/reset-password
+ */
+const resetPassword = async (req, res) => {
+  try {
+    const data = await service.resetPassword(req.body);
+    res.json({ success: true, ...data });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * POST /api/auth/change-password
+ */
+const changePassword = async (req, res) => {
+  try {
+    const data = await service.changePassword(req.user._id, req.body.password);
+    res.json({ success: true, ...data });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   registrar,
   login,
   getPerfil,
+  forgotPassword,
+  resetPassword,
+  changePassword,
 };

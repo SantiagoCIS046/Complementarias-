@@ -82,8 +82,14 @@ const userSchema = new mongoose.Schema(
       default: true 
     },
     // Recuperación de Contraseña
-    resetPasswordToken:   { type: String },
-    resetPasswordExpires: { type: Date }
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+    }
   },
   {
     timestamps: true,

@@ -28,4 +28,26 @@ router.post('/login', controller.login);
  */
 router.get('/profile', verifyToken, controller.getPerfil);
 
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Solicitar email para restablecer contraseña
+ * @access  Public
+ */
+router.post('/forgot-password', controller.forgotPassword);
+
+/**
+ * @route   POST /api/auth/reset-password
+ * @desc    Restablecer contraseña con token del email
+ * @access  Public
+ * @body    { token: string, newPassword: string }
+ */
+router.post('/reset-password', controller.resetPassword);
+
+/**
+ * @route   POST /api/auth/change-password
+ * @desc    Cambiar la contraseña del usuario actual
+ * @access  Private
+ */
+router.post('/change-password', verifyToken, controller.changePassword);
+
 module.exports = router;

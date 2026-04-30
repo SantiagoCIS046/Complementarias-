@@ -2,9 +2,10 @@
 // 🤝 ZONA COMPARTIDA
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../store/auth.store'
+import { useUiStore } from '../store/ui.store'
 
 const routes = [
-  // ── 🟢 DEV 1: Auth ──────────────────────────────────
+  // ── 🟢 DEV 1: Auth & Dashboard ───────────────────────
   {
     path: '/login',
     name: 'Login',
@@ -12,22 +13,22 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
-    path: '/reset-password/:token',
-    name: 'ResetPassword',
-    component: () => import('../../modules/admin-auth-dev1/views/ResetPassword.vue'),
-    meta: { requiresAuth: false },
-  },
-  {
     path: '/dashboard',
-    name: 'DashboardAdmin',
+    name: 'Dashboard',
     component: () => import('../../modules/admin-auth-dev1/views/DashboardAdmin.vue'),
-    meta: { requiresAuth: false, roles: ['ADMIN'] },
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
   },
   {
     path: '/usuarios',
     name: 'UserManagement',
     component: () => import('../../modules/admin-auth-dev1/views/DashboardAdmin.vue'),
-    meta: { requiresAuth: false, roles: ['ADMIN'] },
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('../../modules/admin-auth-dev1/views/ResetPassword.vue'),
+    meta: { requiresAuth: false },
   },
 
   // ── 🔵 DEV 2: EP Management ─────────────────────────
@@ -49,17 +50,34 @@ const routes = [
     path: '/bitacoras',
     name: 'BitacorasReview',
     component: () => import('../../modules/operation-tracking-dev3/views/BitacorasReview.vue'),
-    meta: { requiresAuth: true, roles: ['INSTRUCTOR', 'APRENDIZ'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
   {
     path: '/seguimiento',
     name: 'TrackingCalendar',
     component: () => import('../../modules/operation-tracking-dev3/views/TrackingCalendar.vue'),
-    meta: { requiresAuth: true, roles: ['INSTRUCTOR'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
 
-  // ── Redirección por defecto ──────────────────────────
-  { path: '/', redirect: '/login' },
+  // ── Redirección Inteligente ──────────────────────────
+  { 
+    path: '/', 
+    redirect: () => {
+      const token = localStorage.getItem('repfora_token');
+      const userData = localStorage.getItem('repfora_user');
+      
+      if (!token || !userData || userData === 'undefined') return '/login';
+      
+      try {
+        const user = JSON.parse(userData);
+        if (user.role === 'ADMIN') return '/dashboard';
+        if (user.role === 'INSTRUCTOR') return '/etapas';
+        return '/bitacoras';
+      } catch (e) {
+        return '/login';
+      }
+    }
+  },
   { path: '/:pathMatch(.*)*', redirect: '/login' },
 ]
 
@@ -68,12 +86,52 @@ const router = createRouter({
   routes,
 })
 
-// Guard de navegación global
+// Guard de navegación con validación de ROLES
 router.beforeEach((to) => {
   const auth = useAuthStore()
-  if (to.meta.requiresAuth && !auth.isLoggedIn) {
+  const ui = useUiStore()
+  
+  const token = auth.token || localStorage.getItem('repfora_token')
+  const isActuallyLoggedIn = !!token
+
+  let userRole = auth.user?.role
+  if (!userRole) {
+    try {
+      const storedUser = localStorage.getItem('repfora_user')
+      if (storedUser && storedUser !== 'undefined') {
+        userRole = JSON.parse(storedUser).role
+      }
+    } catch (e) {
+      userRole = null
+    }
+  }
+
+  // 1. Verificación de Autenticación
+  if (to.meta.requiresAuth && !isActuallyLoggedIn) {
     return { name: 'Login' }
   }
+
+  // 2. Verificación de ROLES
+  if (to.meta.roles && !to.meta.roles.includes(userRole)) {
+    if (userRole === 'INSTRUCTOR') return { name: 'EPRegister' };
+    if (userRole === 'APRENDIZ') return { name: 'BitacorasReview' };
+    return { name: 'Login' };
+  }
+
+  // 3. Redirigir si ya está logueado e intenta ir al Login
+  if (to.name === 'Login' && isActuallyLoggedIn) {
+    if (userRole === 'ADMIN') return { name: 'Dashboard' }
+    if (userRole === 'INSTRUCTOR') return { name: 'EPRegister' }
+    if (userRole === 'APRENDIZ') return { name: 'BitacorasReview' }
+    
+    // Si tiene token pero no hay rol válido (estado corrupto), limpiar y permitir ir al Login
+    localStorage.removeItem('repfora_token')
+    localStorage.removeItem('repfora_user')
+    if (auth.logout) auth.logout() // Si existe la acción en pinia
+    return true // Continúa hacia el Login
+  }
+
+  // Navegación permitida (Sin cargador automático aquí)
 })
 
 export default router

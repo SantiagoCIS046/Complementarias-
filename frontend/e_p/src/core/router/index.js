@@ -64,6 +64,18 @@ const routes = [
     component: () => import('../../modules/operation-tracking-dev3/views/TrackingCalendar.vue'),
     meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
+  {
+    path: '/instructor-dashboard',
+    name: 'InstructorDashboard',
+    component: () => import('../../modules/operation-tracking-dev3/views/InstructorDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
+  },
+  {
+    path: '/certificacion',
+    name: 'Certifications',
+    component: () => import('../../modules/operation-tracking-dev3/views/Certifications.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
+  },
 
   {
     path: '/seguimiento-ep',

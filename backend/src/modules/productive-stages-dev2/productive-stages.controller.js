@@ -48,9 +48,13 @@ const getAll = async (req, res) => {
     if (req.query.estado) filtros.estado = req.query.estado;
     if (req.query.companyId) filtros.companyId = req.query.companyId;
 
-    // Si es APRENDIZ, solo ve las suyas
+    // Filtros por Rol
     if (req.user.role === 'APRENDIZ') {
       filtros.apprenticeId = req.user._id;
+    } else if (req.user.role === 'INSTRUCTOR') {
+      // El instructor solo ve las EPs de sus aprendices asignados
+      // Para esto, el service necesitará buscar los IDs de sus aprendices
+      filtros.instructorId = req.user._id;
     }
 
     const stages = await service.getAll(filtros);

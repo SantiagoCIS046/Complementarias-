@@ -1,8 +1,80 @@
+<<<<<<< Updated upstream
   <script setup>
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
 
   const router = useRouter()
+=======
+<script setup>
+import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '../../admin-auth-dev1/core/store/auth.store'
+import { epService } from '../services/ep.service'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
+}
+
+// --- Datos del Usuario Autenticado ---
+const currentUser = computed(() => authStore.user || { name: 'Usuario', role: 'Invitado' })
+
+// --- Datos de la EP (Dinámicos) ---
+const stages = ref([])
+const isLoading = ref(true)
+
+const aprendiz = ref({
+  nombre: 'Cargando...',
+  estadoActual: 'PENDING',
+  progresoPorcentaje: 0,
+  inicio: '---',
+  finEstimado: '---',
+  razonSocial: '---',
+  email: '---',
+  nit: '---',
+  ubicacion: '---',
+  jefe: '---',
+  modalidad: '---'
+})
+
+const fetchEPData = async () => {
+  try {
+    const res = await epService.getAll()
+    stages.value = res.data.data
+    
+    if (stages.value.length > 0) {
+      const stage = stages.value[0] // Tomamos la primera para el dashboard
+      aprendiz.value = {
+        nombre: stage.apprenticeId?.name || 'Aprendiz',
+        estadoActual: stage.estado,
+        progresoPorcentaje: stage.horasRequeridas > 0 ? (stage.horasCompletadas / stage.horasRequeridas) * 100 : 0,
+        inicio: stage.fechaInicio ? new Date(stage.fechaInicio).toLocaleDateString() : 'Por definir',
+        finEstimado: stage.fechaFin ? new Date(stage.fechaFin).toLocaleDateString() : 'Por definir',
+        razonSocial: stage.companyId?.razonSocial || 'N/A',
+        email: stage.companySnapshot?.emailContacto || 'N/A',
+        nit: stage.companyId?.nit || 'N/A',
+        ubicacion: stage.companySnapshot?.direccion || 'N/A',
+        jefe: stage.companySnapshot?.jefeInmediato || 'N/A',
+        modalidad: stage.modalidad
+      }
+    } else {
+      aprendiz.value.nombre = currentUser.value.name
+    }
+  } catch (error) {
+    console.error('Error fetching EP data:', error)
+    aprendiz.value.nombre = currentUser.value.name
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchEPData()
+})
+>>>>>>> Stashed changes
 
   // --- Datos de Ejemplo ---
   const apprenticeName = ref('Carlos Alberto Ruíz')
@@ -21,8 +93,65 @@
   }
   </script>
 
+<<<<<<< Updated upstream
   <template>
     <div class="min-h-screen bg-[#f8f9fa] font-sans text-gray-800 antialiased">
+=======
+const totalAprobadas = computed(() => bitacoras.value.filter(b => b.estado === 'Aprobada').length)
+const pendientes = computed(() => bitacoras.value.filter(b => b.estado === 'Pendiente').length)
+
+const downloadReport = () => {
+  console.log("Descargando reporte para:", aprendiz.value.nombre)
+}
+</script>
+
+<template>
+  <div class="min-h-screen bg-background font-body text-on-surface antialiased">
+    
+    <!-- Top Navigation -->
+    <nav class="fixed top-0 right-0 left-0 lg:left-64 h-16 z-50 bg-white/80 backdrop-blur-md border-b border-stone-200/60 px-8 flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <span class="text-primary font-headline font-bold tracking-tight text-lg">REPFORA</span>
+        <div class="hidden md:flex gap-6">
+          <a href="#" class="text-sm font-label font-bold text-primary border-b-2 border-primary pb-1">Etapa Productiva</a>
+          <a href="#" class="text-sm font-label font-bold text-on-surface-variant hover:text-on-surface transition-colors">Empresas</a>
+          <a href="#" class="text-sm font-label font-bold text-on-surface-variant hover:text-on-surface transition-colors">Certificación</a>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="w-10 h-10 rounded-full hover:bg-stone-100 flex items-center justify-center transition-colors text-on-surface-variant relative">
+          <span class="material-symbols-outlined text-[22px]">notifications</span>
+          <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+        </button>
+        <button class="w-10 h-10 rounded-full hover:bg-stone-100 flex items-center justify-center transition-colors text-on-surface-variant">
+          <span class="material-symbols-outlined text-[22px]">help</span>
+        </button>
+        <div class="flex items-center gap-3 pl-2 border-l border-stone-200">
+          <div class="text-right hidden sm:block">
+            <p class="text-xs font-bold leading-none">{{ currentUser.name }}</p>
+            <p class="text-[10px] text-on-surface-variant font-medium">{{ currentUser.role }}</p>
+          </div>
+          <div class="h-9 w-9 rounded-full bg-surface-container-high overflow-hidden border border-stone-200 shadow-sm">
+            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0wj6tQ1p8jBIpRM_uuf0oeV8B0U3CjLV3yWZlFPPue85p9nWNcfprEeXu4pmPdNCmbtXEBoVIukJIZZLxoo7_hBYrhXhlr0NzkPvlDj6NbYNQ_VWVr349JKN8L3x86bjv6X_mI2_q2kYqNwuKRcvHyM7G9QlNOCefWIYf4wsurtcQoSy83mhPAlEc9QeHoNAo82Ir__ce5NJQGNWgEejTGFRZT9jnLtdklMNdhaVHoYok4HdT9zEdMlfRkAtkHQ1DrCvdhKZAfhk" alt="Avatar" class="w-full h-full object-cover" />
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:flex h-screen w-64 fixed left-0 top-0 flex-col bg-surface-container-low border-r border-stone-200/60 z-50">
+      <div class="p-8 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+            <span class="material-symbols-outlined fill-icon text-[26px]">architecture</span>
+          </div>
+          <div>
+            <h2 class="font-headline font-extrabold text-on-surface leading-none tracking-tight">Gestión EP</h2>
+            <p class="text-[9px] text-on-surface-variant font-black uppercase tracking-[0.15em] mt-1 opacity-70">{{ currentUser.role }}</p>
+          </div>
+        </div>
+      </div>
+>>>>>>> Stashed changes
       
       <!-- Sidebar -->
       <aside class="hidden lg:flex w-64 fixed left-0 top-0 h-full flex-col bg-[#f4f5f6] border-r border-gray-200 z-50">

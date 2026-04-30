@@ -131,6 +131,18 @@ const getAll = async (filtros = {}) => {
   if (filtros.estado)       query.estado = filtros.estado;
   if (filtros.companyId)    query.companyId = filtros.companyId;
 
+  // Filtro por Instructor (Dev 2)
+  if (filtros.instructorId) {
+    const User = require('../users-dev1/user.model');
+    const apprentices = await User.find({ 
+      instructorAsignado: filtros.instructorId,
+      role: 'APRENDIZ' 
+    }).select('_id');
+    
+    const apprenticeIds = apprentices.map(a => a._id);
+    query.apprenticeId = { $in: apprenticeIds };
+  }
+
   const stages = await ProductiveStage.find(query)
     .populate('apprenticeId', 'name email role')
     .populate('companyId', 'razonSocial nit')

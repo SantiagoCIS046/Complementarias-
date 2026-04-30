@@ -65,6 +65,13 @@ const routes = [
     meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
 
+  {
+    path: '/seguimiento-ep',
+    name: 'EPDashboard',
+    component: () => import('../../modules/ep-management-dev2/views/EPDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
+  },
+
   // ── Redirección Inteligente ──────────────────────────
   { 
     path: '/', 
@@ -77,8 +84,9 @@ const routes = [
       try {
         const user = JSON.parse(userData);
         if (user.role === 'ADMIN') return '/dashboard';
-        if (user.role === 'INSTRUCTOR') return '/etapas';
-        return '/bitacoras';
+        if (user.role === 'INSTRUCTOR') return '/seguimiento-ep';
+        if (user.role === 'APRENDIZ') return '/seguimiento-ep';
+        return '/login';
       } catch (e) {
         return '/login';
       }
@@ -119,16 +127,22 @@ router.beforeEach((to) => {
 
   // 2. Verificación de ROLES
   if (to.meta.roles && !to.meta.roles.includes(userRole)) {
-    if (userRole === 'INSTRUCTOR') return { name: 'EPRegister' };
-    if (userRole === 'APRENDIZ') return { name: 'BitacorasReview' };
+    if (userRole === 'INSTRUCTOR') return { name: 'EPDashboard' };
+    if (userRole === 'APRENDIZ') return { name: 'EPDashboard' };
     return { name: 'Login' };
   }
 
   // 3. Redirigir si ya está logueado e intenta ir al Login
   if (to.name === 'Login' && isActuallyLoggedIn) {
+<<<<<<< Updated upstream
     if (userRole === 'ADMIN') return { name: 'EPDashboard' }
     if (userRole === 'INSTRUCTOR') return { name: 'EPRegister' }
     if (userRole === 'APRENDIZ') return { name: 'BitacorasReview' }
+=======
+    if (userRole === 'ADMIN') return { name: 'Dashboard' }
+    if (userRole === 'INSTRUCTOR') return { name: 'EPDashboard' }
+    if (userRole === 'APRENDIZ') return { name: 'EPDashboard' }
+>>>>>>> Stashed changes
     
     // Si tiene token pero no hay rol válido (estado corrupto), limpiar y permitir ir al Login
     localStorage.removeItem('repfora_token')

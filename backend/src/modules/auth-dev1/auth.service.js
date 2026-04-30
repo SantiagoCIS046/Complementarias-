@@ -62,7 +62,7 @@ const login = async ({ email, password }) => {
   }
 
   // Verificar que esté activo
-  if (!usuario.activo) {
+  if (usuario.status === 'INACTIVO') {
     throw new Error('Tu cuenta está desactivada. Contacta al administrador.');
   }
 

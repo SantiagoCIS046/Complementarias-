@@ -63,6 +63,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    status: {
+      type: String,
+      enum: ['ACTIVO', 'INACTIVO', 'ELEGIBLE', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO', 'EN CURSO', 'FINALIZADA', 'RENOVACION'],
+      default: 'ACTIVO',
+    },
     resetPasswordToken: {
       type: String,
       default: null,

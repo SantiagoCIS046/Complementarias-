@@ -14,7 +14,7 @@ const getAll = async (req, res) => {
     const filtros = {
       role: req.query.role,
       busqueda: req.query.busqueda,
-      activo: req.query.activo === 'false' ? false : true,
+      status: req.query.status,
     };
     
     const data = await service.getAll(filtros);

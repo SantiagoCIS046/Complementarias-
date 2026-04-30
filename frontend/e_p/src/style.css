@@ -10,3 +10,122 @@ html, body, #app {
   height: 100vh;
   overflow: hidden;
 }
+
+:root {
+  --color_card: #318335;          /* Verde principal de cards */
+  --color_text_card: white;       /* Texto sobre cards verdes */
+  --color_button: #2e7d32;        /* Verde botones */
+  --color_text_button: white;     /* Texto sobre botones */
+  --color_box: #2e7d32;           /* Borde de tooltips / cajas */
+  --color_button_closed: black;
+  --color_header: #2e7d32;        /* Header superior */
+  --color_input: #2e7d32;         /* Inputs y selects */
+  --color_tooltip: #d4cece;
+}
+
+/* ── Utility Classes ── */
+.style-btn {
+  background-color: var(--color_button);
+  color: var(--color_text_button);
+}
+
+.style-text {
+  text-transform: capitalize;
+}
+
+.style-select {
+  border-color: var(--color_input);
+  outline-color: var(--color_input);
+}
+
+.my-sticky-header-table {
+  height: 60vh;
+}
+
+.my-sticky-header-table2 {
+  height: 70vh;
+}
+
+.table-reactive {
+  height: 1000px;
+}
+
+.titleReport {
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.open-tooltip {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color_box);
+  color: white;
+  text-align: center;
+  line-height: 20px;
+  font-weight: bold;
+}
+
+.content-tooltip {
+  visibility: hidden;
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  border: 1px solid var(--color_box);
+  padding: 10px;
+  border-radius: 4px;
+  width: max-content;
+  max-width: 250px;
+  z-index: 10;
+  box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+}
+
+.tooltip:hover .content-tooltip {
+  visibility: visible;
+}
+
+.h-tooltip {
+  font-weight: bold;
+  color: var(--color_box);
+  margin-bottom: 5px;
+}
+
+.p-tooltip {
+  font-size: 14px;
+  color: #333;
+}
+
+.customEvents {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+  border-radius: 4px;
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: #ccc; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa; 
+}

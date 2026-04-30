@@ -9,7 +9,7 @@ export default {
     extend: {
       colors: {
         sena: {
-          green:      '#39A900',
+          green: '#39A900',
           'green-dark': '#2d8500',
           'green-light': '#e8f7e1',
         },

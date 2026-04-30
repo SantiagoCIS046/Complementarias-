@@ -63,19 +63,46 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // --- Seguridad y Bloqueos (DEV 1) ---
+    status: {
+      type: String,
+      enum: ['ACTIVO', 'INACTIVO', 'ELEGIBLE', 'CONTRATO_TERMINADO'],
+      default: 'ACTIVO'
+    },
+    loginAttempts: { 
+      type: Number, 
+      required: true, 
+      default: 0 
+    },
+    lockUntil: { 
+      type: Date 
+    },
+    isFirstLogin: { 
+      type: Boolean, 
+      default: true 
+    },
+    // Recuperación de Contraseña
+    resetPasswordToken:   { type: String },
+    resetPasswordExpires: { type: Date }
   },
   {
     timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
   }
 );
 
+// --- Virtual para saber si el usuario está bloqueado ---
+userSchema.virtual('isLocked').get(function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+});
+
 // --- Middleware: hashear contraseña antes de guardar ---
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 // --- Método: comparar contraseña ---

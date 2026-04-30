@@ -66,8 +66,8 @@ const userSchema = new mongoose.Schema(
     // --- Seguridad y Bloqueos (DEV 1) ---
     status: {
       type: String,
-      enum: ['ACTIVO', 'INACTIVO', 'ELEGIBLE', 'CONTRATO_TERMINADO'],
-      default: 'ACTIVO'
+      enum: ['ACTIVO', 'INACTIVO', 'ELEGIBLE', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO', 'EN CURSO', 'FINALIZADA', 'RENOVACION'],
+      default: 'ACTIVO',
     },
     loginAttempts: { 
       type: Number, 

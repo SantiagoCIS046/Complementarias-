@@ -12,7 +12,7 @@ const getAll = async (filtros = {}) => {
   const query = {};
 
   if (filtros.role)     query.role = filtros.role;
-  if (filtros.activo !== undefined) query.activo = filtros.activo;
+  if (filtros.status !== undefined) query.status = filtros.status;
   if (filtros.busqueda) {
     query.$or = [
       { name:  { $regex: filtros.busqueda, $options: 'i' } },

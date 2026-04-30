@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ── Global Reset — RepFora ── */
+/* Global Reset - RepFora */
 *,
 *::before,
 *::after {
@@ -10,26 +10,29 @@
 }
 
 html,
-body,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
 #app {
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 :root {
-  --color_card: #318335;          /* Verde principal de cards */
-  --color_text_card: white;       /* Texto sobre cards verdes */
-  --color_button: #2e7d32;        /* Verde botones */
-  --color_text_button: white;     /* Texto sobre botones */
-  --color_box: #2e7d32;           /* Borde de tooltips / cajas */
+  --color_card: #318335;
+  --color_text_card: white;
+  --color_button: #2e7d32;
+  --color_text_button: white;
+  --color_box: #2e7d32;
   --color_button_closed: black;
-  --color_header: #2e7d32;        /* Header superior */
-  --color_input: #2e7d32;         /* Inputs y selects */
+  --color_header: #2e7d32;
+  --color_input: #2e7d32;
   --color_tooltip: #d4cece;
 }
 
-/* ── Utility Classes ── */
 .style-btn {
   background-color: var(--color_button);
   color: var(--color_text_button);

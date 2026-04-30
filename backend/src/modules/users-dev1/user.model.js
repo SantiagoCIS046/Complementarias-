@@ -4,7 +4,7 @@
 // Referenciado por: auth, productive-stages, documents, bitacoras.
 // =============================================
 const mongoose = require('mongoose');
-const bcrypt   = require('bcryptjs');
+const bcrypt = require('bcryptjs');
 const { ROLES } = require('../../core/utils/enums');
 
 const userSchema = new mongoose.Schema(
@@ -69,17 +69,17 @@ const userSchema = new mongoose.Schema(
       enum: ['ACTIVO', 'INACTIVO', 'ELEGIBLE', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO', 'EN CURSO', 'FINALIZADA', 'RENOVACION'],
       default: 'ACTIVO',
     },
-    loginAttempts: { 
-      type: Number, 
-      required: true, 
-      default: 0 
+    loginAttempts: {
+      type: Number,
+      required: true,
+      default: 0
     },
-    lockUntil: { 
-      type: Date 
+    lockUntil: {
+      type: Date
     },
-    isFirstLogin: { 
-      type: Boolean, 
-      default: true 
+    isFirstLogin: {
+      type: Boolean,
+      default: true
     },
     // Recuperación de Contraseña
     resetPasswordToken: {
@@ -100,7 +100,7 @@ const userSchema = new mongoose.Schema(
 );
 
 // --- Virtual para saber si el usuario está bloqueado ---
-userSchema.virtual('isLocked').get(function() {
+userSchema.virtual('isLocked').get(function () {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 

@@ -1,6 +1,6 @@
 // seed.js - DEV 1 | Agregando usuario de prueba personal
 const mongoose = require('mongoose');
-const bcrypt   = require('bcryptjs');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const User = require('./src/modules/users-dev1/user.model');

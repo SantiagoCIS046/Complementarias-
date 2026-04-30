@@ -33,6 +33,12 @@ const routes = [
 
   // ── 🔵 DEV 2: EP Management ─────────────────────────
   {
+    path: '/dashboard-ep',
+    name: 'EPDashboard',
+    component: () => import('../../modules/ep-management-dev2/views/EPDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
+  },
+  {
     path: '/etapas',
     name: 'EPRegister',
     component: () => import('../../modules/ep-management-dev2/views/EPRegister.vue'),
@@ -120,7 +126,7 @@ router.beforeEach((to) => {
 
   // 3. Redirigir si ya está logueado e intenta ir al Login
   if (to.name === 'Login' && isActuallyLoggedIn) {
-    if (userRole === 'ADMIN') return { name: 'Dashboard' }
+    if (userRole === 'ADMIN') return { name: 'EPDashboard' }
     if (userRole === 'INSTRUCTOR') return { name: 'EPRegister' }
     if (userRole === 'APRENDIZ') return { name: 'BitacorasReview' }
     

@@ -1277,7 +1277,7 @@ const handleLogout = () => {
 .admin-avatar:hover { border-color: var(--color_button); }
 
 /* Page Content */
-.page-body { flex: 1; overflow-y: auto; padding: 24px 32px; }
+.page-body { flex: 1; overflow-y: auto; padding: 16px 24px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .page-title { font-size: 1.4rem; font-weight: 800; margin: 0; }
 .page-description { font-size: 0.8rem; color: #64748b; }

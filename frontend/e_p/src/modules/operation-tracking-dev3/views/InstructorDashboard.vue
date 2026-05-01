@@ -2,183 +2,192 @@
 import { useRouter } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../../core/store/auth.store'
+import Sidebar from '@/components/layout/Sidebar.vue'
+import Header from '@/components/layout/Header.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const currentUser = computed(() => authStore.user || { name: 'Instructor', role: 'INSTRUCTOR' })
+const currentUser = computed(() => authStore.user || { name: 'Instructor Martin', role: 'INSTRUCTOR' })
 
-// --- Datos del Monitor de Horas ---
+// --- Datos del Monitor de Horas (Semáforo) ---
 const hoursStats = ref({
   reportadas: 168,
   limite: 160,
-  porcentaje: 0
+  porcentaje: 0,
+  estado: 'normal' // normal, warning, danger
 })
 
-// --- Datos de Novedades (Ejemplo) ---
-const novedades = ref([
-  { id: 1, tipo: 'Visita Técnica', fecha: '28 Oct, 2023', estado: 'RESUELTO', color: '#39A900' },
-  { id: 2, tipo: 'Incapacidad Aprendiz', fecha: '29 Oct, 2023', estado: 'PENDIENTE', color: '#F59E0B' },
-  { id: 3, tipo: 'Cambio de Empresa', fecha: '30 Oct, 2023', estado: 'EN REVISIÓN', color: '#3B82F6' }
+// --- Datos de Bitácoras (Ejemplo) ---
+const bitacoras = ref([
+  { id: 1, aprendiz: 'Aprendiz Mancilla', numero: '08', fecha: '28 Oct, 2023', estado: 'APROBADO', color: '#39A900' },
+  { id: 2, aprendiz: 'Carlos Ruiz', numero: '09', fecha: '29 Oct, 2023', estado: 'PENDIENTE', color: '#F59E0B' },
+  { id: 3, aprendiz: 'Ana Garcia', numero: '10', fecha: '30 Oct, 2023', estado: 'EN REVISIÓN', color: '#3B82F6' }
 ])
 
 onMounted(() => {
-  hoursStats.value.porcentaje = Math.min((hoursStats.value.reportadas / hoursStats.value.limite) * 100, 100)
+  const p = (hoursStats.value.reportadas / hoursStats.value.limite) * 100
+  hoursStats.value.porcentaje = Math.min(p, 100)
+  
+  if (p > 100) hoursStats.value.estado = 'danger'
+  else if (p > 85) hoursStats.value.estado = 'warning'
+  else hoursStats.value.estado = 'normal'
 })
-
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
-}
 </script>
 
 <template>
-  <div class="operation-dashboard">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-icon"><span class="material-symbols-outlined">analytics</span></div>
-        <div class="logo-text">
-          <span class="title">Academic Admin</span>
-          <span class="subtitle">REGIONAL DIVISION</span>
-        </div>
-      </div>
-      
-      <nav class="sidebar-nav">
-        <a href="#" class="nav-item active"><span class="material-symbols-outlined">dashboard_customize</span> Dashboard</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">assignment_ind</span> Seguimiento</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">pending_actions</span> Novedades</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">folder_shared</span> Certificaciones</a>
-      </nav>
+  <div class="flex h-screen bg-[#F4F7F6] overflow-hidden">
+    <!-- SIDEBAR GLOBAL COMPACTO -->
+    <Sidebar />
 
-      <div class="sidebar-footer">
-        <button @click="handleLogout" class="nav-item logout-btn"><span class="material-symbols-outlined">logout</span> Logout</button>
-      </div>
-    </aside>
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <!-- HEADER GLOBAL COMPACTO -->
+      <Header />
 
-    <!-- MAIN WRAPPER -->
-    <div class="main-wrapper">
-      <header class="topbar">
-        <div class="header-info">
-          <p class="breadcrumb">PANEL CENTRAL / INSTRUCTOR</p>
-          <h2 class="page-title">Dashboard del Instructor</h2>
-        </div>
-        <div class="topbar-actions">
-          <button class="btn-primary"><span class="material-symbols-outlined">add</span> Reportar Novedad</button>
-          <div class="divider"></div>
-          <div class="user-profile">
-            <span class="user-name">{{ currentUser.name }}</span>
-            <div class="user-avatar">
-              <img src="https://ui-avatars.com/api/?name=Instructor&background=1A4D2E&color=fff" alt="Avatar">
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="content">
-        <!-- GRID SUPERIOR -->
-        <div class="dashboard-grid">
+      <main class="flex-1 overflow-y-auto content-area">
+        <div class="max-w-[1600px] mx-auto p-6 space-y-6">
           
-          <!-- MONITOR DE HORAS -->
-          <div class="card monitor-card">
-            <div class="card-header">
-              <h3 class="card-title">Monitor de Carga Horaria</h3>
-              <span class="material-symbols-outlined icon-faded">schedule</span>
+          <!-- SECCIÓN DE BIENVENIDA COMPACTA -->
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[10px] font-bold text-sena-green uppercase tracking-wider">Tablero de Gestión</p>
+              <h2 class="text-2xl font-black text-slate-800 tracking-tight">Bienvenido, {{ currentUser.name }}</h2>
             </div>
-            
-            <div class="progress-circle-container">
-              <svg class="progress-svg" viewBox="0 0 100 100">
-                <circle class="circle-bg" cx="50" cy="50" r="45"></circle>
-                <circle class="circle-progress" cx="50" cy="50" r="45" :style="{ strokeDashoffset: 283 - (283 * hoursStats.porcentaje) / 100 }"></circle>
-              </svg>
-              <div class="circle-text">
-                <span class="hours-val">{{ hoursStats.reportadas }}</span>
-                <span class="hours-label">HORAS</span>
-              </div>
-            </div>
-
-            <div class="stats-info">
-              <div class="stat-box">
-                <span class="slabel">LÍMITE MENSUAL</span>
-                <span class="sval">{{ hoursStats.limite }} Horas</span>
-              </div>
-              <div v-if="hoursStats.reportadas > hoursStats.limite" class="stat-box warning">
-                <span class="slabel">EXCESO DETECTADO</span>
-                <span class="sval text-red">+{{ hoursStats.reportadas - hoursStats.limite }} Horas Extra</span>
-              </div>
-            </div>
+            <button class="bg-sena-green text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-green-100 flex items-center gap-2 hover:-translate-y-0.5 transition-all">
+              <span class="material-symbols-outlined !text-lg">add_circle</span>
+              Programar Seguimiento
+            </button>
           </div>
 
-          <!-- FORMULARIO RÁPIDO DE NOVEDADES -->
-          <div class="card form-card">
-            <h3 class="card-title mb-6">Registro Rápido de Novedad</h3>
-            <form class="quick-form">
-              <div class="form-group">
-                <label>Seleccionar Aprendiz</label>
-                <select class="custom-select">
-                  <option>Aprendiz Martin</option>
-                  <option>Carlos Alberto Ruíz</option>
-                </select>
+          <!-- GRID SUPERIOR (Semáforo + Acciones) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- MONITOR DE HORAS (Semáforo) -->
+            <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm relative overflow-hidden" :class="hoursStats.estado">
+              <div class="flex justify-between items-start mb-6">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800">Monitor de Carga Horaria</h3>
+                  <p class="text-[10px] text-slate-400 font-medium">Cumplimiento mensual acumulado</p>
+                </div>
+                <span class="status-pill" :class="hoursStats.estado">
+                  {{ hoursStats.estado.toUpperCase() }}
+                </span>
               </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Tipo de Novedad</label>
-                  <select class="custom-select">
-                    <option>Visita Técnica</option>
-                    <option>Problema Administrativo</option>
-                    <option>Cambio de Estado</option>
+              
+              <div class="flex items-center gap-8">
+                <div class="relative w-28 h-28">
+                  <svg viewBox="0 0 100 100" class="transform -rotate-90">
+                    <circle class="fill-none stroke-slate-50 stroke-[8]" cx="50" cy="50" r="45"></circle>
+                    <circle class="fill-none stroke-[8] stroke-linecap-round transition-all duration-1000" 
+                      :class="{'stroke-sena-green': hoursStats.estado === 'normal', 'stroke-amber-500': hoursStats.estado === 'warning', 'stroke-red-500': hoursStats.estado === 'danger'}"
+                      cx="50" cy="50" r="45" :style="{ strokeDasharray: 283, strokeDashoffset: 283 - (283 * hoursStats.porcentaje) / 100 }"></circle>
+                  </svg>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span class="text-2xl font-black text-slate-800 leading-none">{{ hoursStats.reportadas }}</span>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase">Horas</span>
+                  </div>
+                </div>
+                
+                <div class="flex-1 grid grid-cols-1 gap-4">
+                  <div class="bg-slate-50 p-3 rounded-2xl">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase">Límite Mensual</p>
+                    <p class="text-sm font-black text-slate-700">{{ hoursStats.limite }}h</p>
+                  </div>
+                  <div class="bg-slate-50 p-3 rounded-2xl">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase">Estado de Alerta</p>
+                    <p class="text-sm font-black" :class="{'text-sena-green': hoursStats.estado === 'normal', 'text-amber-600': hoursStats.estado === 'warning', 'text-red-600': hoursStats.estado === 'danger'}">
+                      {{ hoursStats.reportadas > hoursStats.limite ? 'Sobrecarga' : 'Dentro del rango' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- REGISTRO RÁPIDO -->
+            <div class="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+              <h3 class="text-sm font-bold text-slate-800 mb-5">Registro Rápido de Seguimiento</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                  <label class="text-[10px] font-bold text-slate-400 uppercase mb-1.5 block">Aprendiz Seleccionado</label>
+                  <select class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-sena-green transition-colors">
+                    <option>Aprendiz Mancilla</option>
+                    <option>Carlos Ruiz</option>
+                    <option>Ana Garcia</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>Fecha de Ocurrencia</label>
-                  <input type="date" class="custom-input">
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase mb-1.5 block">Modalidad de Visita</label>
+                  <select class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-sena-green transition-colors">
+                    <option>Virtual / Remota</option>
+                    <option>Presencial / Empresa</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase mb-1.5 block">Fecha Programada</label>
+                  <input type="date" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-sena-green transition-colors" />
                 </div>
               </div>
-              <div class="form-group">
-                <label>Descripción Breve</label>
-                <textarea class="custom-textarea" placeholder="Escribe los detalles aquí..."></textarea>
-              </div>
-              <button type="button" class="btn-submit">Enviar Reporte</button>
-            </form>
-          </div>
-        </div>
-
-        <!-- TABLA DE HISTORIAL -->
-        <div class="card table-card mt-8">
-          <div class="card-header flex-row">
-            <h3 class="card-title">Historial de Resoluciones y Novedades</h3>
-            <div class="header-actions">
-              <span class="material-symbols-outlined">filter_list</span>
-              <span class="material-symbols-outlined">download</span>
+              <button class="w-full mt-5 bg-slate-800 text-white py-3 rounded-xl font-bold text-xs hover:bg-slate-900 transition-all">Confirmar Programación</button>
             </div>
           </div>
-          
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>TIPO DE NOVEDAD</th>
-                <th>FECHA REPORTE</th>
-                <th>ESTADO</th>
-                <th class="text-right">ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="nov in novedades" :key="nov.id">
-                <td class="faded">#00{{ nov.id }}</td>
-                <td class="bold">{{ nov.tipo }}</td>
-                <td>{{ nov.fecha }}</td>
-                <td>
-                  <span class="badge" :style="{ background: nov.color + '10', color: nov.color, borderColor: nov.color + '30' }">
-                    <span class="dot" :style="{ background: nov.color }"></span> {{ nov.estado }}
-                  </span>
-                </td>
-                <td class="text-right">
-                  <span class="material-symbols-outlined action-icon">visibility</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+          <!-- TABLA DE BITÁCORAS COMPACTA -->
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-50 flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slate-800">Bitácoras Recientes en Revisión</h3>
+              <div class="flex gap-2">
+                <button class="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-sena-green transition-colors">
+                  <span class="material-symbols-outlined !text-lg">search</span>
+                </button>
+                <button class="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-sena-green transition-colors">
+                  <span class="material-symbols-outlined !text-lg">filter_list</span>
+                </button>
+              </div>
+            </div>
+            
+            <table class="w-full">
+              <thead>
+                <tr class="bg-slate-50/50">
+                  <th class="text-left py-3 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Aprendiz</th>
+                  <th class="text-left py-3 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Nro. Bitácora</th>
+                  <th class="text-left py-3 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Fecha Envío</th>
+                  <th class="text-left py-3 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Estado</th>
+                  <th class="text-right py-3 px-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50">
+                <tr v-for="item in bitacoras" :key="item.id" class="hover:bg-slate-50/30 transition-colors">
+                  <td class="py-4 px-6">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 bg-sena-green/10 rounded-full flex items-center justify-center text-sena-green font-black text-[10px]">
+                        {{ item.aprendiz[0] }}
+                      </div>
+                      <span class="text-xs font-bold text-slate-700">{{ item.aprendiz }}</span>
+                    </div>
+                  </td>
+                  <td class="py-4 px-6 text-xs font-black text-slate-700">Bitácora #{{ item.numero }}</td>
+                  <td class="py-4 px-6 text-xs font-medium text-slate-400">{{ item.fecha }}</td>
+                  <td class="py-4 px-6">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black border" 
+                      :style="{ color: item.color, backgroundColor: item.color + '10', borderColor: item.color + '20' }">
+                      <span class="w-1 h-1 rounded-full" :style="{ backgroundColor: item.color }"></span>
+                      {{ item.estado }}
+                    </span>
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="flex justify-end gap-2">
+                      <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-400 hover:text-sena-green hover:bg-green-50 transition-all">
+                        <span class="material-symbols-outlined !text-lg">check_circle</span>
+                      </button>
+                      <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                        <span class="material-symbols-outlined !text-lg">cancel</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
     </div>
@@ -186,119 +195,15 @@ const handleLogout = () => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+.content-area::-webkit-scrollbar { width: 6px; }
+.content-area::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
 
-.operation-dashboard {
-  display: flex;
-  min-height: 100vh;
-  background: #F4F7F6;
-  font-family: 'Inter', sans-serif;
-  color: #334155;
+.status-pill {
+  font-size: 8px; font-weight: 900; padding: 4px 10px; border-radius: 20px;
 }
-
-/* SIDEBAR */
-.sidebar {
-  width: 260px;
-  background: #FFFFFF;
-  border-right: 1px solid #F1F5F9;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  height: 100vh;
-  z-index: 100;
-}
-
-.sidebar-header { padding: 32px; display: flex; align-items: center; gap: 12px; }
-.logo-icon { width: 40px; height: 40px; background: #1A4D2E; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #FFF; }
-.logo-text .title { display: block; font-size: 14px; font-weight: 800; color: #0F172A; line-height: 1; }
-.logo-text .subtitle { font-size: 9px; font-weight: 700; color: #94A3B8; letter-spacing: 1px; }
-
-.sidebar-nav { padding: 0 16px; flex: 1; }
-.nav-item {
-  display: flex; align-items: center; gap: 12px; padding: 12px 16px; font-size: 13px; font-weight: 600; 
-  color: #94A3B8; text-decoration: none; border-radius: 12px; transition: 0.2s; border: none; background: none; width: 100%; cursor: pointer;
-}
-.nav-item:hover { color: #334155; background: #F8FAFC; }
-.nav-item.active { color: #39A900; background: #F0FDF4; border-left: 4px solid #39A900; }
-.sidebar-footer { padding: 24px 16px; border-top: 1px solid #F1F5F9; }
-
-/* MAIN WRAPPER */
-.main-wrapper { flex: 1; margin-left: 260px; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
-
-.topbar {
-  height: 90px; background: #FFF; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 40px; position: sticky; top: 0; z-index: 90;
-}
-.breadcrumb { font-size: 9px; font-weight: 800; color: #94A3B8; letter-spacing: 2px; margin-bottom: 4px; }
-.page-title { font-size: 22px; font-weight: 900; color: #0F172A; tracking-tight; }
-
-.topbar-actions { display: flex; align-items: center; gap: 24px; }
-.btn-primary {
-  background: #39A900; color: #FFF; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 12px;
-  display: flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(57, 169, 0, 0.15);
-}
-.divider { width: 1px; height: 32px; background: #F1F5F9; }
-.user-profile { display: flex; align-items: center; gap: 12px; }
-.user-name { font-size: 12px; font-weight: 800; color: #1E293B; }
-.user-avatar { width: 42px; height: 42px; border-radius: 50%; overflow: hidden; border: 2px solid #F1F5F9; }
-.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-/* CONTENT & GRID */
-.content { padding: 40px; max-width: 1400px; margin: 0 auto; width: 100%; box-sizing: border-box; }
-.dashboard-grid { display: grid; grid-template-columns: 350px 1fr; gap: 32px; }
-
-.card { background: #FFF; border-radius: 28px; padding: 32px; border: 1px solid #F1F5F9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
-.card-title { font-size: 15px; font-weight: 800; color: #0F172A; margin-bottom: 24px; }
-
-/* MONITOR CARD */
-.monitor-card { display: flex; flex-direction: column; align-items: center; }
-.progress-circle-container { position: relative; width: 200px; height: 200px; margin: 20px 0; }
-.progress-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.circle-bg { fill: none; stroke: #F1F5F9; stroke-width: 8; }
-.circle-progress { fill: none; stroke: #39A900; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 283; transition: stroke-dashoffset 1s ease-out; }
-.circle-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.hours-val { font-size: 48px; font-weight: 900; color: #0F172A; line-height: 1; }
-.hours-label { font-size: 10px; font-weight: 900; color: #94A3B8; letter-spacing: 2px; }
-
-.stats-info { width: 100%; margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
-.stat-box { background: #F8FAFC; padding: 16px; border-radius: 16px; display: flex; flex-direction: column; gap: 4px; border: 1px solid #F1F5F9; }
-.stat-box.warning { border-color: #FECACA; background: #FEF2F2; }
-.slabel { font-size: 9px; font-weight: 900; color: #94A3B8; letter-spacing: 0.5px; }
-.sval { font-size: 14px; font-weight: 800; color: #334155; }
-.text-red { color: #DC2626; }
-
-/* QUICK FORM */
-.quick-form { display: flex; flex-direction: column; gap: 20px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.form-group { display: flex; flex-direction: column; gap: 8px; }
-.form-group label { font-size: 11px; font-weight: 800; color: #64748B; }
-.custom-select, .custom-input, .custom-textarea {
-  background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px 16px; border-radius: 12px;
-  font-size: 13px; font-weight: 600; color: #1E293B; outline: none; transition: 0.2s;
-}
-.custom-select:focus, .custom-input:focus, .custom-textarea:focus { border-color: #39A900; background: #FFF; box-shadow: 0 0 0 4px rgba(57, 169, 0, 0.05); }
-.custom-textarea { height: 100px; resize: none; }
-.btn-submit {
-  background: #0F172A; color: #FFF; border: none; padding: 14px; border-radius: 12px;
-  font-weight: 700; font-size: 13px; margin-top: 10px; cursor: pointer; transition: 0.2s;
-}
-.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-
-/* TABLE */
-.custom-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-.custom-table th { text-align: left; padding: 16px; font-size: 10px; font-weight: 900; color: #94A3B8; border-bottom: 2px solid #F1F5F9; }
-.custom-table td { padding: 20px 16px; font-size: 13px; border-bottom: 1px solid #F8FAFC; }
-.bold { font-weight: 700; color: #1E293B; }
-.faded { color: #94A3B8; font-family: monospace; font-size: 11px; }
-
-.badge {
-  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px;
-  font-size: 9px; font-weight: 900; border: 1px solid transparent;
-}
-.badge .dot { width: 5px; height: 5px; border-radius: 50%; }
-
-.action-icon { color: #CBD5E1; cursor: pointer; transition: 0.2s; }
-.action-icon:hover { color: #39A900; }
+.status-pill.normal { background: #F0FDF4; color: #16A34A; }
+.status-pill.warning { background: #FFFBEB; color: #D97706; }
+.status-pill.danger { background: #FEF2F2; color: #DC2626; }
 
 .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
 </style>

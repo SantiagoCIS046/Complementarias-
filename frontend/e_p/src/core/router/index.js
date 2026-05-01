@@ -56,13 +56,13 @@ const routes = [
     path: '/bitacoras',
     name: 'BitacorasReview',
     component: () => import('../../modules/operation-tracking-dev3/views/BitacorasReview.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
   },
   {
     path: '/seguimiento',
     name: 'TrackingCalendar',
     component: () => import('../../modules/operation-tracking-dev3/views/TrackingCalendar.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
   },
   {
     path: '/instructor-dashboard',
@@ -99,7 +99,7 @@ const routes = [
       try {
         const user = JSON.parse(userData);
         if (user.role === 'ADMIN') return { name: 'Dashboard' };
-        if (user.role === 'INSTRUCTOR') return { name: 'EPDashboard' };
+        if (user.role === 'INSTRUCTOR') return { name: 'InstructorDashboard' };
         if (user.role === 'APRENDIZ') return { name: 'EPDashboard' };
         return { name: 'Login' };
       } catch (e) {
@@ -142,7 +142,7 @@ router.beforeEach((to) => {
 
   // 2. Verificación de ROLES
   if (to.meta.roles && !to.meta.roles.includes(userRole)) {
-    if (userRole === 'INSTRUCTOR') return { name: 'EPDashboard' };
+    if (userRole === 'INSTRUCTOR') return { name: 'InstructorDashboard' };
     if (userRole === 'APRENDIZ') return { name: 'EPDashboard' };
     return { name: 'Login' };
   }
@@ -150,7 +150,7 @@ router.beforeEach((to) => {
   // 3. Redirigir si ya está logueado e intenta ir al Login
   if (to.name === 'Login' && isActuallyLoggedIn) {
     if (userRole === 'ADMIN') return { name: 'Dashboard' }
-    if (userRole === 'INSTRUCTOR') return { name: 'EPDashboard' }
+    if (userRole === 'INSTRUCTOR') return { name: 'InstructorDashboard' }
     if (userRole === 'APRENDIZ') return { name: 'EPDashboard' }
     
     // Si tiene token pero no hay rol válido (estado corrupto), limpiar y permitir ir al Login

@@ -59,22 +59,22 @@ const handleLogout = () => {
       <div class="sidebar-header">
         <div class="logo-icon"><span class="material-symbols-outlined">school</span></div>
         <div class="logo-text">
-          <span class="title">Academic Admin</span>
-          <span class="subtitle">REGIONAL DIVISION</span>
+          <span class="title">Administración Académica</span>
+          <span class="subtitle">DIVISIÓN REGIONAL</span>
         </div>
       </div>
       
       <nav class="sidebar-nav">
-        <a href="#" class="nav-item active"><span class="material-symbols-outlined">grid_view</span> Dashboard</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">group</span> Apprentices</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">menu_book</span> Curriculum</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">task_alt</span> Assessments</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">bar_chart</span> Reports</a>
+        <a href="#" class="nav-item active"><span class="material-symbols-outlined">grid_view</span> Tablero</a>
+        <a href="#" class="nav-item"><span class="material-symbols-outlined">group</span> Aprendices</a>
+        <a href="#" class="nav-item"><span class="material-symbols-outlined">menu_book</span> Currículo</a>
+        <a href="#" class="nav-item"><span class="material-symbols-outlined">task_alt</span> Evaluaciones</a>
+        <a href="#" class="nav-item"><span class="material-symbols-outlined">bar_chart</span> Reportes</a>
       </nav>
 
       <div class="sidebar-footer">
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">help</span> Support</a>
-        <button @click="handleLogout" class="nav-item logout-btn"><span class="material-symbols-outlined">logout</span> Logout</button>
+        <a href="#" class="nav-item"><span class="material-symbols-outlined">help</span> Soporte</a>
+        <button @click="handleLogout" class="nav-item logout-btn"><span class="material-symbols-outlined">logout</span> Cerrar Sesión</button>
       </div>
     </aside>
 
@@ -89,7 +89,7 @@ const handleLogout = () => {
           <div class="user-profile">
             <span class="user-name">{{ currentUser.name }}</span>
             <div class="user-avatar">
-              <img src="https://ui-avatars.com/api/?name=User&background=39a900&color=fff" alt="Avatar">
+              <img src="https://ui-avatars.com/api/?name=Usuario&background=39a900&color=fff" alt="Avatar del Usuario">
             </div>
           </div>
         </div>
@@ -229,7 +229,7 @@ const handleLogout = () => {
 
 /* --- Sidebar --- */
 .sidebar {
-  width: 260px;
+  width: 230px;
   background: #FFFFFF;
   border-right: 1px solid #F1F5F9;
   display: flex;
@@ -241,10 +241,10 @@ const handleLogout = () => {
 }
 
 .sidebar-header {
-  padding: 32px;
+  padding: 24px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .logo-icon {
@@ -311,7 +311,7 @@ const handleLogout = () => {
 /* --- Main Layout --- */
 .main-wrapper {
   flex: 1;
-  margin-left: 260px;
+  margin-left: 230px;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -320,13 +320,13 @@ const handleLogout = () => {
 }
 
 .topbar {
-  height: 80px;
+  height: 64px;
   background: #FFF;
   border-bottom: 1px solid #F1F5F9;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 40px;
+  padding: 0 24px;
   position: sticky;
   top: 0;
   z-index: 90;
@@ -360,39 +360,39 @@ const handleLogout = () => {
 .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 /* --- Content --- */
-.content { padding: 40px; max-width: 1400px; width: 100%; box-sizing: border-box; }
+.content { padding: 24px; max-width: 1400px; width: 100%; box-sizing: border-box; }
 
-.info-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; margin-bottom: 32px; }
+.info-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 24px; }
 
-.company-card { background: #FFF; border-radius: 24px; padding: 32px; border: 1px solid #F1F5F9; }
-.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+.company-card { background: #FFF; border-radius: 20px; padding: 24px; border: 1px solid #F1F5F9; }
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
 .header-text .label { display: block; font-size: 11px; font-weight: 900; color: #94A3B8; letter-spacing: 1px; }
 .header-text .desc { font-size: 11px; color: #94A3B8; }
 .status-badge { background: #FFF1F2; color: #E11D48; padding: 6px 12px; border-radius: 8px; font-size: 9px; font-weight: 900; }
 
 .company-details { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.detail-item { display: flex; align-items: center; gap: 16px; background: #F8FAFC; padding: 16px; border-radius: 16px; border: 1px solid #F1F5F9; }
-.detail-item .icon { width: 44px; height: 44px; background: #FFF; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #39A900; box-shadow: 0 2px 8px rgba(0,0,0,0.02); flex-shrink: 0; }
+.detail-item { display: flex; align-items: center; gap: 12px; background: #F8FAFC; padding: 12px; border-radius: 12px; border: 1px solid #F1F5F9; }
+.detail-item .icon { width: 36px; height: 36px; background: #FFF; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #39A900; box-shadow: 0 2px 8px rgba(0,0,0,0.02); flex-shrink: 0; }
 .detail-item .key { display: block; font-size: 9px; font-weight: 900; color: #94A3B8; margin-bottom: 2px; }
 .detail-item .val { font-size: 13px; font-weight: 700; color: #1E293B; }
 
-.progress-card { background: #1A4D2E; border-radius: 24px; padding: 40px; color: #FFF; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+.progress-card { background: #1A4D2E; border-radius: 20px; padding: 24px; color: #FFF; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
 .progress-card::after { content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 50%; blur: 40px; }
 .progress-card .label { font-size: 10px; font-weight: 900; color: rgba(255,255,255,0.6); letter-spacing: 2px; }
-.progress-card .percent { font-size: 64px; font-weight: 900; margin: 12px 0; line-height: 1; letter-spacing: -2px; }
+.progress-card .percent { font-size: 48px; font-weight: 900; margin: 8px 0; line-height: 1; letter-spacing: -1px; }
 .progress-card .stats { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.6; }
-.progress-bar-container { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 32px; overflow: hidden; }
+.progress-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 20px; overflow: hidden; }
 .progress-bar { height: 100%; background: #FFF; border-radius: 10px; transition: width 1s; }
 
 /* --- Table --- */
-.table-container { background: #FFF; border-radius: 24px; border: 1px solid #F1F5F9; overflow: hidden; }
-.table-header { padding: 32px; display: flex; justify-content: space-between; align-items: center; }
-.table-header h3 { font-size: 16px; font-weight: 700; color: #1E293B; }
+.table-container { background: #FFF; border-radius: 20px; border: 1px solid #F1F5F9; overflow: hidden; }
+.table-header { padding: 24px; display: flex; justify-content: space-between; align-items: center; }
+.table-header h3 { font-size: 15px; font-weight: 700; color: #1E293B; }
 .table-icons { display: flex; gap: 16px; color: #CBD5E1; }
 
 .bitacora-table { width: 100%; border-collapse: collapse; }
-.bitacora-table th { background: #F8FAFC; padding: 20px 32px; text-align: left; font-size: 10px; font-weight: 900; color: #94A3B8; letter-spacing: 1px; }
-.bitacora-table td { padding: 24px 32px; border-top: 1px solid #F1F5F9; font-size: 13px; }
+.bitacora-table th { background: #F8FAFC; padding: 12px 24px; text-align: left; font-size: 10px; font-weight: 900; color: #94A3B8; letter-spacing: 1px; }
+.bitacora-table td { padding: 16px 24px; border-top: 1px solid #F1F5F9; font-size: 13px; }
 .bitacora-table .bold { font-weight: 700; color: #1E293B; }
 .bitacora-table .faded { color: #64748B; font-weight: 500; display: flex; align-items: center; gap: 8px; }
 .bitacora-table .mini { font-size: 18px; color: #CBD5E1; }

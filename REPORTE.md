@@ -4,35 +4,24 @@ Este documento constituye la guía maestra de arquitectura, responsabilidades y 
 
 ---
 
-## 🛡️ NORMAS DE DESARROLLO Y RESPONSABILIDADES
+## 🛡️ REGLA DE ORO: ORGANIZACIÓN POR ROLES
 
-El proyecto se divide en tres núcleos de trabajo independientes para evitar conflictos de código y asegurar la especialización:
+Esta es la estructura maestra para que el equipo trabaje organizado y no se pise el código. Cada desarrollador es dueño absoluto de su universo y de su respectiva rama en GitHub:
 
-### 👤 Dev 1 (Arquitecto de Software)
-*   **Módulo:** Seguridad y Administración Global.
-*   **Responsabilidades:**
-    *   Arquitectura Base del Backend (Express, JWT, MongoDB).
-    *   Dashboard del Administrador (Admin Dashboard).
-    *   Gestión de Usuarios (CRUD, Roles, Estados).
-    *   Importación Masiva de Datos (Excel/CSV).
-    *   Seguridad y Middlewares de acceso.
+### 🛡️ Dev 1 (Tú - Arquitecto): Páginas del Administrador
+*   **Alcance:** Seguridad, roles, creación masiva y gestión de usuarios.
+*   **Responsabilidades:** Arquitectura Base del Backend, Dashboard del Administrador, Seguridad y Middlewares.
 
-### 👤 Dev 2 (Gestión de Aprendiz)
-*   **Módulo:** Registro e Inicio de Etapa Productiva.
-*   **Responsabilidades:**
-    *   Dashboard del Aprendiz (Aprendiz Dashboard).
-    *   Registro de Empresas y Convenios.
-    *   Selección de Modalidad de Etapa Productiva.
-    *   Carga de Documentación Legal de Inicio (Formatos 023, etc.).
+### 🟢 Dev 2: Páginas del Aprendiz
+*   **Alcance:** Todo el flujo del aprendiz (empresa, modalidad y documentos).
+*   **Responsabilidades:** Registro de empresa, documentos iniciales y Dashboard del Aprendiz.
 
-### 👤 Dev 3 (Seguimiento Académico)
-*   **Módulo:** Instructor y Seguimiento.
-*   **Responsabilidades:**
-    *   Dashboard del Instructor (Instructor Dashboard).
-    *   Monitor de Horas (Semáforo de cumplimiento).
-    *   Gestión de Bitácoras Quincenales (Aprobación/Rechazo).
-    *   Reporte de Novedades y Visitas Técnicas.
-    *   Proceso de Graduación y Cierre de Etapa.
+### 🔵 Dev 3: Páginas del Instructor
+*   **Alcance:** Control de bitácoras, seguimiento y graduación.
+*   **Responsabilidades:** Semáforo de horas, validación de bitácoras y cierre académico.
+
+> [!IMPORTANT]
+> **BAJO ESTA ESTRUCTURA:** Cada quien opera de forma autónoma. Si necesitas cambios fuera de tu zona, solicita apoyo al Arquitecto (Dev 1).
 
 ---
 

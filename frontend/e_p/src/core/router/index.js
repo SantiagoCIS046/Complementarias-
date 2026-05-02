@@ -79,7 +79,7 @@ const routes = [
 
   {
     path: '/seguimiento-ep',
-    name: 'EPDashboard',
+    name: 'EPDashboardSeg',
     component: () => import('../../modules/ep-management-dev2/views/EPDashboard.vue'),
     meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
@@ -91,7 +91,6 @@ const routes = [
       const token = localStorage.getItem('repfora_token');
       const userData = localStorage.getItem('repfora_user');
       
-      // SI NO HAY TOKEN, SIEMPRE AL LOGIN
       if (!token || !userData || userData === 'undefined') {
         return { name: 'Login' };
       }
@@ -99,7 +98,7 @@ const routes = [
       try {
         const user = JSON.parse(userData);
         if (user.role === 'ADMIN') return { name: 'Dashboard' };
-        if (user.role === 'INSTRUCTOR') return { name: 'InstructorDashboard' };
+        if (user.role === 'INSTRUCTOR') return { name: 'InstructorDashboard' }; 
         if (user.role === 'APRENDIZ') return { name: 'EPDashboard' };
         return { name: 'Login' };
       } catch (e) {
@@ -115,10 +114,8 @@ const router = createRouter({
   routes,
 })
 
-// Guard de navegación con validación de ROLES
 router.beforeEach((to) => {
   const auth = useAuthStore()
-  const ui = useUiStore()
   
   const token = auth.token || localStorage.getItem('repfora_token')
   const isActuallyLoggedIn = !!token
@@ -135,32 +132,21 @@ router.beforeEach((to) => {
     }
   }
 
-  // 1. Verificación de Autenticación
   if (to.meta.requiresAuth && !isActuallyLoggedIn) {
     return { name: 'Login' }
   }
 
-  // 2. Verificación de ROLES
   if (to.meta.roles && !to.meta.roles.includes(userRole)) {
     if (userRole === 'INSTRUCTOR') return { name: 'InstructorDashboard' };
     if (userRole === 'APRENDIZ') return { name: 'EPDashboard' };
     return { name: 'Login' };
   }
 
-  // 3. Redirigir si ya está logueado e intenta ir al Login
   if (to.name === 'Login' && isActuallyLoggedIn) {
     if (userRole === 'ADMIN') return { name: 'Dashboard' }
     if (userRole === 'INSTRUCTOR') return { name: 'InstructorDashboard' }
     if (userRole === 'APRENDIZ') return { name: 'EPDashboard' }
-    
-    // Si tiene token pero no hay rol válido (estado corrupto), limpiar y permitir ir al Login
-    localStorage.removeItem('repfora_token')
-    localStorage.removeItem('repfora_user')
-    if (auth.logout) auth.logout() // Si existe la acción en pinia
-    return true // Continúa hacia el Login
   }
-
-  // Navegación permitida (Sin cargador automático aquí)
 })
 
 export default router

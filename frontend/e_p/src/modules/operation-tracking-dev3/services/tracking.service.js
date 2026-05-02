@@ -1,11 +1,22 @@
-// tracking.service.js  ?? DEV 3 | Llamadas Axios a /api/bitacoras, /api/trackings y /api/hours
+// tracking.service.js 🟡 DEV 3 | Servicio de Seguimiento para el Instructor
 import axios from 'axios'
+import { useAuthStore } from '../../../core/store/auth.store'
+
 const API = import.meta.env.VITE_API_URL
 
+const http = axios.create({ baseURL: API })
+
+http.interceptors.request.use((config) => {
+    const auth = useAuthStore()
+    if (auth.token) {
+        config.headers.Authorization = `Bearer ${auth.token}`
+    }
+    return config
+})
+
 export const trackingService = {
-  getBitacoras:  ()     => axios.get(${API}/bitacoras),
-  createBitacora:(data) => axios.post(${API}/bitacoras, data),
-  getTrackings:  ()     => axios.get(${API}/trackings),
-  createTracking:(data) => axios.post(${API}/trackings, data),
-  getHours:      (id)   => axios.get(${API}/hours/),
+    /**
+     * Listar etapas productivas (aprendices) asignadas al instructor
+     */
+    getMyApprentices: (params = {}) => http.get('/productive-stages', { params })
 }

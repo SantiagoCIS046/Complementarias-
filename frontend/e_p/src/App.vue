@@ -1,6 +1,33 @@
 <script setup>
+import { onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUiStore } from './core/store/ui.store'
-const uiStore = useUiStore()
+import { useAuthStore } from './core/store/auth.store'
+
+const uiStore   = useUiStore()
+const authStore = useAuthStore()
+const router    = useRouter()
+
+// ── Vigilante de sesión ──────────────────────────────────────────────────────
+// Comprueba cada 5 minutos si la sesión expiró (24 h de inactividad).
+// Esto cubre el caso en que el usuario deja la pestaña abierta sin navegar.
+const SESSION_CHECK_INTERVAL = 5 * 60 * 1000  // 5 minutos
+let sessionWatcher = null
+
+function checkSessionExpiry() {
+  if (authStore.isLoggedIn && authStore.isSessionExpired()) {
+    authStore.logout()
+    router.push({ name: 'Login', query: { expired: '1' } })
+  }
+}
+
+onMounted(() => {
+  sessionWatcher = setInterval(checkSessionExpiry, SESSION_CHECK_INTERVAL)
+})
+
+onUnmounted(() => {
+  clearInterval(sessionWatcher)
+})
 </script>
 
 <template>

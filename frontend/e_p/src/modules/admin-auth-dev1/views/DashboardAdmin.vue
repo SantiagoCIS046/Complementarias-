@@ -17,11 +17,17 @@
             </svg>
             <span>Gestión de Usuarios</span>
           </a>
-          <a href="/dashboard-ep" class="nav-item">
+          <a href="/etapas" class="nav-item">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 20v-6M9 20v-4M15 20v-8M21 20V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v16"/>
             </svg>
-            <span>Etapa Productiva</span>
+            <span>Etapas Productivas</span>
+          </a>
+          <a href="/empresas" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>Empresas</span>
           </a>
         </div>
       </nav>

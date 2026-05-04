@@ -118,5 +118,36 @@ Se ha completado la fase de profesionalización y sincronización del Dashboard 
 
 ---
 
+## 🔐 ESTABILIZACIÓN DE SEGURIDAD Y DEPURAACIÓN (Sesión Actual - Dev 1)
+
+Se ha completado la fase de aseguramiento de la infraestructura de autenticación y navegación. El sistema ha sido estabilizado eliminando errores de acceso y garantizando la segregación total de datos por roles.
+
+### 🛡️ Infraestructura de Autenticación (Frontend)
+1.  **Cliente HTTP Centralizado (`http.js`)**: 
+    *   Implementación de un cliente único para todas las peticiones API.
+    *   **Inyección Automática de Token**: El token JWT se inyecta en cada petición (`Bearer <token>`) eliminando errores de permisos manuales.
+    *   **Gestión de Expiración**: Interceptor global que detecta errores `401 Unauthorized`, cierra la sesión localmente y redirige al `/login?expired=1` de forma elegante.
+2.  **Protección de Rutas (Navigation Guards)**:
+    *   Refactorización del `Router Guard` en `core/router/index.js`.
+    *   **Segregación Estricta**: La ruta `/dashboard-ep` es ahora accesible **únicamente** por usuarios con rol `APRENDIZ`.
+    *   **Redirección Inteligente**: Los usuarios con sesión activa son redirigidos automáticamente a su portal correspondiente si intentan acceder al Login.
+    *   **Time-to-Live (TTL)**: Validación de actividad de 24 horas para garantizar la seguridad de las sesiones.
+
+### 🛠️ Depuración y Backend (Resolución de Errores)
+1.  **Resolución de Error 401**: Identificado y corregido en los módulos `EP`, `Users` y `Tracking` al estandarizar el envío de cabeceras de autorización.
+2.  **Resolución de Error 500**:
+    *   Se investigó la causa raíz del error en el endpoint `GET /api/productive-stages`.
+    *   **Inyección de Logs**: Se añadió `console.error` en el bloque catch del controlador para visibilidad total de fallos internos.
+    *   **Validación de Datos**: Verificación de esquemas Mongoose y scripts de depuración (`test-backend.js`) confirmaron la estabilidad del servicio bajo diferentes roles.
+3.  **Refactorización de UI Admin**:
+    *   Corrección del Sidebar en el Dashboard del Administrador para eliminar el acceso directo al tablero del aprendiz, redirigiendo a las vistas administrativas correctas (`Etapas Productivas` y `Empresas`).
+
+### 📂 Archivos Clave Estabilizados
+*   `frontend/src/core/api/http.js`: Motor de comunicaciones.
+*   `frontend/src/core/router/index.js`: Lógica de acceso.
+*   `backend/src/modules/productive-stages-dev2/productive-stages.controller.js`: Robustez en respuestas.
+
+---
+
 > [!TIP]
-> **PRÓXIMO PASO:** Una vez que Dev 2 finalice la lógica de subida de archivos, se habilitará la descarga de PDFs reales desde la vista de Bitácoras del Instructor.
+> **ESTADO DEL PROYECTO:** El sistema es ahora robusto y seguro. Los roles están aislados y la comunicación frontend-backend es estable y predecible.

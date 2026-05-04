@@ -1,11 +1,13 @@
 // ep.service.js  🔵 DEV 2 | Llamadas Axios a /api/productive-stages y /api/companies
-import axios from 'axios'
-const API = import.meta.env.VITE_API_URL
+// Usa el cliente HTTP centralizado que inyecta el token JWT automáticamente
+import http from '../../../core/api/http'
 
 export const epService = {
-  getAll:    ()     => axios.get(`${API}/productive-stages`),
-  getById:   (id)   => axios.get(`${API}/productive-stages/${id}`),
-  create:    (data) => axios.post(`${API}/productive-stages`, data),
-  update:    (id, data) => axios.put(`${API}/productive-stages/${id}`, data),
-  getCompanies: ()  => axios.get(`${API}/companies`),
+  getAll:       ()          => http.get('/productive-stages'),
+  getById:      (id)        => http.get(`/productive-stages/${id}`),
+  create:       (data)      => http.post('/productive-stages', data),
+  update:       (id, data)  => http.put(`/productive-stages/${id}`, data),
+  remove:       (id)        => http.delete(`/productive-stages/${id}`),
+  getCompanies: ()          => http.get('/companies'),
 }
+

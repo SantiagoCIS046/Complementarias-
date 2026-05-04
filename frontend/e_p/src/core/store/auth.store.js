@@ -3,6 +3,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
+// ── Constante de expiración ──────────────────────────────────────────────────
+/** Tiempo máximo de inactividad: 24 horas en milisegundos */
+const SESSION_TTL = 24 * 60 * 60 * 1000   // 24 h
+const LAST_ACTIVITY_KEY = 'repfora_last_activity'
+
 export const useAuthStore = defineStore('auth', () => {
   // ── State ──────────────────────────────────────────
   const storedUser = localStorage.getItem('repfora_user')
@@ -15,8 +20,10 @@ export const useAuthStore = defineStore('auth', () => {
   const userName   = computed(() => user.value?.nombre || '')
 
   // ── Actions ────────────────────────────────────────
+
   /**
    * Guarda el usuario y token luego del login exitoso.
+   * También registra el momento de inicio de sesión.
    * @param {{ user: object, token: string }} payload
    */
   function login(payload) {
@@ -25,17 +32,43 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = payload.token
     localStorage.setItem('repfora_user',  JSON.stringify(userData))
     localStorage.setItem('repfora_token', payload.token)
+    // Registrar el momento de la última actividad al hacer login
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString())
   }
 
   /**
-   * Limpia la sesión del usuario.
+   * Renueva el timestamp de última actividad.
+   * Se llama en cada navegación exitosa del usuario.
+   */
+  function refreshActivity() {
+    if (token.value) {
+      localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString())
+    }
+  }
+
+  /**
+   * Verifica si la sesión expiró por inactividad (> 24 horas).
+   * @returns {boolean} true si la sesión ya no es válida
+   */
+  function isSessionExpired() {
+    const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY)
+    if (!lastActivity) return true   // Si no hay registro, considerar expirado
+    return (Date.now() - parseInt(lastActivity, 10)) > SESSION_TTL
+  }
+
+  /**
+   * Limpia la sesión del usuario por completo.
    */
   function logout() {
     user.value  = null
     token.value = null
     localStorage.removeItem('repfora_user')
     localStorage.removeItem('repfora_token')
+    localStorage.removeItem(LAST_ACTIVITY_KEY)
   }
 
-  return { user, token, isLoggedIn, userRole, userName, login, logout }
+  return {
+    user, token, isLoggedIn, userRole, userName,
+    login, logout, refreshActivity, isSessionExpired,
+  }
 })

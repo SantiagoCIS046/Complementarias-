@@ -11,8 +11,9 @@ export const useUiStore = defineStore('ui', () => {
     }, duration)
   }
 
-  function showLoader() { isLoading.value = true }
-  function hideLoader() { isLoading.value = false }
+  function showLoader()  { isLoading.value = true  }
+  function hideLoader()  { isLoading.value = false }
+  function stopLoading() { isLoading.value = false } // alias para router.afterEach
 
-  return { isLoading, startLoading, showLoader, hideLoader }
+  return { isLoading, startLoading, showLoader, hideLoader, stopLoading }
 })

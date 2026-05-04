@@ -106,6 +106,16 @@
           <button class="back-link-btn" @click="showRecovery = false">Volver al inicio de sesión</button>
         </div>
 
+        <!-- Mensaje sesión expirada -->
+        <transition name="fade">
+          <div v-if="expiredMsg" class="expired-alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="expired-icon">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {{ expiredMsg }}
+          </div>
+        </transition>
+
         <!-- Mensajes Globales -->
         <transition name="fade">
           <div v-if="errorMsg" class="error-alert">{{ errorMsg }}</div>
@@ -133,12 +143,13 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { useUiStore } from '../../../core/store/ui.store'
 import { authService } from '../services/auth.service'
 
 const router    = useRouter()
+const route     = useRoute()
 const authStore = useAuthStore()
 const uiStore   = useUiStore()
 
@@ -149,27 +160,35 @@ const showRecovery  = ref(false)
 const loading       = ref(false)
 const errorMsg      = ref('')
 const successMsg    = ref('')
+const expiredMsg    = ref('')
+
+// Detectar si el sistema cerró la sesión automáticamente por inactividad
+if (route.query.expired === '1') {
+  expiredMsg.value = '⏰ Tu sesión expiró por inactividad (24 horas). Por favor inicia sesión nuevamente.'
+}
 
 async function handleLogin() {
-  errorMsg.value = ''
+  errorMsg.value   = ''
   successMsg.value = ''
-  loading.value = true
-  uiStore.startLoading(3000) // Cargador global por 3 segundos
+  loading.value    = true
+  uiStore.startLoading(3000)
+
   try {
     const res = await authService.login(form.value)
-    
-    // 1. Guardar en el Store (Pinia)
-    authStore.login(res.data.data) // <--- Aquí estaba el error (res.data vs res.data.data)
-    
-    // 2. Pequeña pausa para asegurar que el estado se guardó
+
+    // 1. Persistir sesión en el store (Pinia + localStorage)
+    authStore.login(res.data.data)
+
     successMsg.value = '¡Acceso concedido! Entrando...'
-    
-    setTimeout(async () => {
-      await router.push('/') // <--- El router se encargará de enviarlo a su Dashboard
-    }, 100)
+
+    // 2. Redirigir: si venía de una ruta protegida, volver a ella;
+    //    de lo contrario el guard de '/' lo llevará a su dashboard.
+    const redirectTo = route.query.redirect || '/'
+    setTimeout(() => router.push(redirectTo), 150)
 
   } catch (err) {
-    errorMsg.value = err.response?.data?.message || 'Credenciales incorrectas'
+    uiStore.stopLoading()
+    errorMsg.value = err.response?.data?.message || 'Credenciales incorrectas. Intenta de nuevo.'
   } finally {
     loading.value = false
   }
@@ -180,9 +199,9 @@ async function handleRecovery() {
     errorMsg.value = 'Ingresa tu correo electrónico'
     return
   }
-  errorMsg.value = ''
+  errorMsg.value   = ''
   successMsg.value = ''
-  loading.value = true
+  loading.value    = true
   try {
     await authService.forgotPassword(recoveryEmail.value)
     successMsg.value = '¡Enviado! Revisa tu correo electrónico.'
@@ -321,5 +340,26 @@ async function handleRecovery() {
 @media (max-width: 900px) {
   .right-panel { display: none; }
   .left-panel { width: 100%; }
+}
+
+.expired-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 15px;
+  border: 1px solid #fde68a;
+  line-height: 1.5;
+}
+.expired-icon {
+  width: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #d97706;
 }
 </style>

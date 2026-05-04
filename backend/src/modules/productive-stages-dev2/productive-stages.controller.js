@@ -65,6 +65,7 @@ const getAll = async (req, res) => {
       data: stages,
     });
   } catch (error) {
+    console.error('🔥 ERROR en ProductiveStages.getAll:', error);
     res.status(500).json({
       success: false,
       message: error.message,

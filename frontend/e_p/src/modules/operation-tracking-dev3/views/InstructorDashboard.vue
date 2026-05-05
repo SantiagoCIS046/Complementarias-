@@ -11,22 +11,37 @@ const authStore = useAuthStore()
 const instructorName = computed(() => authStore.user?.name || 'Instructor')
 const isAuthenticated = computed(() => !!authStore.user)
 
-// ── Estado ──────────────────────────────────
+// ── Estado REAL ──────────────────────────────────
 const apprentices = ref([])
 const isLoading = ref(true)
 const errorMsg = ref(null)
 
 // ── Filtros UI ──────────────────────────────────
 const searchQuery = ref('')
-const semaphoreFilter = ref('TODOS')
-const phaseFilter = ref('TODOS')
-const modalityFilter = ref('TODOS')
 const fichaFilter = ref('TODOS')
 
-// ── Modo de Desarrollo (Bypass) ────────────────
-const isDevMode = ref(true) 
+// Estados para Menús Desplegables
+const activeMenus = ref({ time: false, module: false, problems: false })
+const filters = ref({
+  time: 'TODOS',
+  module: 'APRENDICES',
+  problem: 'TODOS'
+})
 
-// ── Carga de Datos Inteligente ──────────────────────────────────
+const toggleMenu = (menu) => {
+  // Cerrar los demás al abrir uno
+  Object.keys(activeMenus.value).forEach(k => {
+    if (k !== menu) activeMenus.value[k] = false
+  })
+  activeMenus.value[menu] = !activeMenus.value[menu]
+}
+
+const setFilterValue = (type, value) => {
+  filters.value[type] = value
+  activeMenus.value[type] = false
+}
+
+// ── Carga de Datos Únicamente desde BD ───────────────────────────
 const fetchApprentices = async () => {
   isLoading.value = true
   errorMsg.value = null
@@ -42,57 +57,77 @@ const fetchApprentices = async () => {
         name: item.apprenticeId?.name || 'Aprendiz sin nombre',
         initials: (item.apprenticeId?.name || 'A').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
         avatarColor: '#E6F4EA',
-        company: item.razonSocial || 'Empresa',
-        hours: item.horasAcomuladas || 0,
-        limit: 864,
-        progress: Math.min(Math.round(((item.horasAcomuladas || 0) / 864) * 100), 100),
-        status: 'AL DÍA',
-        lastReport: 0,
+        company: item.companyId?.razonSocial || item.razonSocial || 'Sin empresa',
+        hours: item.horasCompletadas || 0,
+        limit: item.horasRequeridas || 864,
+        progress: item.horasRequeridas > 0 ? Math.min(Math.round(((item.horasCompletadas || 0) / item.horasRequeridas) * 100), 100) : 0,
+        status: item.estado === 'COMPLETADA' ? 'AL DÍA' : 'EN CURSO',
+        lastReport: item.seguimientos?.length || 0,
         phase: item.estadoEP || 'ACTIVO',
         modality: item.modalidad || 'CONTRATO',
-        ficha: item.ficha || '2670687'
+        ficha: item.ficha || 'S/F'
       }))
-    } else if (isDevMode.value) {
-      loadMockData()
     } else {
-      errorMsg.value = 'Lo siento no puedes tener acceso puesto que no tienes aprendices.'
+      errorMsg.value = 'No se encontraron aprendices asignados en la base de datos.'
     }
   } catch (err) {
-    if (isDevMode.value) {
-      loadMockData()
-    } else {
-      errorMsg.value = 'Error de conexión con el servidor.'
-    }
+    console.error('Error de conexión:', err)
+    errorMsg.value = 'Error al conectar con el servidor de datos.'
   } finally {
     isLoading.value = false
   }
-}
-
-const loadMockData = () => {
-  apprentices.value = [
-    { id: 1, doc: '99999999', name: 'Aprendiz Mancilla', initials: 'AM', avatarColor: '#E6F4EA', company: 'TechSolutions', hours: 145, limit: 864, progress: 17, status: 'AL DÍA', lastReport: 5, phase: 'ACTIVO', modality: 'CONTRATO DE APRENDIZAJE', ficha: '2670687' },
-    { id: 2, doc: '77777777', name: 'Aprendiz Carlos', initials: 'AC', avatarColor: '#FCE4EC', company: 'Construcciones SENA', hours: 72, limit: 864, progress: 8, status: 'ATRASADO', lastReport: 18, phase: 'EN REVISIÓN', modality: 'PASANTÍA', ficha: '2670687' },
-    { id: 3, doc: '1100976876', name: 'Santiago Cisneros (Prueba)', initials: 'SC', avatarColor: '#E8F5E9', company: 'Software Innovación', hours: 864, limit: 864, progress: 100, status: 'AL DÍA', lastReport: 2, phase: 'LISTO PARA CIERRE', modality: 'VÍNCULO LABORAL', ficha: '2558342' },
-    { id: 4, doc: '1037112564', name: 'Daniela Palacio', initials: 'DP', avatarColor: '#E8F5E9', company: 'Logística S.A.', hours: 450, limit: 864, progress: 52, status: 'AL DÍA', lastReport: 10, phase: 'ACTIVO', modality: 'PROYECTO PRODUCTIVO', ficha: '2558342' },
-  ]
 }
 
 onMounted(fetchApprentices)
 
 const availableFichas = computed(() => [...new Set(apprentices.value.map(a => a.ficha))].sort())
 
+// ── Lógica de Agrupación para Módulo FICHAS ──────────────────
+const groupedFichas = computed(() => {
+  const groups = {}
+  apprentices.value.forEach(app => {
+    if (!groups[app.ficha]) {
+      groups[app.ficha] = {
+        numero: app.ficha,
+        total: 0,
+        alDia: 0,
+        retrasados: 0
+      }
+    }
+    groups[app.ficha].total++
+    if (app.status === 'AL DÍA') groups[app.ficha].alDia++
+    else groups[app.ficha].retrasados++
+  })
+  
+  return Object.values(groups).filter(f => {
+    const q = searchQuery.value.toLowerCase()
+    return f.numero.includes(q)
+  })
+})
+
+// ── Lógica de Filtrado para Módulo APRENDICES ────────────────
 const filteredApprentices = computed(() => {
   return apprentices.value.filter(a => {
+    // Búsqueda
     const q = searchQuery.value.toLowerCase()
     const matchesSearch = a.name.toLowerCase().includes(q) || a.doc.includes(q) || a.ficha.includes(q)
-    let matchesSemaphore = true
-    if (semaphoreFilter.value === 'AL DÍA') matchesSemaphore = a.lastReport <= 15
-    if (semaphoreFilter.value === 'ATRASADO') matchesSemaphore = a.lastReport > 15 && a.lastReport <= 30
-    if (semaphoreFilter.value === 'CRÍTICO') matchesSemaphore = a.lastReport > 30
-    return matchesSearch && matchesSemaphore && 
-           (phaseFilter.value === 'TODOS' || a.phase === phaseFilter.value) && 
-           (modalityFilter.value === 'TODOS' || a.modality === modalityFilter.value) && 
-           (fichaFilter.value === 'TODOS' || a.ficha === fichaFilter.value)
+    
+    // Filtro Ficha (si se usa desde el select anterior o lógica interna)
+    const matchesFicha = fichaFilter.value === 'TODOS' || a.ficha === fichaFilter.value
+    
+    // Filtro Tiempo
+    let matchesTime = true
+    if (filters.value.time === 'AL DÍA') matchesTime = a.status === 'AL DÍA'
+    if (filters.value.time === 'RETRASADO') matchesTime = a.status !== 'AL DÍA' && a.hours > 0
+    if (filters.value.time === 'NO ENTREGADO') matchesTime = a.hours === 0
+
+    // Filtro Problemas
+    let matchesProblem = true
+    if (filters.value.problem === 'DESERTORES') matchesProblem = a.phase === 'DESERCIÓN'
+    if (filters.value.problem === 'REPORTADOS') matchesProblem = a.lastReport > 0
+    if (filters.value.problem === 'NO CUMPLIDOS') matchesProblem = a.progress < 50
+
+    return matchesSearch && matchesFicha && matchesTime && matchesProblem
   })
 })
 
@@ -101,14 +136,20 @@ const viewDetails = (app) => {
 }
 
 const resetFilters = () => {
-  searchQuery.value = ''; semaphoreFilter.value = 'TODOS'; phaseFilter.value = 'TODOS'; modalityFilter.value = 'TODOS'; fichaFilter.value = 'TODOS';
+  searchQuery.value = ''
+  fichaFilter.value = 'TODOS'
+  filters.value = {
+    time: 'TODOS',
+    module: 'APRENDICES',
+    problem: 'TODOS'
+  }
+  // Cerrar menús abiertos
+  Object.keys(activeMenus.value).forEach(k => activeMenus.value[k] = false)
 }
 
 const getStatusStyle = (status) => {
-  if (status === 'AL DÍA') return { bg: '#dcfce7', text: '#15803d', dot: '#22c55e' }
-  if (status === 'ATRASADO') return { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' }
-  if (status === 'CRÍTICO') return { bg: '#fee2e2', text: '#b91c1c', dot: '#ef4444' }
-  return { bg: '#f1f5f9', text: '#64748b', dot: '#94a3b8' }
+  if (status === 'AL DÍA' || status === 'COMPLETADA') return { bg: '#dcfce7', text: '#15803d', dot: '#22c55e' }
+  return { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' }
 }
 
 const getModalityIcon = (modality) => {
@@ -120,8 +161,6 @@ const getModalityIcon = (modality) => {
 
 const getPhaseStyle = (phase) => {
   if (phase === 'ACTIVO') return { backgroundColor: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }
-  if (phase === 'EN REVISIÓN') return { backgroundColor: '#fffbeb', color: '#ca8a04', borderColor: '#fef3c7' }
-  if (phase === 'LISTO PARA CIERRE') return { backgroundColor: '#eff6ff', color: '#2563eb', borderColor: '#dbeafe' }
   return { backgroundColor: '#f1f5f9', color: '#475569', borderColor: '#e2e8f0' }
 }
 </script>
@@ -135,48 +174,24 @@ const getPhaseStyle = (phase) => {
 
       <main class="content-view">
         
-        <div v-if="(!isAuthenticated && !isDevMode) || (errorMsg && !isDevMode)" class="access-denied-container">
+        <div v-if="!isAuthenticated || errorMsg" class="access-denied-container">
           <div class="denied-card">
-            <span class="material-symbols-outlined icon-denied">lock_person</span>
-            <h2>Acceso Restringido</h2>
-            <p>{{ !isAuthenticated ? 'Debe iniciar sesión para acceder.' : errorMsg }}</p>
-            <a href="/login" class="btn-login-return">Regresar al Inicio</a>
+            <span class="material-symbols-outlined icon-denied">{{ errorMsg ? 'database_off' : 'lock_person' }}</span>
+            <h2>{{ errorMsg ? 'Sin Datos Reales' : 'Acceso Restringido' }}</h2>
+            <p>{{ errorMsg || 'Debe iniciar sesión para acceder.' }}</p>
+            <button @click="fetchApprentices" class="btn-login-return">Sincronizar de nuevo</button>
           </div>
         </div>
 
         <div v-else class="dashboard-inner">
-          
           <div class="dashboard-top-row">
             <div class="page-title-group">
-              <h1 class="page-main-title">Aprendices de {{ instructorName }}</h1>
-              <p class="page-subtitle">Seguimiento exclusivo para el programa de formación asignado.</p>
-            </div>
-
-            <div class="header-indicators" v-if="!isLoading">
-              <div class="mini-indicator-card" @click="semaphoreFilter = 'AL DÍA'">
-                <div class="mini-card-content">
-                  <p class="mini-tag">AL DÍA</p>
-                  <p class="mini-num">{{ apprentices.filter(a => a.status === 'AL DÍA').length }}</p>
-                </div>
-                <div class="mini-icon bg-green-light"><span class="material-symbols-outlined text-green">check_circle</span></div>
-              </div>
-              <div class="mini-indicator-card" @click="semaphoreFilter = 'ATRASADO'">
-                <div class="mini-card-content">
-                  <p class="mini-tag">ATRASADOS</p>
-                  <p class="mini-num text-yellow">{{ apprentices.filter(a => a.status === 'ATRASADO').length }}</p>
-                </div>
-                <div class="mini-icon bg-yellow-light"><span class="material-symbols-outlined text-yellow">schedule</span></div>
-              </div>
-              <div class="mini-indicator-card" @click="semaphoreFilter = 'CRÍTICO'">
-                <div class="mini-card-content">
-                  <p class="mini-tag">CRÍTICOS</p>
-                  <p class="mini-num text-red">{{ apprentices.filter(a => a.status === 'CRÍTICO').length }}</p>
-                </div>
-                <div class="mini-icon bg-red-light"><span class="material-symbols-outlined text-red">error</span></div>
-              </div>
+              <h1 class="page-main-title">Panel del Instructor: {{ instructorName }}</h1>
+              <p class="page-subtitle">Visualización en tiempo real de la base de datos oficial.</p>
             </div>
           </div>
 
+          <!-- Filtros -->
           <div class="filters-bar-card">
             <div class="filters-grid">
               <div class="filter-item">
@@ -187,228 +202,238 @@ const getPhaseStyle = (phase) => {
                 </div>
               </div>
 
-              <div class="filter-item">
-                <label>Fichas Asignadas</label>
-                <select v-model="fichaFilter" class="premium-select">
-                  <option value="TODOS">Todas las Fichas</option>
-                  <option v-for="f in availableFichas" :key="f" :value="f">Ficha: {{ f }}</option>
-                </select>
+
+
+              <!-- Botón Tiempo -->
+              <div class="filter-item dropdown-wrapper">
+                <label>Tiempo</label>
+                <button class="btn-dropdown" @click="toggleMenu('time')">
+                  <span>{{ filters.time === 'TODOS' ? 'Estado de Entrega' : filters.time }}</span>
+                  <span class="material-symbols-outlined">expand_more</span>
+                </button>
+                <div v-if="activeMenus.time" class="dropdown-menu">
+                  <button @click="setFilterValue('time', 'AL DÍA')">Al día</button>
+                  <button @click="setFilterValue('time', 'RETRASADO')">Retrasado</button>
+                  <button @click="setFilterValue('time', 'NO ENTREGADO')">No entregado</button>
+                  <hr />
+                  <button @click="setFilterValue('time', 'TODOS')">Ver Todos</button>
+                </div>
               </div>
 
-              <div class="filter-item">
-                <label>Semáforo</label>
-                <select v-model="semaphoreFilter" class="premium-select">
-                  <option value="TODOS">Todos</option>
-                  <option value="AL DÍA">🟢 Al Día</option>
-                  <option value="ATRASADO">🟡 Atrasados</option>
-                  <option value="CRÍTICO">🔴 Críticos</option>
-                </select>
+              <!-- Botón Módulo -->
+              <div class="filter-item dropdown-wrapper">
+                <label>Módulo</label>
+                <button class="btn-dropdown" @click="toggleMenu('module')">
+                  <span>{{ filters.module }}</span>
+                  <span class="material-symbols-outlined">expand_more</span>
+                </button>
+                <div v-if="activeMenus.module" class="dropdown-menu">
+                  <button @click="setFilterValue('module', 'FICHAS')">Fichas</button>
+                  <button @click="setFilterValue('module', 'APRENDICES')">Aprendices</button>
+                </div>
               </div>
 
-              <div class="filter-item">
-                <label>Fase</label>
-                <select v-model="phaseFilter" class="premium-select">
-                  <option value="TODOS">Todas</option>
-                  <option value="EN REVISIÓN">En Revisión</option>
-                  <option value="ACTIVO">Activos</option>
-                  <option value="LISTO PARA CIERRE">Listos para Cierre</option>
-                </select>
-              </div>
-
-              <div class="filter-item">
-                <label>Modalidad</label>
-                <select v-model="modalityFilter" class="premium-select">
-                  <option value="TODOS">Todas</option>
-                  <option value="CONTRATO DE APRENDIZAJE">Contrato</option>
-                  <option value="PASANTÍA">Pasantía</option>
-                  <option value="VÍNCULO LABORAL">Vínculo</option>
-                </select>
+              <!-- Botón Problemas -->
+              <div class="filter-item dropdown-wrapper">
+                <label>Problemas</label>
+                <button class="btn-dropdown btn-warning-soft" @click="toggleMenu('problems')">
+                  <span>{{ filters.problem === 'TODOS' ? 'Alertas' : filters.problem }}</span>
+                  <span class="material-symbols-outlined">warning</span>
+                </button>
+                <div v-if="activeMenus.problems" class="dropdown-menu menu-danger">
+                  <button @click="setFilterValue('problem', 'DESERTORES')">Desertores</button>
+                  <button @click="setFilterValue('problem', 'REPORTADOS')">Reportados</button>
+                  <button @click="setFilterValue('problem', 'NO CUMPLIDOS')">No cumplidos</button>
+                  <hr />
+                  <button @click="setFilterValue('problem', 'TODOS')">Sin Filtro de Problemas</button>
+                </div>
               </div>
 
               <div class="filter-actions">
                 <button class="btn-clean" @click="resetFilters" title="Limpiar Filtros">
                   <span class="material-symbols-outlined">filter_alt_off</span>
                 </button>
-                <button class="btn-primary-sena">
-                  <span class="material-symbols-outlined">download</span> Exportar
+                <button class="btn-primary-sena" @click="fetchApprentices">
+                  <span class="material-symbols-outlined">sync</span> Sincronizar BD
                 </button>
               </div>
             </div>
           </div>
 
           <div class="table-container-card">
-            <div v-if="isLoading" class="loading-state-overlay"><div class="spin-ring-lg"></div><p>Cargando...</p></div>
+            <div v-if="isLoading" class="loading-state-overlay"><div class="spin-ring-lg"></div><p>Consultando MongoDB...</p></div>
             <div class="scrollable-table" v-else>
               <table class="apprentices-table">
                 <thead>
-                  <tr>
+                  <!-- Encabezados para FICHAS -->
+                  <tr v-if="filters.module === 'FICHAS'">
+                    <th>FICHA #</th>
+                    <th class="text-center">TOTAL APRENDICES</th>
+                    <th class="text-center">AL DÍA</th>
+                    <th class="text-center">PENDIENTES</th>
+                    <th class="text-center">ACCIONES</th>
+                  </tr>
+                  <!-- Encabezados para APRENDICES -->
+                  <tr v-else>
                     <th>APRENDIZ</th>
                     <th>FICHA</th>
                     <th>MODALIDAD / EMPRESA</th>
-                    <th>FASE</th>
                     <th>CUMPLIMIENTO</th>
                     <th>ESTADO</th>
                     <th class="text-center">ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="app in filteredApprentices" :key="app.id">
-                    <td>
-                      <div class="user-cell">
-                        <div class="avatar" :style="{ backgroundColor: app.avatarColor }">{{ app.initials }}</div>
-                        <div class="user-info">
-                          <p class="user-name">{{ app.name }}</p>
-                          <p class="user-sub">C.C. {{ app.doc }}</p>
+                  <!-- Render para FICHAS -->
+                  <template v-if="filters.module === 'FICHAS'">
+                    <tr v-for="f in groupedFichas" :key="f.numero">
+                      <td><div class="ficha-cell-premium"><span class="ficha-number">#{{ f.numero }}</span></div></td>
+                      <td class="text-center font-bold">{{ f.total }} Alumnos</td>
+                      <td class="text-center"><span class="text-green font-bold">{{ f.alDia }}</span></td>
+                      <td class="text-center"><span class="text-red font-bold">{{ f.retrasados }}</span></td>
+                      <td class="text-center">
+                        <button class="btn-action-view" @click="setFilterValue('module', 'APRENDICES'); fichaFilter = f.numero">
+                          <span class="material-symbols-outlined">visibility</span> Ver Grupo
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
+                  <template v-else>
+                    <tr v-for="app in filteredApprentices" :key="app.id">
+                      <td>
+                        <div class="user-cell">
+                          <div class="avatar" :style="{ backgroundColor: '#E6F4EA' }">{{ app.initials }}</div>
+                          <div class="user-info">
+                            <p class="user-name">{{ app.name }}</p>
+                            <p class="user-sub">Doc: {{ app.doc }}</p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="ficha-cell-premium">
-                        <span class="ficha-number">#{{ app.ficha }}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="modality-cell-premium">
-                        <div class="company-row">
-                          <span class="material-symbols-outlined icon-company">{{ getModalityIcon(app.modality) }}</span>
-                          <span class="company-name">{{ app.company }}</span>
-                        </div>
-                        <div class="mod-tags-row">
+                      </td>
+                      <td><div class="ficha-cell-premium"><span class="ficha-number">#{{ app.ficha }}</span></div></td>
+                      <td>
+                        <div class="modality-cell-premium">
+                          <div class="company-row">
+                            <span class="material-symbols-outlined icon-company">{{ getModalityIcon(app.modality) }}</span>
+                            <span class="company-name">{{ app.company }}</span>
+                          </div>
                           <span class="mod-pill">{{ app.modality }}</span>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span class="phase-badge" :style="getPhaseStyle(app.phase)">
-                        {{ app.phase }}
-                      </span>
-                    </td>
-                    <td class="td-progress">
-                      <div class="progress-info"><span>{{ app.hours }}h</span><span>{{ app.progress }}%</span></div>
-                      <div class="mini-bar"><div class="mini-fill" :style="{ width: app.progress + '%', backgroundColor: app.progress > 70 ? '#39A900' : (app.progress > 40 ? '#f59e0b' : '#C62828') }"></div></div>
-                    </td>
-                    <td>
-                      <span class="status-pill-admin" :style="{ backgroundColor: getStatusStyle(app.status).bg, color: getStatusStyle(app.status).text }">
-                        <div class="status-dot-admin" :style="{ backgroundColor: getStatusStyle(app.status).dot }"></div>
-                        {{ app.status }}
-                      </span>
-                    </td>
-                    <td class="text-center">
-                      <button class="btn-view" title="Ver Seguimiento"><span class="material-symbols-outlined">visibility</span></button>
-                    </td>
+                      </td>
+                      <td class="td-progress">
+                        <div class="progress-info"><span>{{ app.hours }}h</span><span>{{ app.progress }}%</span></div>
+                        <div class="mini-bar"><div class="mini-fill" :style="{ width: app.progress + '%', backgroundColor: 'var(--color_button)' }"></div></div>
+                      </td>
+                      <td>
+                        <span class="status-pill-admin" :style="{ backgroundColor: getStatusStyle(app.status).bg, color: getStatusStyle(app.status).text }">
+                          <div class="status-dot-admin" :style="{ backgroundColor: getStatusStyle(app.status).dot }"></div>
+                          {{ app.status }}
+                        </span>
+                      </td>
+                      <td class="text-center">
+                        <button class="btn-view" @click="viewDetails(app)"><span class="material-symbols-outlined">visibility</span></button>
+                      </td>
+                    </tr>
+                  </template>
+
+                  <tr v-if="(filters.module === 'APRENDICES' && filteredApprentices.length === 0) || (filters.module === 'FICHAS' && groupedFichas.length === 0)">
+                    <td colspan="6" class="text-center" style="padding: 3rem; color: #94a3b8; font-weight: 600;">No hay datos que coincidan con la búsqueda.</td>
                   </tr>
                 </tbody>
               </table>
             </div>
-
-            <div class="pagination-row" v-if="!isLoading">
-              <p class="pag-info">Mostrando <b>{{ filteredApprentices.length }}</b> de <b>{{ apprentices.length }}</b> aprendices</p>
-              <div class="pag-btns">
-                <button class="btn-p-nav"><span class="material-symbols-outlined">chevron_left</span></button>
-                <button class="btn-p active">1</button>
-                <button class="btn-p-nav"><span class="material-symbols-outlined">chevron_right</span></button>
-              </div>
-            </div>
           </div>
         </div>
-
       </main>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* ESTILOS SINCRONIZADOS */
 .instructor-dashboard { display: flex; height: 100vh; background-color: #F8FAF9; overflow: hidden; font-family: 'Inter', sans-serif; }
 .main-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .content-view { flex: 1; overflow-y: auto; padding: 1.5rem; background: #fbfcfb; }
 .dashboard-inner { max-width: 1400px; margin: 0 auto; }
 
-/* ACCESS DENIED */
 .access-denied-container { display: flex; align-items: center; justify-content: center; height: 70vh; }
 .denied-card { background: white; padding: 3rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.06); text-align: center; max-width: 450px; border: 1px solid #f1f5f9; }
-.icon-denied { font-size: 4rem !important; color: #fca5a5; margin-bottom: 1.5rem; }
-.btn-login-return { background: #39A900; color: white; padding: 0.75rem 2rem; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; }
+.icon-denied { font-size: 4rem !important; color: #cbd5e1; margin-bottom: 1.5rem; }
+.btn-login-return { background: var(--color_button); color: white; padding: 0.75rem 2rem; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; display: inline-block; }
 
-/* TOP ROW */
 .dashboard-top-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; }
 .page-main-title { font-size: 1.25rem; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.5px; }
 .page-subtitle { font-size: 0.7rem; color: #64748b; margin: 2px 0 0; }
-.header-indicators { display: flex; gap: 1rem; }
-.mini-indicator-card { background: white; padding: 0.75rem 1rem; border-radius: 12px; border: 1px solid #edf2f7; display: flex; align-items: center; gap: 1rem; min-width: 130px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-.mini-indicator-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); border-color: #39A900; }
-.mini-num { font-size: 1.1rem; font-weight: 800; color: #1e293b; margin: 0; }
-.mini-tag { font-size: 0.6rem; font-weight: 800; color: #94a3b8; margin: 0; text-transform: uppercase; }
-.mini-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
 
-/* FILTERS */
 .filters-bar-card { background: white; padding: 1.25rem; border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; margin-bottom: 1.5rem; }
-.filters-grid { display: grid; grid-template-columns: 1.2fr 1fr 0.8fr 0.8fr 0.8fr 180px; gap: 1rem; align-items: flex-end; }
+.filters-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr auto; gap: 1rem; align-items: flex-end; }
 .filter-item label { display: block; font-size: 0.6rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; }
 .search-input-wrapper { position: relative; }
 .search-input-wrapper span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; color: #94a3b8; }
-.search-input-wrapper input, .premium-select { width: 100%; height: 38px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 0.75rem; padding: 0 12px; outline: none; transition: 0.2s; }
+.search-input-wrapper input, .premium-select { width: 100%; height: 38px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 0.75rem; padding: 0 12px; outline: none; }
 .search-input-wrapper input { padding-left: 35px; }
-.search-input-wrapper input:focus, .premium-select:focus { border-color: #39A900; background: white; box-shadow: 0 0 0 4px rgba(57, 169, 0, 0.05); }
-.filter-actions { display: flex; gap: 0.5rem; }
-.btn-clean { width: 38px; height: 38px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-.btn-clean:hover { color: #dc2626; border-color: #fca5a5; background: #fef2f2; }
-.btn-primary-sena { flex: 1; height: 38px; background: #39A900; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: 0.2s; }
-.btn-primary-sena:hover { background: #2d8500; box-shadow: 0 6px 15px rgba(57, 169, 0, 0.2); }
 
-/* TABLE */
+.filter-actions { display: flex; gap: 0.5rem; }
+.btn-clean { width: 38px; height: 38px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-primary-sena { height: 38px; background: var(--color_button); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: 0 15px; }
+
+/* DROPDOWN STYLES */
+.dropdown-wrapper { position: relative; }
+.btn-dropdown { width: 100%; height: 38px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s; }
+.btn-dropdown span { font-size: 0.75rem; font-weight: 700; color: #475569; }
+.btn-dropdown .material-symbols-outlined { font-size: 1.2rem; color: #94a3b8; }
+.btn-dropdown:hover { border-color: var(--color_button); background: #fff; }
+
+.btn-warning-soft { border-color: #FED7D7; }
+.btn-warning-soft span { color: #C53030; }
+.btn-warning-soft .material-symbols-outlined { color: #E53E3E; }
+
+.dropdown-menu { position: absolute; top: calc(100% + 5px); left: 0; width: 100%; background: white; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; overflow: hidden; padding: 4px; animation: slideDown 0.2s ease-out; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+.dropdown-menu button { width: 100%; padding: 10px 12px; border: none; background: none; text-align: left; font-size: 0.7rem; font-weight: 700; color: #475569; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+.dropdown-menu button:hover { background: #F1F5F9; color: var(--color_button); }
+.dropdown-menu hr { border: none; border-top: 1px solid #F1F5F9; margin: 4px 0; }
+
+.menu-danger button:hover { background: #FFF5F5; color: #C53030; }
+
+/* UTILS & VIEW SWITCHER */
+.text-green { color: #16a34a; }
+.text-red { color: #dc2626; }
+.font-bold { font-weight: 800; }
+.btn-action-view { background: #F1F5F9; border: 1px solid #E2E8F0; color: #475569; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s; margin: 0 auto; }
+.btn-action-view:hover { background: var(--color_button); color: white; border-color: var(--color_button); }
+.btn-action-view .material-symbols-outlined { font-size: 1rem; }
+
 .table-container-card { background: white; border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; overflow: hidden; position: relative; }
 .apprentices-table { width: 100%; border-collapse: collapse; }
-.apprentices-table th { background: #39A900; color: white; padding: 1rem; text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.apprentices-table th { background: var(--color_header); color: white; padding: 1rem; text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
 .apprentices-table td { padding: 1rem; border-bottom: 1px solid #f1f5f9; }
-.apprentices-table tbody tr:nth-child(even) { background: #fafbfc; }
-.apprentices-table tbody tr:hover { background: #f1fdf4; }
 
 .user-cell { display: flex; align-items: center; gap: 0.75rem; }
 .avatar { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; color: #15803d; }
 .user-name { font-size: 0.8rem; font-weight: 800; color: #1e293b; margin: 0; }
 .user-sub { font-size: 0.65rem; color: #94a3b8; margin: 0; }
 
-/* MODALITY CELL PREMIUM */
-.modality-cell-premium { display: flex; flex-direction: column; gap: 6px; }
-.company-row { display: flex; align-items: center; gap: 6px; }
-.icon-company { font-size: 1.1rem !important; color: #39A900; }
-.company-name { font-size: 0.8rem; font-weight: 800; color: #1e293b; letter-spacing: -0.2px; }
-.mod-tags-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.mod-pill { background: #f1f5f9; color: #475569; font-size: 0.58rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; border: 1px solid #e2e8f0; }
-
-/* FICHA CELL */
 .ficha-cell-premium { background: #e0f2fe; padding: 4px 10px; border-radius: 8px; border: 1px solid #bae6fd; display: inline-block; }
-.ficha-number { color: #0369a1; font-size: 0.75rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
+.ficha-number { color: #0369a1; font-size: 0.75rem; font-weight: 900; }
 
-.phase-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; border: 1px solid transparent; text-transform: uppercase; }
+.modality-cell-premium { display: flex; flex-direction: column; gap: 4px; }
+.company-row { display: flex; align-items: center; gap: 6px; }
+.icon-company { font-size: 1.1rem !important; color: var(--color_button); }
+.company-name { font-size: 0.8rem; font-weight: 800; color: #1e293b; }
+.mod-pill { background: #f1f5f9; color: #475569; font-size: 0.58rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; width: fit-content; }
 
 .td-progress { width: 140px; }
-.progress-info { display: flex; justify-content: space-between; font-size: 0.6rem; font-weight: 800; margin-bottom: 4px; color: #475569; }
-.mini-bar { height: 5px; background: #f1f5f9; border-radius: 10px; overflow: hidden; }
-.mini-fill { height: 100%; transition: width 0.4s ease; }
+.progress-info { display: flex; justify-content: space-between; font-size: 0.6rem; font-weight: 800; margin-bottom: 4px; }
+.mini-bar { height: 5px; background: #f1f5f9; border-radius: 10px; }
+.mini-fill { height: 100%; border-radius: 10px; }
 
 .status-pill-admin { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.6rem; font-weight: 800; }
 .status-dot-admin { width: 6px; height: 6px; border-radius: 50%; }
 
-.btn-view { width: 34px; height: 34px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; color: #39A900; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-.btn-view:hover { background: #e8f7e1; transform: scale(1.1); border-color: #39A900; }
+.btn-view { width: 34px; height: 34px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; color: var(--color_button); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-/* PAGINATION */
-.pagination-row { padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; background: #fff; border-top: 1px solid #f1f5f9; }
-.pag-info { font-size: 0.75rem; color: #64748b; font-weight: 500; margin: 0; }
-.pag-btns { display: flex; gap: 8px; }
-.btn-p, .btn-p-nav { width: 34px; height: 34px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 0.75rem; font-weight: 700; }
-.btn-p:hover, .btn-p-nav:hover { border-color: #39A900; color: #39A900; background: #f0fdf4; }
-.btn-p.active { background: #39A900; color: white; border-color: #39A900; box-shadow: 0 4px 10px rgba(57, 169, 0, 0.2); }
-
-/* UTILS */
-.bg-green-light { background: #f0fdf4; }
-.bg-yellow-light { background: #fffbeb; }
-.bg-red-light { background: #fef2f2; }
-.text-green { color: #16a34a; }
-.text-yellow { color: #ca8a04; }
-.text-red { color: #dc2626; }
-.loading-state-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem; gap: 1rem; }
-.spin-ring-lg { width: 40px; height: 40px; border: 3px solid #f1f5f9; border-top-color: #39A900; border-radius: 50%; animation: spin 1s linear infinite; }
+.loading-state-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem; gap: 1rem; color: #94a3b8; }
+.spin-ring-lg { width: 40px; height: 40px; border: 3px solid #f1f5f9; border-top-color: var(--color_header); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>

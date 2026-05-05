@@ -9,7 +9,7 @@ const userRole = computed(() => authStore.user?.role || 'Visitante');
 
 const avatarUrl = computed(() => {
   const name = encodeURIComponent(currentUser.value.name);
-  return `https://ui-avatars.com/api/?name=${name}&background=39A900&color=fff&bold=true`;
+  return `https://ui-avatars.com/api/?name=${name}&background=2e7d32&color=fff&bold=true`;
 });
 </script>
 
@@ -89,7 +89,7 @@ const avatarUrl = computed(() => {
   width: 0.375rem;
   height: 0.375rem;
   border-radius: 50%;
-  background-color: #39A900;
+  background-color: var(--color_header);
 }
 
 .role-text {
@@ -165,7 +165,7 @@ const avatarUrl = computed(() => {
 .dot-online {
   width: 0.25rem;
   height: 0.25rem;
-  background-color: #39A900;
+  background-color: var(--color_header);
   border-radius: 50%;
 }
 
@@ -186,7 +186,7 @@ const avatarUrl = computed(() => {
 
 .icon-btn:hover {
   background-color: #f8fafc;
-  color: #39A900;
+  color: var(--color_header);
 }
 
 .notification-dot {

@@ -156,7 +156,7 @@ async function handleReset() {
 .field { margin-bottom: 18px; }
 .field-label { display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 6px; }
 .input-box { display: flex; align-items: center; gap: 12px; padding: 0 15px; background: #f8fafc; border: 2px solid transparent; border-radius: 10px; transition: 0.3s; }
-.input-box:focus-within { border-color: #39a900; background: white; box-shadow: 0 0 0 4px rgba(57, 169, 0, 0.1); }
+.input-box:focus-within { border-color: var(--color_input); background: white; box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1); }
 .field-icon { width: 18px; color: #94a3b8; }
 .field-input { flex: 1; border: none; background: transparent; padding: 12px 0; outline: none; font-size: 0.9rem; }
 
@@ -173,7 +173,7 @@ async function handleReset() {
 .eye-btn svg { width: 18px; height: 18px; }
 .eye-btn:hover { color: #475569; }
 
-.submit-btn { width: 100%; padding: 14px; background: #39a900; color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+.submit-btn { width: 100%; padding: 14px; background: var(--color_button); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: 0.3s; }
 .submit-btn:hover { background: #2e8b00; transform: translateY(-2px); box-shadow: 0 10px 15px rgba(57, 169, 0, 0.2); }
 .error-alert { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-top: 15px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .back-btn { background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.75rem; transition: 0.2s; }

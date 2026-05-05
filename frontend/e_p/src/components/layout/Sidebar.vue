@@ -60,7 +60,7 @@ const handleLogout = () => {
           <span class="logo-r">R</span>
         </div>
         <div class="logo-text-group">
-          <h1 class="logo-main">REPFORA</h1>
+          <h1 class="logo-main">REPFORA E.P.</h1>
           <p class="logo-sub">Portal</p>
         </div>
       </div>
@@ -117,7 +117,7 @@ const handleLogout = () => {
 .logo-icon {
   width: 1.75rem;
   height: 1.75rem;
-  background-color: #39A900;
+  background-color: var(--color_card);
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
@@ -181,7 +181,7 @@ const handleLogout = () => {
 }
 
 .nav-item.active {
-  background-color: #39A900;
+  background-color: var(--color_button);
   color: #ffffff;
 }
 

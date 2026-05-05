@@ -64,7 +64,7 @@ onUnmounted(() => {
   width: 50px;
   height: 50px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #39a900;
+  border-top: 4px solid var(--color_header);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 15px;

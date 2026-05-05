@@ -65,16 +65,27 @@ const handleLogout = () => {
       </div>
       
       <nav class="sidebar-nav">
-        <a href="#" class="nav-item active"><span class="material-symbols-outlined">grid_view</span> Tablero</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">group</span> Aprendices</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">menu_book</span> Currículo</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">task_alt</span> Evaluaciones</a>
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">bar_chart</span> Reportes</a>
+        <button @click="router.push('/dashboard')" class="nav-item active">
+          <span class="material-symbols-outlined">grid_view</span> Tablero
+        </button>
+        <button @click="router.push('/seguimiento')" class="nav-item">
+          <span class="material-symbols-outlined">assessment</span> Seguimiento
+        </button>
+        <button class="nav-item">
+          <span class="material-symbols-outlined">menu_book</span> Bitácoras
+        </button>
+        <button class="nav-item">
+          <span class="material-symbols-outlined">bar_chart</span> Reportes
+        </button>
       </nav>
 
       <div class="sidebar-footer">
-        <a href="#" class="nav-item"><span class="material-symbols-outlined">help</span> Soporte</a>
-        <button @click="handleLogout" class="nav-item logout-btn"><span class="material-symbols-outlined">logout</span> Cerrar Sesión</button>
+        <button class="btn-new-visit-sidebar">
+          <span class="material-symbols-outlined">add_circle</span> New Technical Visit
+        </button>
+        <button @click="handleLogout" class="nav-item logout-btn">
+          <span class="material-symbols-outlined">logout</span> Cerrar Sesión
+        </button>
       </div>
     </aside>
 
@@ -89,7 +100,7 @@ const handleLogout = () => {
           <div class="user-profile">
             <span class="user-name">{{ currentUser.name }}</span>
             <div class="user-avatar">
-              <img src="https://ui-avatars.com/api/?name=Usuario&background=39a900&color=fff" alt="Avatar del Usuario">
+              <img src="https://ui-avatars.com/api/?name=Usuario&background=2e7d32&color=fff" alt="Avatar del Usuario">
             </div>
           </div>
         </div>
@@ -299,13 +310,31 @@ const handleLogout = () => {
 
 .nav-item:hover { color: #334155; background: #F8FAFC; }
 .nav-item.active {
-  color: #39A900;
+  color: var(--color_button);
   background: #F0FDF4;
-  border-left: 4px solid #39A900;
+  border-left: 4px solid var(--color_button);
   border-radius: 4px 12px 12px 4px;
 }
 
-.sidebar-footer { padding: 24px 16px; border-top: 1px solid #F1F5F9; }
+.sidebar-footer { padding: 24px 16px; border-top: 1px solid #F1F5F9; display: flex; flex-direction: column; gap: 12px; }
+.btn-new-visit-sidebar {
+  width: 100%;
+  background: #1A4D2E;
+  color: #FFF;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 8px;
+}
+.btn-new-visit-sidebar:hover { background: #143b23; }
 .logout-btn:hover { color: #EF4444; }
 
 /* --- Main Layout --- */
@@ -337,7 +366,7 @@ const handleLogout = () => {
 
 .topbar-actions { display: flex; align-items: center; gap: 24px; }
 .btn-new {
-  background: #39A900;
+  background: var(--color_card);
   color: #FFF;
   border: none;
   padding: 10px 20px;
@@ -372,7 +401,7 @@ const handleLogout = () => {
 
 .company-details { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .detail-item { display: flex; align-items: center; gap: 12px; background: #F8FAFC; padding: 12px; border-radius: 12px; border: 1px solid #F1F5F9; }
-.detail-item .icon { width: 36px; height: 36px; background: #FFF; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #39A900; box-shadow: 0 2px 8px rgba(0,0,0,0.02); flex-shrink: 0; }
+.detail-item .icon { width: 36px; height: 36px; background: #FFF; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--color_button); box-shadow: 0 2px 8px rgba(0,0,0,0.02); flex-shrink: 0; }
 .detail-item .key { display: block; font-size: 9px; font-weight: 900; color: #94A3B8; margin-bottom: 2px; }
 .detail-item .val { font-size: 13px; font-weight: 700; color: #1E293B; }
 
@@ -408,7 +437,7 @@ const handleLogout = () => {
 .badge.pending .dot { background: #E11D48; }
 
 .action-btn { color: #CBD5E1; cursor: pointer; transition: color 0.2s; }
-.action-btn:hover { color: #39A900; }
+.action-btn:hover { color: var(--color_button); }
 
 .table-footer { padding: 24px 32px; background: #F8FAFC; border-top: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center; }
 .footer-stats { font-size: 10px; font-weight: 900; color: #94A3B8; letter-spacing: 0.5px; }
@@ -418,7 +447,7 @@ const handleLogout = () => {
 /* --- Banner --- */
 .reminder-banner { background: #F1F5F9; border-radius: 24px; padding: 32px; display: flex; justify-content: space-between; align-items: center; margin-top: 32px; border: 1px solid #E2E8F0; }
 .reminder-content { display: flex; align-items: center; gap: 24px; }
-.lamp-icon { width: 56px; height: 56px; background: #FFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #39A900; border: 1px solid #E2E8F0; flex-shrink: 0; }
+.lamp-icon { width: 56px; height: 56px; background: #FFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color_button); border: 1px solid #E2E8F0; flex-shrink: 0; }
 .rtitle { display: block; font-size: 14px; font-weight: 700; color: #1E293B; margin-bottom: 4px; }
 .rdesc { font-size: 12px; color: #94A3B8; font-weight: 500; max-width: 500px; margin: 0; }
 .btn-cal { background: #E2E8F0; border: none; padding: 12px 24px; border-radius: 12px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer; white-space: nowrap; }

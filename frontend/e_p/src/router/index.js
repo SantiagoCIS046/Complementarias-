@@ -14,7 +14,7 @@ const routes = [
   {
     path: '/seguimiento',
     name: 'seguimiento',
-    component: () => import('@/modules/operation-tracking-dev3/views/TrackingCalendar.vue')
+    component: () => import('@/modules/ep-management-dev2/views/EPSeguimiento.vue')
   },
   {
     path: '/bitacoras',

@@ -1,64 +1,115 @@
-// seed.js - DEV 1 | Agregando usuario de prueba personal
+// seed.js - Script de Sembrado Real para RepFora E.P.
+// Usa los modelos REALES del backend para evitar conflictos de esquema
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-require('dotenv').config();
+const path = require('path');
 
+// Cargar variables de entorno del backend
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+// Importar el modelo REAL del backend (con el middleware de hashing)
 const User = require('./src/modules/users-dev1/user.model');
-// const SystemConfig = require('./src/modules/system-config-dev1/SystemConfig.model');
+const Company = require('./src/modules/companies-dev2/company.model');
+const ProductiveStage = require('./src/modules/productive-stages-dev2/productive-stage.model');
 
-async function main() {
-  console.log('🌱 Limpiando y actualizando usuarios...');
-  await mongoose.connect(process.env.MONGO_URI);
+// Usa la MISMA conexión que el backend (MongoDB Atlas)
+const MONGO_URI = process.env.MONGO_URI;
+console.log('📡 Base de datos destino:', MONGO_URI ? 'MongoDB Atlas (Nube)' : '❌ MONGO_URI no encontrada');
 
-  // Limpiar usuarios existentes para evitar conflictos de duplicados
-  await User.deleteMany({});
+async function runSeed() {
+  try {
+    console.log('🚀 Conectando a MongoDB...');
+    await mongoose.connect(MONGO_URI);
+    
+    // Limpieza
+    await User.deleteMany({});
+    await Company.deleteMany({});
+    await ProductiveStage.deleteMany({});
+    console.log('🗑️  Colecciones limpiadas.');
 
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+    // CONTRASEÑA EN TEXTO PLANO - el modelo real la hashea automáticamente
+    const PASSWORD = 'sena2024';
 
-  // 🛡️ DEV 1: USUARIOS DE ADMINISTRACIÓN (Seguridad y Gestión)
-  const adminUsers = [
-    { email: 'santiago@repfora.com', documento: '1100976876', name: 'Santiago Cisneros', role: 'ADMIN' },
-    { email: 'santiagocisneros046@gmail.com', documento: '1100976877', name: 'Santiago Personal', role: 'ADMIN' }
-  ];
+    // 1. ADMINISTRADOR
+    const admin = await User.create({
+      name: 'Administrador del Sistema Santiago Cisneros',
+      email: 'santiagocisneros046@gmail.com',
+      password: PASSWORD,
+      role: 'ADMIN',
+      documento: '1037658690'
+    });
+    console.log('✅ Admin creado:', admin.email);
 
-  for (const u of adminUsers) {
-    await User.findOneAndUpdate(
-      { email: u.email },
-      { ...u, password: hashedPassword, status: 'ACTIVO', isFirstLogin: false },
-      { upsert: true }
-    );
+    // 2. INSTRUCTOR
+    const instructor = await User.create({
+      name: 'Martin',
+      email: 'martin@gmail.com',
+      password: PASSWORD,
+      role: 'INSTRUCTOR',
+      documento: '123475869'
+    });
+    console.log('✅ Instructor creado:', instructor.email);
+
+    // 3. APRENDICES (vinculados al instructor)
+    const a1 = await User.create({
+      name: 'Juan Mancilla',
+      email: 'mancilla@gmail.com',
+      password: PASSWORD,
+      role: 'APRENDIZ',
+      documento: '1037000111',
+      instructorAsignado: instructor._id
+    });
+
+    const a2 = await User.create({
+      name: 'Daniela Palacio',
+      email: 'dpalacio@soy.sena.edu.co',
+      password: PASSWORD,
+      role: 'APRENDIZ',
+      documento: '1037000333',
+      instructorAsignado: instructor._id
+    });
+    console.log('✅ Aprendices creados: Juan Mancilla, Daniela Palacio');
+
+    // 4. EMPRESAS
+    const co1 = await Company.create({ razonSocial: 'Bancolombia S.A.', nit: '890.903.938-8' });
+    const co2 = await Company.create({ razonSocial: 'Software Innovación S.A.S', nit: '900.123.456-7' });
+    console.log('✅ Empresas creadas: Bancolombia, Software Innovación');
+
+    // 5. ETAPAS PRODUCTIVAS (valores del enum real: enums.js)
+    await ProductiveStage.create({
+      apprenticeId: a1._id,
+      instructorId: instructor._id,
+      companyId: co1._id,
+      ficha: '2670687',
+      estado: 'REGISTRO',
+      tipoFormacion: 'PRESENCIAL',
+      modalidad: 'CONTRATO_APRENDIZAJE',
+      horasCompletadas: 320,
+      horasRequeridas: 864
+    });
+
+    await ProductiveStage.create({
+      apprenticeId: a2._id,
+      instructorId: instructor._id,
+      companyId: co2._id,
+      ficha: '2558342',
+      estado: 'REGISTRO',
+      tipoFormacion: 'PRESENCIAL',
+      modalidad: 'VINCULACION_LABORAL',
+      horasCompletadas: 864,
+      horasRequeridas: 864
+    });
+    console.log('✅ Etapas productivas vinculadas.');
+
+    console.log('\n--- ✅ SINCRONIZACIÓN EXITOSA ---');
+    console.log('🔑 ADMIN:      santiagocisneros046@gmail.com / sena2024');
+    console.log('🔑 INSTRUCTOR: martin@gmail.com / sena2024');
+    console.log('🔑 APRENDIZ:   mancilla@gmail.com / sena2024');
+    
+    process.exit(0);
+  } catch (err) {
+    console.error('❌ Error en el seed:', err.message);
+    process.exit(1);
   }
-
-  // 🟢 DEV 2: USUARIOS APRENDICES (Flujo de Inicio y Documentos)
-  const apprenticeUsers = [
-    { email: 'mancilla@gmail.com', documento: '99999999', name: 'Aprendiz Mancilla', role: 'APRENDIZ' },
-    { email: 'carlos@gmail.com', documento: '77777777', name: 'Aprendiz Carlos', role: 'APRENDIZ' }
-  ];
-
-  for (const u of apprenticeUsers) {
-    await User.findOneAndUpdate(
-      { email: u.email },
-      { ...u, password: await bcrypt.hash(u.name.split(' ')[1].toLowerCase() + '123', 10), status: 'ACTIVO' },
-      { upsert: true }
-    );
-  }
-
-  // 🔵 DEV 3: USUARIOS INSTRUCTORES (Seguimiento y Bitácoras)
-  const instructorUsers = [
-    { email: 'martin@gmail.com', documento: '88888888', name: 'Instructor Martin', role: 'INSTRUCTOR' },
-    { email: 'elena@gmail.com', documento: '66666666', name: 'Instructora Elena', role: 'INSTRUCTOR' }
-  ];
-
-  for (const u of instructorUsers) {
-    await User.findOneAndUpdate(
-      { email: u.email },
-      { ...u, password: await bcrypt.hash(u.name.split(' ')[1].toLowerCase() + '123', 10), status: 'ACTIVO' },
-      { upsert: true }
-    );
-  }
-
-  console.log('✅ Base de datos poblada con éxito');
-  await mongoose.disconnect();
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+runSeed();

@@ -8,48 +8,79 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const currentUser = computed(() => authStore.user || { name: 'Usuario', role: 'Invitado' })
-const aprendiz = ref({
-  nombre: 'Cargando...',
-  estadoActual: 'EN REVISIÓN',
-  horasCompletadas: 0,
-  horasTotales: 864,
-  progresoPorcentaje: 0,
-  razonSocial: '---',
-  nit: '---',
-  jefe: '---',
-  telefono: '---'
+const stage = ref(null)
+const loading = ref(true)
+const error = ref(null)
+
+const aprendiz = computed(() => {
+  if (!stage.value) return { nombre: '---', estadoActual: '---', horasCompletadas: 0, horasTotales: 864, progresoPorcentaje: 0, razonSocial: '---', nit: '---', jefe: '---', telefono: '---' }
+  const s = stage.value
+  return {
+    nombre: s.apprenticeId?.name || currentUser.value.name,
+    estadoActual: s.estado || '---',
+    horasCompletadas: s.horasCompletadas || 0,
+    horasTotales: s.horasRequeridas || 864,
+    progresoPorcentaje: s.horasRequeridas > 0 ? Math.round((s.horasCompletadas / s.horasRequeridas) * 100) : 0,
+    razonSocial: s.companyId?.razonSocial || s.companySnapshot?.razonSocial || '---',
+    nit: s.companyId?.nit || s.companySnapshot?.nit || '---',
+    jefe: s.companySnapshot?.jefeInmediato || '---',
+    telefono: s.companySnapshot?.telefonoJefe || s.companySnapshot?.telefonoContacto || '---'
+  }
 })
 
-const bitacoras = ref([
-  { numero: '08', rango: '01 Oct - 15 Oct, 2023', horas: '80h', estado: 'APROBADO' },
-  { numero: '09', rango: '16 Oct - 30 Oct, 2023', horas: '80h', estado: 'PENDIENTE' },
-  { numero: '10', rango: '01 Nov - 15 Nov, 2023', horas: '40h', estado: 'PENDIENTE' }
-])
+const bitacoras = ref([])
 
-onMounted(async () => {
+// Modal nueva bitácora
+const showModal = ref(false)
+const saving = ref(false)
+const submitError = ref(null)
+const form = ref({ semana: '', descripcion: '', horasReportadas: '' })
+
+// Enviar a revisión
+const enviando = ref(false)
+const msgRevision = ref(null)
+const puedeEnviarRevision = computed(() => stage.value?.estado === 'REGISTRO')
+
+async function load() {
+  loading.value = true; error.value = null
   try {
     const res = await epService.getAll()
-    if (res.data?.data?.length > 0) {
-      const s = res.data.data[0]
-      aprendiz.value = {
-        nombre: s.apprenticeId?.name || 'Aprendiz',
-        estadoActual: s.estado || 'EN REVISIÓN',
-        horasCompletadas: s.horasCompletadas || 0,
-        horasTotales: s.horasRequeridas || 864,
-        progresoPorcentaje: s.horasRequeridas > 0 ? Math.round((s.horasCompletadas / s.horasRequeridas) * 100) : 0,
-        razonSocial: s.companyId?.razonSocial || '---',
-        nit: s.companyId?.nit || '---',
-        jefe: s.companySnapshot?.jefeInmediato || '---',
-        telefono: s.companySnapshot?.telefonoContacto || '---'
-      }
+    const stages = res.data?.data || []
+    if (stages.length > 0) {
+      stage.value = stages[0]
+      const bRes = await epService.getBitacorasByStage(stage.value._id)
+      bitacoras.value = bRes.data?.data || []
     }
-  } catch (e) { console.error(e) }
-})
-
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
+  } catch (e) { error.value = 'No se pudo cargar la información.' }
+  finally { loading.value = false }
 }
+
+async function enviarRevision() {
+  enviando.value = true; msgRevision.value = null
+  try {
+    await epService.enviarARevision(stage.value._id)
+    msgRevision.value = { type: 'ok', text: 'EP enviada a revisión exitosamente.' }
+    await load()
+  } catch (e) {
+    msgRevision.value = { type: 'err', text: e.response?.data?.message || 'Error al enviar.' }
+  } finally { enviando.value = false }
+}
+
+async function crearBitacora() {
+  saving.value = true; submitError.value = null
+  try {
+    await epService.crearBitacora({ stageId: stage.value._id, semana: Number(form.value.semana), descripcion: form.value.descripcion, horasReportadas: Number(form.value.horasReportadas) })
+    showModal.value = false
+    form.value = { semana: '', descripcion: '', horasReportadas: '' }
+    const bRes = await epService.getBitacorasByStage(stage.value._id)
+    bitacoras.value = bRes.data?.data || []
+  } catch (e) { submitError.value = e.response?.data?.message || 'Error al guardar.' }
+  finally { saving.value = false }
+}
+
+const handleLogout = () => { authStore.logout(); router.push('/login') }
+
+onMounted(load)
 </script>
 
 <template>
@@ -94,7 +125,9 @@ const handleLogout = () => {
       <header class="topbar">
         <h2 class="page-title">Seguimiento de Aprendiz</h2>
         <div class="topbar-actions">
-          <button class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
+          <button v-if="puedeEnviarRevision" @click="enviarRevision" :disabled="enviando" class="btn-new" style="background:#3B82F6">{{ enviando ? 'Enviando...' : 'Enviar a Revisión' }}</button>
+          <button @click="showModal = true" class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
+          <div v-if="msgRevision" :style="{ fontSize:'11px', fontWeight:'700', padding:'6px 12px', borderRadius:'8px', background: msgRevision.type==='ok'?'#F0FDF4':'#FFF1F2', color: msgRevision.type==='ok'?'#16A34A':'#E11D48' }">{{ msgRevision.text }}</div>
           <div class="divider"></div>
           <span class="material-symbols-outlined notification">notifications</span>
           <div class="user-profile">
@@ -180,27 +213,30 @@ const handleLogout = () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in bitacoras" :key="item.numero">
-                <td class="bold">Bitácora #{{ item.numero }}</td>
+              <tr v-if="bitacoras.length === 0">
+                <td colspan="5" style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No tienes bitácoras registradas aún.</td>
+              </tr>
+              <tr v-for="(item, i) in bitacoras" :key="item._id">
+                <td class="bold">Bitácora #{{ String(i + 1).padStart(2, '0') }}</td>
                 <td class="faded">
-                  <span class="material-symbols-outlined mini">calendar_today</span> {{ item.rango }}
+                  <span class="material-symbols-outlined mini">calendar_today</span> {{ item.descripcion }}
                 </td>
-                <td class="center"><span class="hours-badge">{{ item.horas }}</span></td>
+                <td class="center"><span class="hours-badge">{{ item.horasReportadas }}h</span></td>
                 <td class="center">
-                  <span class="badge" :class="item.estado === 'APROBADO' ? 'success' : 'pending'">
+                  <span class="badge" :class="item.estado === 'APROBADA' ? 'success' : 'pending'">
                     <span class="dot"></span> {{ item.estado }}
                   </span>
                 </td>
                 <td class="right">
                   <span class="material-symbols-outlined action-btn">
-                    {{ item.estado === 'APROBADO' ? 'visibility' : 'edit_square' }}
+                    {{ item.estado === 'APROBADA' ? 'visibility' : 'edit_square' }}
                   </span>
                 </td>
               </tr>
             </tbody>
           </table>
           <div class="table-footer">
-            <span class="footer-stats">MOSTRANDO 3 DE 10 REGISTROS</span>
+            <span class="footer-stats">MOSTRANDO {{ bitacoras.length }} REGISTRO{{ bitacoras.length !== 1 ? 'S' : '' }}</span>
             <div class="pagination">
               <button class="pag-btn">Anterior</button>
               <button class="pag-btn">Siguiente</button>
@@ -220,12 +256,54 @@ const handleLogout = () => {
           <button class="btn-cal">Ver Calendario de Fechas</button>
         </div>
       </main>
+
+      <!-- LOADING -->
+      <div v-if="loading" style="position:fixed;inset:0;background:rgba(255,255,255,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:300">
+        <div class="ep-spinner"></div>
+        <p style="font-size:13px;color:#64748B;font-weight:600">Cargando información...</p>
+      </div>
+
+      <!-- ERROR -->
+      <div v-if="error && !loading" style="margin:24px;padding:16px 20px;background:#FFF1F2;border-radius:12px;color:#E11D48;font-size:13px;font-weight:600;display:flex;align-items:center;gap:12px">
+        <span class="material-symbols-outlined">error</span> {{ error }}
+        <button @click="load" style="margin-left:auto;background:#E11D48;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Reintentar</button>
+      </div>
+    </div>
+
+    <!-- MODAL NUEVA BITÁCORA -->
+    <div v-if="showModal" @click.self="showModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
+      <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #F1F5F9">
+          <h3 style="font-size:16px;font-weight:800;color:#1E293B;margin:0">Nueva Bitácora</h3>
+          <button @click="showModal = false" style="background:none;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:11px;font-weight:700;color:#64748B">Número de Semana</label>
+            <input v-model="form.semana" type="number" min="1" placeholder="Ej: 1" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:11px;font-weight:700;color:#64748B">Descripción de Actividades</label>
+            <textarea v-model="form.descripcion" rows="4" placeholder="Describe las actividades realizadas..." style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%;resize:vertical;font-family:inherit"></textarea>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:11px;font-weight:700;color:#64748B">Horas Reportadas</label>
+            <input v-model="form.horasReportadas" type="number" min="0" placeholder="Ej: 40" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
+          </div>
+          <div v-if="submitError" style="font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;background:#FFF1F2;color:#E11D48">{{ submitError }}</div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+            <button @click="showModal = false" style="background:#F1F5F9;color:#475569;border:none;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Cancelar</button>
+            <button @click="crearBitacora" :disabled="saving" class="btn-new">{{ saving ? 'Guardando...' : 'Guardar Bitácora' }}</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
 
 /* --- Reset & Base --- */
 .repfora-dashboard {
@@ -455,8 +533,13 @@ const handleLogout = () => {
 /* --- Material Symbols --- */
 .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
 
+/* --- Spinner --- */
+.ep-spinner { width: 40px; height: 40px; border: 4px solid #F1F5F9; border-top: 4px solid #1A4D2E; border-radius: 50%; animation: ep-spin .8s linear infinite; }
+@keyframes ep-spin { to { transform: rotate(360deg); } }
+
 /* --- Responsiveness fixes --- */
 @media (max-width: 1200px) {
   .info-grid { grid-template-columns: 1fr; }
 }
 </style>
+

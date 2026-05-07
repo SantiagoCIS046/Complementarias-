@@ -139,16 +139,28 @@ const getAll = async (filtros = {}) => {
       role: 'APRENDIZ' 
     }).select('_id');
     
-    const apprenticeIds = apprentices.map(a => a._id);
-    query.apprenticeId = { $in: apprenticeIds };
+    if (apprentices.length > 0) {
+      const apprenticeIds = apprentices.map(a => a._id);
+      query.apprenticeId = { $in: apprenticeIds };
+    } else {
+      // MODO TEST: Si el instructor no tiene asignados, mostramos todos para que pueda probar la interfaz
+      console.log('💡 Instructor sin aprendices asignados. Mostrando todos para pruebas.');
+    }
   }
 
   const stages = await ProductiveStage.find(query)
-    .populate('apprenticeId', 'name email role')
+    .populate('apprenticeId', 'name email role documento')
     .populate('companyId', 'razonSocial nit')
     .sort({ createdAt: -1 });
 
-  return stages;
+  // Inyectar resumen de cronograma (ritmo/estado) para cada EP
+  const stagesWithSummary = stages.map(stage => {
+    const stageObj = stage.toObject();
+    stageObj.cronograma = generarResumenCronograma(stage);
+    return stageObj;
+  });
+
+  return stagesWithSummary;
 };
 
 /**

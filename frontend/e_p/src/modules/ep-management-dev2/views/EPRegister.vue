@@ -1,6 +1,10 @@
   <script setup>
   import { ref, reactive } from 'vue'
   import { useRouter } from 'vue-router'
+  import Sidebar from '@/components/layout/Sidebar.vue'
+  import Header from '@/components/layout/Header.vue'
+  import BtnBack from '@/layouts/btnBackLayout.vue'
+  import HeaderLayout from '@/layouts/headerViewsLayout.vue'
 
   const router = useRouter()
 
@@ -35,67 +39,21 @@
   </script>
 
   <template>
-    <div class="min-h-screen bg-[#f8f9fa] font-sans text-gray-800 antialiased">
-      
-      <!-- Sidebar -->
-      <aside class="hidden lg:flex w-64 fixed left-0 top-0 h-full flex-col bg-[#f4f5f6] border-r border-gray-200 z-50">
-        <div class="p-6 mb-2 flex items-center gap-3">
-          <div class="w-10 h-10 bg-green-700 rounded-lg flex items-center justify-center text-white shadow-sm">
-            <span class="material-symbols-outlined text-[24px]">architecture</span>
-          </div>
-          <div>
-            <h2 class="font-bold text-gray-900 text-sm leading-tight">Gestión EP</h2>
-            <p class="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">SENA CORE</p>
-          </div>
-        </div>
-        
-        <nav class="flex-1 px-3 space-y-1">
-          <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
-            <span class="material-symbols-outlined text-[20px]">grid_view</span> DASHBOARD
-          </a>
-          <a href="#" class="flex items-center gap-3 px-4 py-3 text-xs font-bold text-green-700 bg-white rounded-xl shadow-sm border-l-4 border-green-700 transition-colors">
-            <span class="material-symbols-outlined text-[20px]">bar_chart</span> ETAPA PRODUCTIVA
-          </a>
-          <a href="#" class="flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
-            <span class="material-symbols-outlined text-[20px]">domain</span> DIRECTORIO
-          </a>
-        </nav>
+    <div class="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
+      <Sidebar />
 
-        <div class="p-4 mt-auto border-t border-gray-200">
-          <button @click="handleLogout" class="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
-            <span class="material-symbols-outlined text-[20px]">logout</span> CERRAR SESIÓN
-          </button>
-        </div>
-      </aside>
+      <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Header />
 
-      <!-- Main Wrapper -->
-      <div class="lg:pl-64 flex flex-col min-h-screen">
-        
-        <!-- Top Nav -->
-        <nav class="h-16 bg-[#f8f9fa] px-8 flex items-center justify-between sticky top-0 z-40">
-          <div class="flex items-center gap-8">
-            <span class="text-green-700 font-extrabold tracking-tight text-lg">REPFORA</span>
-          </div>
-          <div class="flex items-center gap-4">
-            <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
-              <div class="text-right hidden sm:block">
-                <p class="text-xs font-bold text-gray-900 leading-none">Admin User</p>
-                <p class="text-[10px] text-gray-500 font-medium">Coordinador EP</p>
-              </div>
-              <div class="h-8 w-8 rounded-full bg-gray-200 overflow-hidden border border-gray-300">
-                <img src="https://ui-avatars.com/api/?name=Admin+User&background=16a34a&color=fff" alt="Avatar" class="w-full h-full object-cover" />
-              </div>
-            </div>
-          </div>
-        </nav>
+        <main class="flex-1 overflow-y-auto p-6 lg:p-8">
+          <div class="w-full space-y-4">
+            <!-- 1. Botón volver -->
+            <BtnBack route="/dashboard" />
 
-        <!-- Main Content -->
-        <main class="flex-1 px-8 py-8 max-w-[1200px] w-full mx-auto">
-          
-          <div class="mb-8">
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Registro de Etapa Productiva</h1>
-            <p class="text-gray-500 text-sm mt-1">Completa los pasos para formalizar tu proceso institucional.</p>
-          </div>
+            <!-- 2. Título de sección con separador verde -->
+            <HeaderLayout title="Registro de Etapa Productiva" />
+
+            <p class="text-gray-500 font-medium q-mb-lg">Completa los pasos para formalizar tu proceso institucional.</p>
 
           <!-- Stepper -->
           <div class="bg-white rounded-3xl p-8 mb-8 shadow-sm border border-gray-100">
@@ -182,16 +140,17 @@
             <!-- Buttons -->
             <div class="mt-12 flex justify-between items-center border-t border-gray-100 pt-8">
               <button @click="prevStep" :disabled="currentStep === 1" class="px-6 py-3 rounded-xl text-sm font-bold text-gray-400 hover:text-gray-900 transition-all disabled:opacity-0">Atrás</button>
-              <button @click="currentStep === totalSteps ? handleFinish() : nextStep()" class="px-8 py-3.5 rounded-2xl bg-green-700 text-white font-bold shadow-lg hover:bg-green-800 transition-all flex items-center gap-3">
+              <button @click="currentStep === totalSteps ? handleFinish() : nextStep()" class="px-8 py-3.5 rounded-2xl bg-green-9 text-white font-bold shadow-lg hover:bg-green-10 transition-all flex items-center gap-3">
                 {{ currentStep === totalSteps ? 'Enviar Registro' : 'Siguiente Paso' }}
                 <span class="material-symbols-outlined text-[20px]">{{ currentStep === totalSteps ? 'send' : 'arrow_forward' }}</span>
               </button>
+            </div>
             </div>
           </div>
         </main>
       </div>
     </div>
-  </template>
+</template>
 
   <style scoped>
   .font-sans { font-family: 'Inter', system-ui, sans-serif; }

@@ -2,7 +2,8 @@
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Header from '@/components/layout/Header.vue';
 import CompanyCard from '../components/CompanyCard.vue';
-import { Plus } from 'lucide-vue-next';
+import BtnBack from '@/layouts/btnBackLayout.vue';
+import HeaderLayout from '@/layouts/headerViewsLayout.vue';
 
 const companies = [
   {
@@ -50,29 +51,38 @@ const filters = [
       <Header />
 
       <main class="flex-1 overflow-y-auto p-12 lg:p-16">
-        <div class="max-w-7xl mx-auto space-y-12">
-          <!-- Header Section -->
-          <div class="flex items-start justify-between">
-            <div class="space-y-2">
-              <h1 class="text-5xl font-black text-gray-800 tracking-tighter">Directorio de Empresas</h1>
-              <p class="text-lg text-gray-400 font-medium">Gestión integral de aliados corporativos y convenios.</p>
-            </div>
-            <button class="flex items-center gap-3 bg-sena-green text-white px-8 py-5 rounded-[1.25rem] font-bold text-sm shadow-xl shadow-green-100 hover:bg-sena-green-dark hover:-translate-y-1 transition-all active:translate-y-0">
-              <Plus :size="20" stroke-width="3" />
-              Nueva Empresa
+        <div class="max-w-7xl mx-auto space-y-8">
+          <!-- 1. Botón volver -->
+          <BtnBack route="/dashboard" />
+
+          <!-- 2. Título de sección con separador verde -->
+          <HeaderLayout title="Directorio de Empresas" />
+
+          <!-- 3. Barra superior: botón Crear + filtro/buscador -->
+          <div class="row items-center justify-between flex gap-6">
+            <button class="bg-green-9 text-white px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-green-10 transition-all shadow-md">
+              <span class="material-symbols-outlined" style="font-size: 20px">add_circle</span>
+              Crear Nueva Empresa
             </button>
+            
+            <div class="flex-1 max-w-md">
+              <div class="input-box-repfora">
+                <span class="material-symbols-outlined icon-prepend">search</span>
+                <input type="text" placeholder="Buscar empresa..." class="field-input-native" />
+              </div>
+            </div>
           </div>
 
           <!-- Filters -->
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3 q-mt-md">
             <button 
               v-for="filter in filters" 
               :key="filter.label"
               :class="[
-                'px-8 py-3 rounded-full text-xs font-extrabold transition-all',
+                'px-6 py-2 rounded-full text-xs font-bold transition-all border',
                 filter.active 
-                  ? 'bg-sena-green text-white shadow-lg shadow-green-100' 
-                  : 'bg-white text-gray-400 border border-gray-100 hover:bg-gray-50'
+                  ? 'bg-green-10 text-white border-green-10 shadow-sm' 
+                  : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
               ]"
             >
               {{ filter.label }}
@@ -94,9 +104,21 @@ const filters = [
   </div>
 </template>
 
-<style scoped>
-/* Ensure clean typography */
-h1 {
-  letter-spacing: -0.05em;
+/* Estilos adicionales para compatibilidad con la guía */
+.bg-green-9 { background-color: var(--color_button); }
+.bg-green-10 { background-color: #1b5e20; }
+.text-white { color: white; }
+
+.input-box-repfora {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  transition: all 0.2s;
 }
+.icon-prepend { color: var(--color_input); font-size: 20px; }
+.field-input-native { flex: 1; border: none; background: transparent; padding: 10px 0; outline: none; font-size: 0.9rem; }
 </style>

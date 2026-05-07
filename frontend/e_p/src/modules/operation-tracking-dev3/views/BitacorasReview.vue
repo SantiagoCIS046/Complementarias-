@@ -1,23 +1,15 @@
 <template>
-  <div class="bitacoras-layout">
+  <div class="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
     <Sidebar />
-    <div class="main-wrapper">
-      <!-- Top Search Bar -->
-      <header class="top-nav-bitacoras">
-        <div class="nav-brand">
-          <span class="material-symbols-outlined icon-main">description</span>
-          <h1>Gestión de Bitácoras</h1>
-        </div>
-        <div class="nav-search">
-          <span class="material-symbols-outlined">search</span>
-          <input type="text" placeholder="Buscar entregas, fichas o aprendices..." />
-        </div>
-        <div class="nav-actions">
-          <button class="nav-btn"><span class="material-symbols-outlined">notifications</span></button>
-          <button class="nav-btn"><span class="material-symbols-outlined">settings</span></button>
-          <div class="user-avatar-mini"></div>
-        </div>
-      </header>
+
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <Header />
+
+      <main class="flex-1 overflow-y-auto p-8 lg:p-12">
+        <div class="w-full space-y-2">
+
+          <!-- 2. Título de sección con separador verde -->
+          <HeaderLayout title="Gestión de Bitácoras" icon="assignment" />
 
       <div class="content-columns">
         <!-- Columna 1: Fichas -->
@@ -96,7 +88,7 @@
         </section>
 
         <!-- Columna 3: Detalle / Revisión -->
-        <main class="column-revision">
+        <section class="column-revision">
           <div class="revision-scroll">
             <header class="revision-header">
               <div class="user-profile">
@@ -179,14 +171,19 @@
               </button>
             </footer>
           </div>
-        </main>
+        </section>
       </div>
     </div>
-  </div>
+  </main>
+</div>
+</div>
 </template>
 
 <script setup>
 import Sidebar from '@/components/layout/Sidebar.vue'
+import Header from '@/components/layout/Header.vue'
+import BtnBack from '@/layouts/btnBackLayout.vue'
+import HeaderLayout from '@/layouts/headerViewsLayout.vue'
 </script>
 
 <style scoped>
@@ -250,7 +247,7 @@ import Sidebar from '@/components/layout/Sidebar.vue'
 
 /* Columna Revisión */
 .column-revision { background: white; overflow-y: auto; }
-.revision-scroll { padding: 1rem; max-width: 800px; margin: 0 auto; }
+.revision-scroll { padding: 1rem; width: 100%; }
 
 .revision-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; }
 .user-profile { display: flex; align-items: center; gap: 12px; }
@@ -293,7 +290,7 @@ import Sidebar from '@/components/layout/Sidebar.vue'
 .pdf-zoom button { background: none; border: none; color: #a0aec0; cursor: pointer; }
 
 .pdf-mockup { background: #1e1e1e; padding: 1rem; min-height: 300px; display: flex; justify-content: center; }
-.pdf-page { background: white; width: 100%; max-width: 600px; padding: 1.5rem; border-radius: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+.pdf-page { background: white; width: 100%; padding: 1.5rem; border-radius: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
 .pdf-skeleton { background: #f1f5f9; border-radius: 4px; margin-bottom: 6px; }
 .pdf-skeleton.title { height: 12px; width: 40%; margin-bottom: 14px; }
 .pdf-skeleton.line { height: 6px; width: 100%; }
@@ -303,5 +300,5 @@ import Sidebar from '@/components/layout/Sidebar.vue'
 /* Revision Actions */
 .revision-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #edf2f7; }
 .btn-reject { padding: 10px; border-radius: 10px; border: 2px solid #c53030; color: #c53030; background: white; font-weight: 800; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.btn-approve { padding: 10px; border-radius: 10px; border: none; background: var(--color_button, #2e7d32); color: white; font-weight: 800; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-approve { padding: 10px; border-radius: 10px; border: none; background: var(--color_button); color: white; font-weight: 800; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
 </style>

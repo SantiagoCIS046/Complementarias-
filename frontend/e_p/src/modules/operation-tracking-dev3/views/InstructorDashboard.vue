@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import Sidebar from '@/components/layout/Sidebar.vue'
-import Header from '@/components/layout/Header.vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { trackingService } from '../services/tracking.service'
+import Sidebar from '@/components/layout/Sidebar.vue'
+import Header from '@/components/layout/Header.vue'
+import HeaderLayout from '@/layouts/headerViewsLayout.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -132,7 +133,7 @@ const filteredApprentices = computed(() => {
 })
 
 const viewDetails = (app) => {
-  router.push({ name: 'bitacoras', query: { id: app.id, name: app.name, ficha: app.ficha } })
+  router.push({ name: 'BitacorasReview', query: { id: app.id, name: app.name, ficha: app.ficha } })
 }
 
 const resetFilters = () => {
@@ -166,29 +167,23 @@ const getPhaseStyle = (phase) => {
 </script>
 
 <template>
-  <div class="instructor-dashboard">
+  <div class="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
     <Sidebar />
 
-    <div class="main-wrapper">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <Header />
 
-      <main class="content-view">
-        
-        <div v-if="!isAuthenticated || errorMsg" class="access-denied-container">
-          <div class="denied-card">
-            <span class="material-symbols-outlined icon-denied">{{ errorMsg ? 'database_off' : 'lock_person' }}</span>
-            <h2>{{ errorMsg ? 'Sin Datos Reales' : 'Acceso Restringido' }}</h2>
-            <p>{{ errorMsg || 'Debe iniciar sesión para acceder.' }}</p>
-            <button @click="fetchApprentices" class="btn-login-return">Sincronizar de nuevo</button>
-          </div>
-        </div>
+      <main class="flex-1 overflow-y-auto p-8 lg:p-12">
+        <div class="w-full space-y-2">
+          <!-- Título de sección con separador verde -->
+          <HeaderLayout :title="'Panel del Instructor: ' + instructorName" icon="dashboard" />
 
-        <div v-else class="dashboard-inner">
-          <div class="dashboard-top-row">
-            <div class="page-title-group">
-              <h1 class="page-main-title">Panel del Instructor: {{ instructorName }}</h1>
-              <p class="page-subtitle">Visualización en tiempo real de la base de datos oficial.</p>
-            </div>
+          <div class="flex items-center justify-between gap-4 mb-2">
+            <p class="text-gray-500 font-medium text-xs">Visualización en tiempo real de la base de datos oficial.</p>
+            <button class="bg-green-9 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-green-10 transition-all" @click="fetchApprentices">
+              <span class="material-symbols-outlined text-sm">sync</span>
+              Sincronizar BD
+            </button>
           </div>
 
           <!-- Filtros -->
@@ -353,7 +348,7 @@ const getPhaseStyle = (phase) => {
 .instructor-dashboard { display: flex; height: 100vh; background-color: #F8FAF9; overflow: hidden; font-family: 'Inter', sans-serif; }
 .main-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .content-view { flex: 1; overflow-y: auto; padding: 1.5rem; background: #fbfcfb; }
-.dashboard-inner { max-width: 1400px; margin: 0 auto; }
+.dashboard-inner { width: 100%; }
 
 .access-denied-container { display: flex; align-items: center; justify-content: center; height: 70vh; }
 .denied-card { background: white; padding: 3rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.06); text-align: center; max-width: 450px; border: 1px solid #f1f5f9; }
@@ -404,10 +399,12 @@ const getPhaseStyle = (phase) => {
 .btn-action-view:hover { background: var(--color_button); color: white; border-color: var(--color_button); }
 .btn-action-view .material-symbols-outlined { font-size: 1rem; }
 
-.table-container-card { background: white; border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; overflow: hidden; position: relative; }
-.apprentices-table { width: 100%; border-collapse: collapse; }
-.apprentices-table th { background: var(--color_header); color: white; padding: 1rem; text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-.apprentices-table td { padding: 1rem; border-bottom: 1px solid #f1f5f9; }
+.bg-green-9 { background-color: var(--color_button); }
+.bg-green-10 { background-color: #1b5e20; }
+
+.apprentices-table { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
+.apprentices-table th { background: var(--color_header); color: white; padding: 0.75rem 1rem; text-align: left; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
+.apprentices-table td { padding: 0.65rem 1rem; border-bottom: 1px solid #f1f5f9; background: white; }
 
 .user-cell { display: flex; align-items: center; gap: 0.75rem; }
 .avatar { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; color: #15803d; }

@@ -16,7 +16,10 @@ const avatarUrl = computed(() => {
 <template>
   <header class="main-header">
     <div class="header-left">
-      <!-- Elementos de búsqueda y rol movidos al dashboard para mayor densidad -->
+      <div class="search-box">
+        <Search class="search-icon" :size="14" />
+        <input type="text" placeholder="Buscar entregas, fichas o aprendices..." class="search-input" />
+      </div>
     </div>
 
     <div class="header-right">
@@ -62,7 +65,7 @@ const avatarUrl = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.25rem;
+  padding: 0 2.5rem;
   position: sticky;
   top: 0;
   z-index: 50;
@@ -101,31 +104,34 @@ const avatarUrl = computed(() => {
 }
 
 .search-box {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #f8fafc;
-  border: 1px solid #f1f5f9;
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.625rem;
-  width: 200px;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.5rem;
+  width: 280px;
+  transition: all 0.2s;
 }
 
-@media (min-width: 1024px) {
-  .search-box { display: flex; }
+.search-box:focus-within {
+  background-color: #ffffff;
+  border-color: var(--color_header);
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
 }
 
 .search-icon {
-  color: #cbd5e1;
+  color: #94a3b8;
 }
 
 .search-input {
   background: transparent;
   border: none;
   outline: none;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #334155;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #1e293b;
   width: 100%;
 }
 

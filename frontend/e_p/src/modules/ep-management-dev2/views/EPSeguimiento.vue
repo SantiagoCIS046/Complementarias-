@@ -1,147 +1,150 @@
 <template>
-  <div class="dashboard-layout">
+  <div class="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
     <Sidebar />
-    <div class="main-content">
+
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <Header />
-      
-      <main class="page-container">
-        <!-- Header de la Página -->
-        <header class="page-header-premium">
-          <div class="header-titles">
-            <h1 class="page-main-title">Agenda de Seguimientos Técnicos</h1>
-            <p class="page-subtitle">Gestione las visitas y acompañamiento a sus aprendices en etapa productiva.</p>
-          </div>
-          <div class="header-date">
-            <span class="label">HOY</span>
-            <span class="date">{{ currentDate }}</span>
-          </div>
-        </header>
 
-        <!-- Tarjetas de Estadísticas -->
-        <section class="stats-grid-agenda">
-          <div class="stat-card-agenda">
-            <div class="stat-content">
-              <span class="stat-label">Visitas Pendientes</span>
-              <h2 class="stat-value">5</h2>
-            </div>
-            <div class="stat-icon-agenda bg-yellow-soft">
-              <span class="material-symbols-outlined">work_history</span>
-            </div>
-          </div>
-          
-          <div class="stat-card-agenda">
-            <div class="stat-content">
-              <span class="stat-label">Visitas Realizadas</span>
-              <h2 class="stat-value">12</h2>
-            </div>
-            <div class="stat-icon-agenda bg-green-soft">
-              <span class="material-symbols-outlined">task_alt</span>
+      <main class="flex-1 overflow-y-auto p-8 lg:p-12">
+        <div class="w-full space-y-2">
+
+          <!-- 2. Título de sección con separador verde -->
+          <HeaderLayout title="Agenda de Seguimientos Técnicos" icon="event_note" />
+
+          <div class="flex items-center justify-between gap-4 mb-2">
+            <p class="text-gray-500 font-medium text-xs">Gestione las visitas y acompañamiento a sus aprendices.</p>
+            <div class="header-date text-right">
+              <span class="label block text-[10px] font-bold text-gray-400 uppercase">HOY</span>
+              <span class="date font-bold text-gray-700">{{ currentDate }}</span>
             </div>
           </div>
 
-          <div class="stat-card-agenda">
-            <div class="stat-content">
-              <span class="stat-label">Próximas a Vencer</span>
-              <h2 class="stat-value">1</h2>
-            </div>
-            <div class="stat-icon-agenda bg-red-soft">
-              <span class="material-symbols-outlined">priority_high</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Barra de Filtros y Acciones -->
-        <section class="filters-bar-agenda">
-          <div class="filters-left">
-            <div class="search-input-wrapper">
-              <span class="material-symbols-outlined">search</span>
-              <input type="text" v-model="searchQuery" placeholder="Buscar Doc, Nombre o Ficha..." />
+          <!-- Tarjetas de Estadísticas -->
+          <section class="stats-grid-agenda">
+            <div class="stat-card-agenda">
+              <div class="stat-content">
+                <span class="stat-label">Visitas Pendientes</span>
+                <h2 class="stat-value">5</h2>
+              </div>
+              <div class="stat-icon-agenda bg-yellow-soft">
+                <span class="material-symbols-outlined">work_history</span>
+              </div>
             </div>
             
-            <select v-model="typeFilter" class="select-premium">
-              <option value="TODOS">Tipo de Visita</option>
-              <option value="INICIAL">Inicial</option>
-              <option value="PARCIAL">Parcial</option>
-              <option value="FINAL">Final</option>
-            </select>
-
-            <select v-model="statusFilter" class="select-premium">
-              <option value="TODOS">Estado Visita</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="REALIZADA">Realizada</option>
-              <option value="PROGRAMADA">Programada</option>
-            </select>
-          </div>
-
-          <button class="btn-programar">
-            <span class="material-symbols-outlined">add</span>
-            Programar Visita
-          </button>
-        </section>
-
-        <!-- Tabla de Seguimientos -->
-        <section class="table-container-agenda">
-          <div class="scrollable-table-wrapper">
-            <table class="premium-table">
-              <thead>
-                <tr>
-                  <th>APRENDIZ</th>
-                  <th>EMPRESA / FICHA</th>
-                  <th>TIPO VISITA</th>
-                  <th>ESTADO BITÁCORAS</th>
-                  <th>FECHA VISITA</th>
-                  <th>ESTADO SEGUIMIENTO</th>
-                  <th>ACCIONES</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="seg in filteredSeguimientos" :key="seg.id">
-                  <td>
-                    <div class="user-cell">
-                      <div class="avatar">{{ seg.initials }}</div>
-                      <span class="user-name">{{ seg.name }}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="company-cell">
-                      <span class="company-name">{{ seg.company }}</span>
-                      <span class="ficha-tag">FICHA: {{ seg.ficha }}</span>
-                    </div>
-                  </td>
-                  <td><span class="badge-type" :class="seg.type.toLowerCase()">{{ seg.type }}</span></td>
-                  <td><span class="badge-logs" :class="seg.logsStatus.replace(' ', '-').toLowerCase()">{{ seg.logsStatus }}</span></td>
-                  <td><span class="visit-date">{{ seg.date }}</span></td>
-                  <td><span class="badge-status" :class="seg.status.toLowerCase()">{{ seg.status }}</span></td>
-                  <td>
-                    <div class="actions-cell">
-                      <button v-if="seg.status === 'PENDIENTE'" class="btn-upload">
-                        <span class="material-symbols-outlined">description</span>
-                        Subir Acta PDF
-                      </button>
-                      <button v-else class="btn-view-acta">
-                        <span class="material-symbols-outlined">visibility</span>
-                        Ver Acta
-                      </button>
-                      <button class="btn-edit-inline"><span class="material-symbols-outlined">edit</span></button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <!-- Paginación -->
-          <footer class="table-footer">
-            <span class="results-info">Mostrando {{ filteredSeguimientos.length }} de 17 registros encontrados</span>
-            <div class="pagination">
-              <button class="p-btn"><span class="material-symbols-outlined">chevron_left</span></button>
-              <button class="p-num active">1</button>
-              <button class="p-num">2</button>
-              <button class="p-num">3</button>
-              <button class="p-btn"><span class="material-symbols-outlined">chevron_right</span></button>
+            <div class="stat-card-agenda">
+              <div class="stat-content">
+                <span class="stat-label">Visitas Realizadas</span>
+                <h2 class="stat-value">12</h2>
+              </div>
+              <div class="stat-icon-agenda bg-green-soft">
+                <span class="material-symbols-outlined">task_alt</span>
+              </div>
             </div>
-          </footer>
-        </section>
+
+            <div class="stat-card-agenda">
+              <div class="stat-content">
+                <span class="stat-label">Próximas a Vencer</span>
+                <h2 class="stat-value">1</h2>
+              </div>
+              <div class="stat-icon-agenda bg-red-soft">
+                <span class="material-symbols-outlined">priority_high</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Barra de Filtros y Acciones -->
+          <section class="filters-bar-agenda">
+            <div class="filters-left">
+              <div class="search-input-wrapper">
+                <span class="material-symbols-outlined">search</span>
+                <input type="text" v-model="searchQuery" placeholder="Buscar Doc, Nombre o Ficha..." />
+              </div>
+              
+              <select v-model="typeFilter" class="select-premium">
+                <option value="TODOS">Tipo de Visita</option>
+                <option value="INICIAL">Inicial</option>
+                <option value="PARCIAL">Parcial</option>
+                <option value="FINAL">Final</option>
+              </select>
+
+              <select v-model="statusFilter" class="select-premium">
+                <option value="TODOS">Estado Visita</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="REALIZADA">Realizada</option>
+                <option value="PROGRAMADA">Programada</option>
+              </select>
+            </div>
+
+            <button class="btn-programar">
+              <span class="material-symbols-outlined">add</span>
+              Programar Visita
+            </button>
+          </section>
+
+          <!-- Tabla de Seguimientos -->
+          <section class="table-container-agenda">
+            <div class="scrollable-table-wrapper">
+              <table class="premium-table">
+                <thead>
+                  <tr>
+                    <th>APRENDIZ</th>
+                    <th>EMPRESA / FICHA</th>
+                    <th>TIPO VISITA</th>
+                    <th>ESTADO BITÁCORAS</th>
+                    <th>FECHA VISITA</th>
+                    <th>ESTADO SEGUIMIENTO</th>
+                    <th>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="seg in filteredSeguimientos" :key="seg.id">
+                    <td>
+                      <div class="user-cell">
+                        <div class="avatar">{{ seg.initials }}</div>
+                        <span class="user-name">{{ seg.name }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="company-cell">
+                        <span class="company-name">{{ seg.company }}</span>
+                        <span class="ficha-tag">FICHA: {{ seg.ficha }}</span>
+                      </div>
+                    </td>
+                    <td><span class="badge-type" :class="seg.type.toLowerCase()">{{ seg.type }}</span></td>
+                    <td><span class="badge-logs" :class="seg.logsStatus.replace(' ', '-').toLowerCase()">{{ seg.logsStatus }}</span></td>
+                    <td><span class="visit-date">{{ seg.date }}</span></td>
+                    <td><span class="badge-status" :class="seg.status.toLowerCase()">{{ seg.status }}</span></td>
+                    <td>
+                      <div class="actions-cell">
+                        <button v-if="seg.status === 'PENDIENTE'" class="btn-upload">
+                          <span class="material-symbols-outlined">description</span>
+                          Subir Acta PDF
+                        </button>
+                        <button v-else class="btn-view-acta">
+                          <span class="material-symbols-outlined">visibility</span>
+                          Ver Acta
+                        </button>
+                        <button class="btn-edit-inline"><span class="material-symbols-outlined">edit</span></button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Paginación -->
+            <footer class="table-footer">
+              <span class="results-info">Mostrando {{ filteredSeguimientos.length }} de 17 registros encontrados</span>
+              <div class="pagination">
+                <button class="p-btn"><span class="material-symbols-outlined">chevron_left</span></button>
+                <button class="p-num active">1</button>
+                <button class="p-num">2</button>
+                <button class="p-num">3</button>
+                <button class="p-btn"><span class="material-symbols-outlined">chevron_right</span></button>
+              </div>
+            </footer>
+          </section>
+        </div>
       </main>
     </div>
   </div>
@@ -151,6 +154,8 @@
 import { ref, computed } from 'vue'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
+import BtnBack from '@/layouts/btnBackLayout.vue'
+import HeaderLayout from '@/layouts/headerViewsLayout.vue'
 
 const currentDate = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
 const searchQuery = ref('')
@@ -225,8 +230,8 @@ const filteredSeguimientos = computed(() => {
 .scrollable-table-wrapper::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 10px; }
 
 .premium-table { width: 100%; border-collapse: collapse; min-width: 900px; }
-.premium-table th { background: #2e7d32; color: white; padding: 1rem 1.25rem; text-align: left; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-.premium-table td { padding: 0.9rem 1.25rem; border-bottom: 1px solid #f7fafc; }
+.premium-table th { background: var(--color_header); color: white; padding: 0.75rem 1rem; text-align: left; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
+.premium-table td { padding: 0.6rem 1rem; border-bottom: 1px solid #f7fafc; }
 
 .user-cell { display: flex; align-items: center; gap: 10px; }
 .avatar { width: 30px; height: 30px; background: #E6F4EA; color: #2e7d32; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; }
@@ -249,7 +254,7 @@ const filteredSeguimientos = computed(() => {
 
 .badge-status { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
 .badge-status.pendiente { color: #D97706; border: 1px solid #FEF3C7; }
-.badge-status.realizada { background: #2e7d32; color: white; }
+.badge-status.realizada { background: var(--color_button); color: white; }
 .badge-status.programada { color: #A0AEC0; font-weight: 600; border: 1px solid #edf2f7; }
 
 .visit-date { font-weight: 700; color: #4a5568; font-size: 0.8rem; }
@@ -257,7 +262,7 @@ const filteredSeguimientos = computed(() => {
 /* Actions */
 .actions-cell { display: flex; align-items: center; gap: 8px; }
 .btn-upload { background: #F0FDF4; color: #16A34A; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 4px; cursor: pointer; }
-.btn-view-acta { background: #2e7d32; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.btn-view-acta { background: var(--color_button); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .btn-edit-inline { background: transparent; border: none; color: #CBD5E0; cursor: pointer; }
 .btn-edit-inline .material-symbols-outlined { font-size: 1.1rem; }
 
@@ -266,7 +271,7 @@ const filteredSeguimientos = computed(() => {
 .results-info { font-size: 0.75rem; color: #718096; font-weight: 700; }
 .pagination { display: flex; align-items: center; gap: 6px; }
 .p-num { width: 28px; height: 28px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; font-size: 0.75rem; font-weight: 700; color: #4a5568; cursor: pointer; }
-.p-num.active { background: #2e7d32; color: white; border-color: #2e7d32; }
+.p-num.active { background: var(--color_button); color: white; border-color: var(--color_button); }
 .p-btn { background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px; color: #a0aec0; cursor: pointer; }
 .p-btn .material-symbols-outlined { font-size: 1.1rem; }
 </style>

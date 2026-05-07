@@ -1,5 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
+import BtnBack from '@/layouts/btnBackLayout.vue'
+import HeaderLayout from '@/layouts/headerViewsLayout.vue'
+import Sidebar from '@/components/layout/Sidebar.vue'
+import Header from '@/components/layout/Header.vue'
 
 // --- Estado de los Documentos ---
 const documentos = ref([
@@ -70,81 +74,23 @@ const totalAprobados = computed(() => documentos.value.filter(d => d.estado === 
 </script>
 
 <template>
-  <div class="min-h-screen bg-background font-body text-on-surface antialiased">
-    
-    <!-- Top Navigation -->
-    <nav class="fixed top-0 right-0 left-0 lg:left-64 h-16 z-50 bg-white/80 backdrop-blur-md border-b border-stone-200/60 px-8 flex items-center justify-between">
-      <div class="flex items-center gap-6">
-        <span class="text-primary font-headline font-bold tracking-tight text-lg">REPFORA</span>
-        <div class="hidden md:flex gap-6">
-          <a href="#" class="text-sm font-label font-bold text-on-surface-variant hover:text-on-surface transition-colors">Etapa Productiva</a>
-          <a href="#" class="text-sm font-label font-bold text-on-surface-variant hover:text-on-surface transition-colors">Empresas</a>
-          <a href="#" class="text-sm font-label font-bold text-primary border-b-2 border-primary pb-1">Certificación</a>
-        </div>
-      </div>
-      <div class="flex items-center gap-4">
-        <button class="w-10 h-10 rounded-full hover:bg-stone-100 flex items-center justify-center transition-colors text-on-surface-variant relative">
-          <span class="material-symbols-outlined text-[22px]">notifications</span>
-          <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
-        </button>
-        <div class="flex items-center gap-3 pl-2 border-l border-stone-200">
-          <div class="text-right hidden sm:block">
-            <p class="text-xs font-bold leading-none">Admin User</p>
-            <p class="text-[10px] text-on-surface-variant font-medium">SENA Administrator</p>
-          </div>
-          <div class="h-9 w-9 rounded-full bg-surface-container-high overflow-hidden border border-stone-200 shadow-sm">
-            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0wj6tQ1p8jBIpRM_uuf0oeV8B0U3CjLV3yWZlFPPue85p9nWNcfprEeXu4pmPdNCmbtXEBoVIukJIZZLxoo7_hBYrhXhlr0NzkPvlDj6NbYNQ_VWVr349JKN8L3x86bjv6X_mI2_q2kYqNwuKRcvHyM7G9QlNOCefWIYf4wsurtcQoSy83mhPAlEc9QeHoNAo82Ir__ce5NJQGNWgEejTGFRZT9jnLtdklMNdhaVHoYok4HdT9zEdMlfRkAtkHQ1DrCvdhKZAfhk" alt="Avatar" class="w-full h-full object-cover" />
-          </div>
-        </div>
-      </div>
-    </nav>
+  <div class="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
+    <Sidebar />
 
-    <!-- Sidebar -->
-    <aside class="hidden lg:flex h-screen w-64 fixed left-0 top-0 flex-col bg-surface-container-low border-r border-stone-200/60 z-50">
-      <div class="p-8 mb-4">
-        <div class="flex items-center gap-3">
-          <div class="w-11 h-11 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-            <span class="material-symbols-outlined fill-icon text-[26px]">architecture</span>
-          </div>
-          <div>
-            <h2 class="font-headline font-extrabold text-on-surface leading-none tracking-tight">Gestión EP</h2>
-            <p class="text-[9px] text-on-surface-variant font-black uppercase tracking-[0.15em] mt-1 opacity-70">Institutional Architect</p>
-          </div>
-        </div>
-      </div>
-      
-      <nav class="flex-1 px-4 space-y-1.5">
-        <a href="#" class="flex items-center gap-3.5 px-4 py-3.5 font-label text-[11px] uppercase tracking-widest font-extrabold text-on-surface-variant hover:bg-stone-200/50 rounded-xl transition-all duration-300">
-          <span class="material-symbols-outlined text-[20px]">dashboard</span> DASHBOARD
-        </a>
-        <a href="#" class="flex items-center gap-3.5 px-4 py-3.5 font-label text-[11px] uppercase tracking-widest font-extrabold text-on-surface-variant hover:bg-stone-200/50 rounded-xl transition-all duration-300">
-          <span class="material-symbols-outlined text-[20px]">analytics</span> ETAPA PRODUCTIVA
-        </a>
-        <a href="#" class="flex items-center gap-3.5 px-4 py-3.5 font-label text-[11px] uppercase tracking-widest font-extrabold text-on-surface-variant hover:bg-stone-200/50 rounded-xl transition-all duration-300">
-          <span class="material-symbols-outlined text-[20px]">business</span> DIRECTORIO
-        </a>
-        <a href="#" class="flex items-center gap-3.5 px-4 py-3.5 font-label text-[11px] uppercase tracking-widest font-extrabold bg-white text-primary shadow-sm border border-stone-200/40 rounded-xl transition-all duration-300">
-          <span class="material-symbols-outlined fill-icon text-[20px]">description</span> DOCUMENTACIÓN
-        </a>
-        <a href="#" class="flex items-center gap-3.5 px-4 py-3.5 font-label text-[11px] uppercase tracking-widest font-extrabold text-on-surface-variant hover:bg-stone-200/50 rounded-xl transition-all duration-300">
-          <span class="material-symbols-outlined text-[20px]">settings</span> CONFIGURACIÓN
-        </a>
-      </nav>
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <Header />
 
-      <div class="p-4 mt-auto">
-        <button class="w-full flex items-center gap-3 px-4 py-3 font-label text-[11px] uppercase tracking-widest font-black text-on-surface-variant hover:bg-error-container hover:text-error rounded-xl transition-all">
-          <span class="material-symbols-outlined text-[20px]">logout</span> CERRAR SESIÓN
-        </button>
-      </div>
-    </aside>
+      <main class="flex-1 overflow-y-auto p-6 lg:p-8">
+        <div class="w-full space-y-4">
+          <!-- 1. Botón volver -->
+          <BtnBack route="/dashboard" />
 
-    <main class="lg:ml-64 pt-24 px-8 lg:px-12 pb-12">
-      <header class="max-w-7xl mx-auto mb-10">
-        <h1 class="font-headline text-5xl font-extrabold tracking-tight text-on-surface mb-2">Certificación Final</h1>
-        <p class="font-body text-on-surface-variant text-lg max-w-2xl leading-relaxed">
-          Carga la documentación requerida para finalizar tu proceso de Etapa Productiva. Todos los documentos deben estar en formato PDF.
-        </p>
-      </header>
+          <!-- 2. Título de sección con separador verde -->
+          <HeaderLayout title="Certificación Final de Etapa Productiva" />
+
+          <p class="font-body text-gray-500 text-lg max-w-3xl leading-relaxed">
+            Carga la documentación requerida para finalizar tu proceso institucional. Todos los documentos deben estar en formato PDF.
+          </p>
 
       <div class="grid grid-cols-12 gap-8 max-w-7xl mx-auto">
         <!-- Documents Section -->
@@ -275,7 +221,7 @@ const totalAprobados = computed(() => documentos.value.filter(d => d.estado === 
               </div>
             </div>
 
-            <button @click="solicitarRevision" class="w-full mt-10 py-5 bg-primary text-white font-black font-label text-[11px] uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3">
+            <button @click="solicitarRevision" class="w-full mt-10 py-5 bg-green-9 text-white font-black font-label text-[11px] uppercase tracking-[0.2em] rounded-2xl shadow-xl hover:bg-green-10 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3">
               <span class="material-symbols-outlined fill-icon text-[20px]">send</span>
               Solicitar Revisión Final
             </button>
@@ -294,26 +240,20 @@ const totalAprobados = computed(() => documentos.value.filter(d => d.estado === 
                 </div>
              </div>
           </div>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.font-headline { font-family: 'Outfit', sans-serif; }
-.font-body { font-family: 'Inter', sans-serif; }
-.font-label { font-family: 'Manrope', sans-serif; }
+.bg-green-9 { background-color: var(--color_button); }
+.bg-green-10 { background-color: #1b5e20; }
+.text-primary { color: var(--color_button); }
+.bg-primary { background-color: var(--color_button); }
 
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-}
-
-.fill-icon {
-  font-variation-settings: 'FILL' 1;
-}
-
-.shadow-premium {
-  box-shadow: 0 4px 30px -4px rgba(0, 0, 0, 0.04), 0 2px 15px -2px rgba(0, 0, 0, 0.02);
 }
 </style>

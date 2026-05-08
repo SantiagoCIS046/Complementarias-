@@ -49,7 +49,7 @@ router.post(
 router.post(
   '/upload',
   verifyToken,
-  checkRole(['APRENDIZ']),
+  checkRole(['APRENDIZ', 'INSTRUCTOR']),
   upload.single('archivo'),
   controller.uploadToDrive
 );

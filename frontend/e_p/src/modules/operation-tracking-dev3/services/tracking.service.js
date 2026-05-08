@@ -12,5 +12,22 @@ export const trackingService = {
     /**
      * Listar visitas de seguimiento (Seguimientos Técnicos)
      */
-    getAllTrackings: (params = {}) => http.get('/trackings', { params })
+    getAllTrackings: (params = {}) => http.get('/trackings', { params }),
+
+    /**
+     * Crear un nuevo seguimiento
+     */
+    createTracking: (data) => http.post('/trackings', data),
+
+    /**
+     * Actualizar un seguimiento existente
+     */
+    updateTracking: (id, data) => http.put(`/trackings/${id}`, data),
+
+    /**
+     * Subir acta PDF a Drive
+     */
+    uploadDocument: (formData) => http.post('/documents/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
 }

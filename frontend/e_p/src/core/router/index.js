@@ -58,16 +58,16 @@ const routes = [
   // ── 🔵 DEV 2: EP Management ─────────────────────────
   {
     // Vista exclusiva del aprendiz — su tablero personal de seguimiento
-    path: '/dashboard-ep',
+    path: '/mi-ep',
     name: 'EPDashboard',
     component: () => import('../../modules/ep-management-dev2/views/EPDashboard.vue'),
     meta: { requiresAuth: true, roles: ['APRENDIZ'] },
   },
   {
-    path: '/etapas',
+    path: '/registro-ep',
     name: 'EPRegister',
     component: () => import('../../modules/ep-management-dev2/views/EPRegister.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
   {
     path: '/empresas',
@@ -81,13 +81,13 @@ const routes = [
     path: '/bitacoras',
     name: 'BitacorasReview',
     component: () => import('../../modules/operation-tracking-dev3/views/BitacorasReview.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
   {
     path: '/seguimiento',
     name: 'TrackingCalendar',
     component: () => import('../../modules/ep-management-dev2/views/EPSeguimiento.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
   {
     path: '/instructor-dashboard',
@@ -99,7 +99,7 @@ const routes = [
     path: '/certificacion',
     name: 'Certifications',
     component: () => import('../../modules/operation-tracking-dev3/views/Certifications.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
 
   {

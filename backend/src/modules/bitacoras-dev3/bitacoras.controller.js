@@ -96,9 +96,29 @@ const revisar = async (req, res) => {
   }
 };
 
+/**
+ * PUT /api/bitacoras/:id
+ */
+const actualizar = async (req, res) => {
+  try {
+    const data = await service.actualizar(req.params.id, req.body);
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    const status = error.message.includes('no encontrada') ? 404 : 400;
+    res.status(status).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   crear,
   getAll,
   getByStage,
   revisar,
+  actualizar,
 };

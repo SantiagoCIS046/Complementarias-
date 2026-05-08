@@ -1,41 +1,93 @@
   <script setup>
-  import { ref, reactive } from 'vue'
+  import { ref, reactive, watch, computed } from 'vue'
   import { useRouter } from 'vue-router'
   import Sidebar from '@/components/layout/Sidebar.vue'
   import Header from '@/components/layout/Header.vue'
   import BtnBack from '@/layouts/btnBackLayout.vue'
   import HeaderLayout from '@/layouts/headerViewsLayout.vue'
+  import { epService } from '../services/ep.service'
 
   const router = useRouter()
 
   // --- Lógica de Estado ---
   const currentStep = ref(1)
   const totalSteps = 3
+  const isSubmitting = ref(false)
+  const submitError = ref('')
+  
+  // Buscar empresas
+  const companies = ref([])
+  const isLoadingCompanies = ref(false)
+
+  const loadCompanies = async () => {
+    try {
+      isLoadingCompanies.value = true
+      const res = await epService.getCompanies()
+      companies.value = res.data?.data || []
+    } catch (e) {
+      console.error('Error cargando empresas:', e)
+    } finally {
+      isLoadingCompanies.value = false
+    }
+  }
 
   const formData = reactive({
+    tipoFormacion: 'PRACTICA',
     modalidad: 'Contrato de Aprendizaje',
     nit: '',
-    empresaSeleccionada: {
-      nombre: 'TECNOLOGÍAS GLOBALES S.A.S',
-      ubicacion: 'Bogotá D.C. | Sector Servicios',
-      registrada: true
-    },
-    supervisor: {
-      nombre: '',
-      cargo: '',
-      email: '',
-      telefono: ''
+    empresaSeleccionada: null,
+    observaciones: ''
+  })
+
+  // Detectar empresa automáticamente por NIT
+  watch(() => formData.nit, (newNit) => {
+    if (!newNit || newNit.length < 5) {
+      formData.empresaSeleccionada = null
+      return
+    }
+    const found = companies.value.find(c => c.nit.includes(newNit) || c.nit === newNit)
+    if (found) {
+      formData.empresaSeleccionada = {
+        _id: found._id,
+        nombre: found.razonSocial,
+        ubicacion: found.direccion || 'Colombia',
+        registrada: true
+      }
+    } else {
+      formData.empresaSeleccionada = null
     }
   })
 
   const nextStep = () => { if (currentStep.value < totalSteps) currentStep.value++ }
   const prevStep = () => { if (currentStep.value > 1) currentStep.value-- }
-  const handleLogout = () => {
-    localStorage.removeItem('repfora_token')
-    localStorage.removeItem('repfora_user')
-    window.location.href = '/login'
+  
+  const handleFinish = async () => {
+    if (!formData.empresaSeleccionada) {
+      submitError.value = 'Debe seleccionar una empresa válida.'
+      return
+    }
+    isSubmitting.value = true
+    submitError.value = ''
+    try {
+      const payload = {
+        companyId: formData.empresaSeleccionada._id,
+        tipoFormacion: formData.tipoFormacion,
+        modalidad: formData.modalidad,
+        documentos: [], // Empty docs for now
+        observaciones: 'Registrado desde portal Aprendiz'
+      }
+      await epService.create(payload)
+      alert('¡Registro de Etapa Productiva completado exitosamente!')
+      router.push('/dashboard')
+    } catch (error) {
+      submitError.value = error.response?.data?.message || 'Error al registrar la etapa productiva.'
+    } finally {
+      isSubmitting.value = false
+    }
   }
-  const handleFinish = () => alert('¡Registro completado!')
+
+  // Load initially
+  loadCompanies()
   </script>
 
   <template>
@@ -48,7 +100,7 @@
         <main class="flex-1 overflow-y-auto p-6 lg:p-8">
           <div class="w-full space-y-4">
             <!-- 1. Botón volver -->
-            <BtnBack route="/dashboard" />
+            <BtnBack route="/mi-ep" />
 
             <!-- 2. Título de sección con separador verde -->
             <HeaderLayout title="Registro de Etapa Productiva" />
@@ -100,11 +152,17 @@
                     </div>
                   </div>
                   <div class="bg-green-50/30 rounded-3xl p-6 border border-green-100 flex items-center justify-center">
-                    <div v-if="formData.nit" class="text-center">
-                      <p class="text-[9px] font-bold text-green-700 uppercase tracking-widest mb-1">Empresa Detectada</p>
+                    <div v-if="formData.empresaSeleccionada" class="text-center">
+                      <p class="text-[9px] font-bold text-green-700 uppercase tracking-widest mb-1">Empresa Encontrada</p>
                       <h4 class="font-bold text-gray-900">{{ formData.empresaSeleccionada.nombre }}</h4>
+                      <p class="text-xs text-gray-500 mt-2">{{ formData.empresaSeleccionada.ubicacion }}</p>
                     </div>
-                    <p v-else class="text-sm text-gray-400 italic text-center">Ingresa el NIT...</p>
+                    <div v-else-if="formData.nit && formData.nit.length > 3" class="text-center text-red-500">
+                      <span class="material-symbols-outlined text-3xl mb-2">error</span>
+                      <p class="text-sm font-bold">Empresa no encontrada</p>
+                      <p class="text-xs mt-1">Verifica el NIT ingresado.</p>
+                    </div>
+                    <p v-else class="text-sm text-gray-400 italic text-center">Ingresa el NIT para buscar en la base de datos...</p>
                   </div>
                 </div>
               </div>
@@ -133,15 +191,18 @@
                   <span class="material-symbols-outlined text-3xl">task_alt</span>
                 </div>
                 <h3 class="text-2xl font-extrabold text-gray-900 mb-2">¡Todo listo!</h3>
-                <p class="text-gray-500 text-sm mb-8">Verifica tus datos antes de formalizar.</p>
+                <p class="text-gray-500 text-sm mb-4">Verifica tus datos antes de formalizar la Etapa Productiva.</p>
+                <div v-if="submitError" class="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-bold max-w-md mx-auto mb-4">
+                  {{ submitError }}
+                </div>
               </div>
             </Transition>
 
             <!-- Buttons -->
             <div class="mt-12 flex justify-between items-center border-t border-gray-100 pt-8">
-              <button @click="prevStep" :disabled="currentStep === 1" class="px-6 py-3 rounded-xl text-sm font-bold text-gray-400 hover:text-gray-900 transition-all disabled:opacity-0">Atrás</button>
-              <button @click="currentStep === totalSteps ? handleFinish() : nextStep()" class="px-8 py-3.5 rounded-2xl bg-green-9 text-white font-bold shadow-lg hover:bg-green-10 transition-all flex items-center gap-3">
-                {{ currentStep === totalSteps ? 'Enviar Registro' : 'Siguiente Paso' }}
+              <button @click="prevStep" :disabled="currentStep === 1 || isSubmitting" class="px-6 py-3 rounded-xl text-sm font-bold text-gray-400 hover:text-gray-900 transition-all disabled:opacity-0">Atrás</button>
+              <button @click="currentStep === totalSteps ? handleFinish() : nextStep()" :disabled="isSubmitting" class="px-8 py-3.5 rounded-2xl bg-green-9 text-white font-bold shadow-lg hover:bg-green-10 transition-all flex items-center gap-3">
+                {{ currentStep === totalSteps ? (isSubmitting ? 'Enviando...' : 'Enviar Registro') : 'Siguiente Paso' }}
                 <span class="material-symbols-outlined text-[20px]">{{ currentStep === totalSteps ? 'send' : 'arrow_forward' }}</span>
               </button>
             </div>

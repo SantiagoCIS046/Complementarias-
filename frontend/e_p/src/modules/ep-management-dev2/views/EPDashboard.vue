@@ -30,6 +30,81 @@ const aprendiz = computed(() => {
 
 const bitacoras = ref([])
 
+// Funcionalidad extra: Búsqueda, Paginación, Modales
+const searchQuery = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 5
+
+const filteredBitacoras = computed(() => {
+  let filtered = bitacoras.value
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(b => 
+      b.descripcion.toLowerCase().includes(q) || 
+      String(b.semana).includes(q) ||
+      b.estado.toLowerCase().includes(q)
+    )
+  }
+  return filtered
+})
+
+const totalPages = computed(() => Math.ceil(filteredBitacoras.value.length / itemsPerPage) || 1)
+
+const paginatedBitacoras = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredBitacoras.value.slice(start, start + itemsPerPage)
+})
+
+const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
+const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
+
+// Modales adicionales
+const showViewModal = ref(false)
+const selectedBitacora = ref(null)
+
+const showEditModal = ref(false)
+const editForm = ref({ id: '', semana: '', descripcion: '', horasReportadas: '' })
+
+const showCalendarModal = ref(false)
+
+// Toast
+const toastMsg = ref(null)
+const showToast = (msg, type = 'ok') => {
+  toastMsg.value = { text: msg, type }
+  setTimeout(() => toastMsg.value = null, 3000)
+}
+
+function openView(bitacora) {
+  selectedBitacora.value = bitacora
+  showViewModal.value = true
+}
+
+function openEdit(bitacora) {
+  editForm.value = { 
+    id: bitacora._id, 
+    semana: bitacora.semana, 
+    descripcion: bitacora.descripcion, 
+    horasReportadas: bitacora.horasReportadas 
+  }
+  showEditModal.value = true
+}
+
+async function saveEdit() {
+  try {
+    const data = {
+      semana: Number(editForm.value.semana),
+      descripcion: editForm.value.descripcion,
+      horasReportadas: Number(editForm.value.horasReportadas)
+    }
+    await epService.actualizarBitacora(editForm.value.id, data)
+    showEditModal.value = false
+    showToast('Bitácora actualizada exitosamente.')
+    await load()
+  } catch (err) {
+    showToast(err.response?.data?.message || 'Error al actualizar bitácora', 'err')
+  }
+}
+
 // Modal nueva bitácora
 const showModal = ref(false)
 const saving = ref(false)
@@ -72,8 +147,8 @@ async function crearBitacora() {
     await epService.crearBitacora({ stageId: stage.value._id, semana: Number(form.value.semana), descripcion: form.value.descripcion, horasReportadas: Number(form.value.horasReportadas) })
     showModal.value = false
     form.value = { semana: '', descripcion: '', horasReportadas: '' }
-    const bRes = await epService.getBitacorasByStage(stage.value._id)
-    bitacoras.value = bRes.data?.data || []
+    await load()
+    showToast('Bitácora registrada correctamente.')
   } catch (e) { submitError.value = e.response?.data?.message || 'Error al guardar.' }
   finally { saving.value = false }
 }
@@ -96,18 +171,26 @@ onMounted(load)
       </div>
       
       <nav class="sidebar-nav">
-        <button @click="router.push('/dashboard')" class="nav-item active">
-          <span class="material-symbols-outlined">grid_view</span> Tablero
-        </button>
-        <button @click="router.push('/seguimiento')" class="nav-item">
-          <span class="material-symbols-outlined">assessment</span> Seguimiento
-        </button>
-        <button class="nav-item">
-          <span class="material-symbols-outlined">menu_book</span> Bitácoras
-        </button>
-        <button class="nav-item">
-          <span class="material-symbols-outlined">bar_chart</span> Reportes
-        </button>
+        <router-link to="/mi-ep" custom v-slot="{ navigate, isActive }">
+          <button @click="navigate" :class="['nav-item', { active: isActive }]">
+            <span class="material-symbols-outlined">grid_view</span> Mi Etapa Productiva
+          </button>
+        </router-link>
+        <router-link to="/registro-ep" custom v-slot="{ navigate, isActive }">
+          <button @click="navigate" :class="['nav-item', { active: isActive }]">
+            <span class="material-symbols-outlined">app_registration</span> Formalizar EP
+          </button>
+        </router-link>
+        <router-link to="/seguimiento" custom v-slot="{ navigate, isActive }">
+          <button @click="navigate" :class="['nav-item', { active: isActive }]">
+            <span class="material-symbols-outlined">assessment</span> Seguimientos Técnicos
+          </button>
+        </router-link>
+        <router-link to="/certificacion" custom v-slot="{ navigate, isActive }">
+          <button @click="navigate" :class="['nav-item', { active: isActive }]">
+            <span class="material-symbols-outlined">workspace_premium</span> Certificación Final
+          </button>
+        </router-link>
       </nav>
 
       <div class="sidebar-footer">
@@ -197,9 +280,12 @@ onMounted(load)
         <div class="table-container">
           <div class="table-header">
             <h3>Mis Bitácoras Quincenales</h3>
-            <div class="table-icons">
-              <span class="material-symbols-outlined">filter_list</span>
-              <span class="material-symbols-outlined">search</span>
+            <div class="table-icons" style="display:flex;align-items:center;gap:12px">
+              <div style="display:flex;align-items:center;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:0 12px;height:36px">
+                <span class="material-symbols-outlined" style="font-size:18px;color:#94A3B8">search</span>
+                <input v-model="searchQuery" type="text" placeholder="Buscar bitácora..." style="border:none;background:transparent;outline:none;font-size:12px;color:#334155;width:150px;margin-left:8px" />
+              </div>
+              <span class="material-symbols-outlined action-btn">filter_list</span>
             </div>
           </div>
           <table class="bitacora-table">
@@ -213,13 +299,13 @@ onMounted(load)
               </tr>
             </thead>
             <tbody>
-              <tr v-if="bitacoras.length === 0">
-                <td colspan="5" style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No tienes bitácoras registradas aún.</td>
+              <tr v-if="filteredBitacoras.length === 0">
+                <td colspan="5" style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No tienes bitácoras que coincidan con la búsqueda.</td>
               </tr>
-              <tr v-for="(item, i) in bitacoras" :key="item._id">
-                <td class="bold">Bitácora #{{ String(i + 1).padStart(2, '0') }}</td>
+              <tr v-for="item in paginatedBitacoras" :key="item._id">
+                <td class="bold">Semana {{ item.semana }}</td>
                 <td class="faded">
-                  <span class="material-symbols-outlined mini">calendar_today</span> {{ item.descripcion }}
+                  <span class="material-symbols-outlined mini">calendar_today</span> <span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" :title="item.descripcion">{{ item.descripcion }}</span>
                 </td>
                 <td class="center"><span class="hours-badge">{{ item.horasReportadas }}h</span></td>
                 <td class="center">
@@ -228,18 +314,21 @@ onMounted(load)
                   </span>
                 </td>
                 <td class="right">
-                  <span class="material-symbols-outlined action-btn">
-                    {{ item.estado === 'APROBADA' ? 'visibility' : 'edit_square' }}
-                  </span>
+                  <button v-if="item.estado === 'APROBADA'" @click="openView(item)" style="background:none;border:none;color:#16A34A;cursor:pointer;padding:6px;border-radius:8px" title="Ver Detalle" class="action-btn-hover">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+                  <button v-else @click="openEdit(item)" style="background:none;border:none;color:#3B82F6;cursor:pointer;padding:6px;border-radius:8px" title="Editar Bitácora" class="action-btn-hover">
+                    <span class="material-symbols-outlined">edit_square</span>
+                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
           <div class="table-footer">
-            <span class="footer-stats">MOSTRANDO {{ bitacoras.length }} REGISTRO{{ bitacoras.length !== 1 ? 'S' : '' }}</span>
+            <span class="footer-stats">PÁGINA {{ currentPage }} DE {{ totalPages }} ({{ filteredBitacoras.length }} REGISTROS)</span>
             <div class="pagination">
-              <button class="pag-btn">Anterior</button>
-              <button class="pag-btn">Siguiente</button>
+              <button @click="prevPage" :disabled="currentPage === 1" class="pag-btn" :class="{ disabled: currentPage === 1 }">Anterior</button>
+              <button @click="nextPage" :disabled="currentPage === totalPages" class="pag-btn" :class="{ disabled: currentPage === totalPages }">Siguiente</button>
             </div>
           </div>
         </div>
@@ -253,7 +342,7 @@ onMounted(load)
               <p class="rdesc">Recuerda que las bitácoras deben ser firmadas digitalmente por tu jefe inmediato antes de la fecha de corte quincenal.</p>
             </div>
           </div>
-          <button class="btn-cal">Ver Calendario de Fechas</button>
+          <button @click="showCalendarModal = true" class="btn-cal">Ver Calendario de Fechas</button>
         </div>
       </main>
 
@@ -298,6 +387,86 @@ onMounted(load)
         </div>
       </div>
     </div>
+
+    <!-- MODAL EDITAR BITÁCORA -->
+    <div v-if="showEditModal" @click.self="showEditModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
+      <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #F1F5F9">
+          <h3 style="font-size:16px;font-weight:800;color:#1E293B;margin:0">Editar Bitácora</h3>
+          <button @click="showEditModal = false" style="background:none;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:11px;font-weight:700;color:#64748B">Número de Semana</label>
+            <input v-model="editForm.semana" type="number" min="1" placeholder="Ej: 1" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:11px;font-weight:700;color:#64748B">Descripción de Actividades</label>
+            <textarea v-model="editForm.descripcion" rows="4" placeholder="Describe las actividades realizadas..." style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%;resize:vertical;font-family:inherit"></textarea>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:11px;font-weight:700;color:#64748B">Horas Reportadas</label>
+            <input v-model="editForm.horasReportadas" type="number" min="0" placeholder="Ej: 40" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+            <button @click="showEditModal = false" style="background:#F1F5F9;color:#475569;border:none;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Cancelar</button>
+            <button @click="saveEdit" class="btn-new">Guardar Cambios</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL VER DETALLES -->
+    <div v-if="showViewModal && selectedBitacora" @click.self="showViewModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
+      <div style="background:#fff;border-radius:20px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden">
+        <div style="background:#F8FAFC;padding:24px;border-bottom:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <span style="font-size:11px;font-weight:800;color:#16A34A;letter-spacing:1px;display:block;margin-bottom:4px">BITÁCORA {{ selectedBitacora.estado }}</span>
+            <h3 style="font-size:18px;font-weight:800;color:#1E293B;margin:0">Semana {{ selectedBitacora.semana }}</h3>
+          </div>
+          <button @click="showViewModal = false" style="background:#fff;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center;padding:4px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.05)"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;gap:20px">
+          <div>
+            <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:6px">ACTIVIDADES REALIZADAS</label>
+            <p style="font-size:13px;color:#334155;line-height:1.6;margin:0;background:#F8FAFC;padding:16px;border-radius:12px;border:1px solid #F1F5F9">{{ selectedBitacora.descripcion }}</p>
+          </div>
+          <div style="display:flex;gap:24px">
+            <div>
+              <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:4px">HORAS REPORTADAS</label>
+              <span style="font-size:16px;font-weight:800;color:#1E293B">{{ selectedBitacora.horasReportadas }} h</span>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:4px">ESTADO</label>
+              <span v-if="selectedBitacora.estado === 'APROBADA'" style="font-size:12px;font-weight:700;color:#16A34A;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">check_circle</span> Aprobada</span>
+              <span v-else-if="selectedBitacora.estado === 'RECHAZADA'" style="font-size:12px;font-weight:700;color:#E11D48;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">cancel</span> Rechazada</span>
+              <span v-else style="font-size:12px;font-weight:700;color:#CA8A04;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">schedule</span> Pendiente</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CALENDARIO -->
+    <div v-if="showCalendarModal" @click.self="showCalendarModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
+      <div style="background:#fff;border-radius:20px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.15);padding:32px;text-align:center">
+        <div style="width:64px;height:64px;background:#F0FDF4;color:#16A34A;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+          <span class="material-symbols-outlined" style="font-size:32px">event</span>
+        </div>
+        <h3 style="font-size:18px;font-weight:800;color:#1E293B;margin:0 0 8px">Fechas de Corte Quincenales</h3>
+        <p style="font-size:13px;color:#64748B;line-height:1.5;margin:0 0 24px">Las bitácoras deben enviarse los días 15 y 30 de cada mes. Asegúrate de tenerlas firmadas por tu jefe inmediato.</p>
+        <button @click="showCalendarModal = false" class="btn-new" style="width:100%;justify-content:center;background:#1A4D2E">Entendido</button>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <transition name="toast">
+      <div v-if="toastMsg" class="toast-notification" :class="toastMsg.type">
+        <span class="material-symbols-outlined">{{ toastMsg.type === 'ok' ? 'check_circle' : 'info' }}</span>
+        {{ toastMsg.text }}
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -541,5 +710,15 @@ onMounted(load)
 @media (max-width: 1200px) {
   .info-grid { grid-template-columns: 1fr; }
 }
+
+.action-btn-hover:hover { background: #F1F5F9 !important; }
+.pag-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* --- Toast Notification --- */
+.toast-notification { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 500; }
+.toast-notification.ok { background: #16A34A; color: #FFF; }
+.toast-notification.err { background: #E11D48; color: #FFF; }
+.toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
 </style>
 

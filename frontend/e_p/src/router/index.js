@@ -40,6 +40,16 @@ const routes = [
     path: '/configuracion',
     name: 'configuracion',
     component: () => import('@/modules/operation-tracking-dev3/views/InstructorDashboard.vue') // Placeholder
+  },
+  {
+    path: '/registro-ep',
+    name: 'registro-ep',
+    component: () => import('@/modules/ep-management-dev2/views/EPRegister.vue')
+  },
+  {
+    path: '/mi-ep',
+    name: 'mi-ep',
+    component: () => import('@/modules/ep-management-dev2/views/EPDashboard.vue')
   }
 ]
 

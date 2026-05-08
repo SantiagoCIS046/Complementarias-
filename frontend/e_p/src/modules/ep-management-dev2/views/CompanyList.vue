@@ -104,6 +104,7 @@ const filters = [
   </div>
 </template>
 
+<style scoped>
 /* Estilos adicionales para compatibilidad con la guía */
 .bg-green-9 { background-color: var(--color_button); }
 .bg-green-10 { background-color: #1b5e20; }

@@ -40,8 +40,10 @@ const menuItems = computed(() => {
   }
 
   return [
-    { name: 'MI ETAPA', icon: GraduationCap, path: '/dashboard-ep' },
-    { name: 'BITÁCORAS', icon: FileText, path: '/bitacoras' },
+    { name: 'MI ETAPA', icon: GraduationCap, path: '/mi-ep' },
+    { name: 'REGISTRO', icon: FileText, path: '/registro-ep' },
+    { name: 'CERTIFICACIÓN', icon: ShieldCheck, path: '/certificacion' },
+    { name: 'SEGUIMIENTO', icon: BarChart2, path: '/seguimiento' }
   ];
 });
 

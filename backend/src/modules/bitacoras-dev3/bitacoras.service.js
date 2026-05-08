@@ -1,4 +1,4 @@
-﻿// bitacoras.service.js   ?? DEV 3 | Bitacoras / Evidencias
+// bitacoras.service.js   ?? DEV 3 | Bitacoras / Evidencias
 // =============================================
 // Logica de negocio para gestion de bitacoras
 // semanales del aprendiz.
@@ -88,9 +88,40 @@ const revisar = async (bitacoraId, { estado, observaciones, revisadoPor }) => {
   return bitacora;
 };
 
+/**
+ * Actualizar una bitacora (solo si no esta aprobada).
+ */
+const actualizar = async (bitacoraId, data) => {
+  const bitacora = await Bitacora.findById(bitacoraId);
+  if (!bitacora) {
+    throw new Error('Bitacora no encontrada.');
+  }
+
+  if (bitacora.estado === 'APROBADA') {
+    throw new Error('No se puede editar una bitacora que ya fue aprobada.');
+  }
+
+  // Si cambian las horas, actualizar la EP
+  if (data.horasReportadas !== undefined && data.horasReportadas !== bitacora.horasReportadas) {
+    const stage = await ProductiveStage.findById(bitacora.stageId);
+    if (stage) {
+      stage.horasCompletadas = (stage.horasCompletadas || 0) - bitacora.horasReportadas + data.horasReportadas;
+      await stage.save();
+    }
+    bitacora.horasReportadas = data.horasReportadas;
+  }
+
+  if (data.semana !== undefined) bitacora.semana = data.semana;
+  if (data.descripcion !== undefined) bitacora.descripcion = data.descripcion;
+
+  await bitacora.save();
+  return bitacora;
+};
+
 module.exports = {
   crear,
   getAll,
   getByStage,
   revisar,
+  actualizar,
 };

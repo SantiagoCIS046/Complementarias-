@@ -54,6 +54,18 @@ const routes = [
     component: () => import('../../modules/admin-auth-dev1/views/ResetPassword.vue'),
     meta: { requiresAuth: false },
   },
+  {
+    path: '/gestion-empresas',
+    name: 'CompanyManagement',
+    component: () => import('../../modules/admin-auth-dev1/views/CompanyManagement.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+  },
+  {
+    path: '/fichas',
+    name: 'BatchManagement',
+    component: () => import('../../modules/admin-auth-dev1/views/BatchManagement.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+  },
 
   // ── 🔵 DEV 2: EP Management ─────────────────────────
   {

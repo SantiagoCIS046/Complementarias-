@@ -15,6 +15,7 @@ const getAll = async (req, res) => {
       role: req.query.role,
       busqueda: req.query.busqueda,
       status: req.query.status,
+      programa: req.query.programa,
     };
     
     const data = await service.getAll(filtros);
@@ -94,9 +95,28 @@ const eliminar = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/users/fichas/stats
+ */
+const getFichasSummary = async (req, res) => {
+  try {
+    const data = await service.getFichasSummary();
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAll,
   getById,
   actualizar,
   eliminar,
+  getFichasSummary,
 };

@@ -3,20 +3,32 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <div class="logo-area">
-          <span class="logo-text">REPFORA</span>
-          <span class="logo-subtext">ARQUITECTO INSTITUCIONAL</span>
+        <div class="logo-area" style="display: flex; flex-direction: column;">
+          <span class="logo-text" style="font-size: 1.1rem; font-weight: 900; color: #1b5e20; line-height: 1.1;">REPFORA</span>
+          <span class="logo-subtext" style="font-size: 0.5rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">ARQUITECTO INSTITUCIONAL</span>
         </div>
       </div>
 
       <nav class="sidebar-nav">
         <div class="nav-group">
-          <a href="/dashboard" class="nav-item active">
+          <router-link to="/usuarios" class="nav-item" :class="{ active: $route.path === '/usuarios' || $route.path === '/dashboard' }">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
             <span>Gestión de Usuarios</span>
-          </a>
+          </router-link>
+          <router-link to="/gestion-empresas" class="nav-item" :class="{ active: $route.path === '/gestion-empresas' }">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7"/><path d="M4 21V10"/><path d="M10 21V10"/><path d="M16 21V10"/><path d="M20 21V10"/><path d="M9 2l1 5h4l1-5z"/>
+            </svg>
+            <span>Gestión de Empresas</span>
+          </router-link>
+          <router-link to="/fichas" class="nav-item" :class="{ active: $route.path === '/fichas' }">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+            <span>Gestión de Fichas</span>
+          </router-link>
         </div>
       </nav>
 
@@ -35,9 +47,6 @@
     <main class="main-content">
       <header class="topbar">
         <div class="topbar-left">
-          <nav class="top-nav">
-            <a href="#" class="top-nav-item active">Gestión de Usuarios</a>
-          </nav>
         </div>
         
         <div class="topbar-right">
@@ -262,6 +271,14 @@
             <label>Email</label>
             <input v-model="editModal.data.email" />
           </div>
+          <div v-if="editModal.data.role === 'APRENDIZ'" class="field-sm">
+            <label>Ficha</label>
+            <input v-model="editModal.data.ficha" />
+          </div>
+          <div v-if="editModal.data.role === 'APRENDIZ'" class="field-sm">
+            <label>Programa</label>
+            <input v-model="editModal.data.programa" />
+          </div>
           <div class="field-sm">
             <label>Documento</label>
             <input v-model="editModal.data.documento" />
@@ -394,23 +411,18 @@
     </div>
     <!-- ═══════ MODAL: Nuevo Usuario (Formulario Inteligente) ═══════ -->
     <div class="modal-overlay" v-if="showAddUserModal" @click.self="showAddUserModal = false">
-      <div class="modal-card modal-lg">
-        <div class="modal-head">
-          <div class="head-with-icon">
-            <div class="head-icon-circle green">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-            </div>
-            <div>
-              <h2>Registrar Nuevo Usuario</h2>
-              <p class="modal-subtitle">La identificación será su contraseña inicial.</p>
-            </div>
+      <div class="modal-card modal-full">
+        <div class="modal-head head-premium">
+          <div class="head-info">
+            <h2>Registrar Nuevo Usuario</h2>
+            <p class="u-email">La identificación será su contraseña inicial para el primer ingreso.</p>
           </div>
-          <button class="modal-close" @click="showAddUserModal = false">&times;</button>
+          <button class="modal-close-premium" @click="showAddUserModal = false">&times;</button>
         </div>
 
-        <div class="modal-body">
-          <div class="form-section">
-            <h3 class="section-title">Datos de Identificación</h3>
+        <div class="modal-body modal-body-scroll">
+          <div class="form-section-premium">
+            <h3 class="section-title">🆔 Bloque 1: Datos de Identificación</h3>
             <div class="form-grid-2">
               <div class="field-group">
                 <label class="label-premium">Tipo de Documento</label>
@@ -423,13 +435,13 @@
               </div>
               <div class="field-group">
                 <label class="label-premium">Número de Documento</label>
-                <input type="number" v-model="newUserForm.documento" placeholder="Número" class="input-premium" />
+                <input type="number" v-model="newUserForm.documento" placeholder="Número (Sin puntos ni comas)" class="input-premium" />
               </div>
             </div>
           </div>
 
-          <div class="form-section">
-            <h3 class="section-title">Información de Contacto</h3>
+          <div class="form-section-premium mt-6">
+            <h3 class="section-title">📧 Bloque 2: Información de Contacto</h3>
             <div class="form-grid-2">
               <div class="field-group">
                 <label class="label-premium">Nombres y Apellidos</label>
@@ -442,35 +454,56 @@
             </div>
           </div>
 
-          <div class="form-section mt-6">
-            <h3 class="section-title">3. Rol en el Sistema</h3>
-            <div class="field-group">
-              <label>Seleccionar Rol</label>
-              <div class="role-selector-grid">
-                <label class="role-card" :class="{active: newUserForm.role === 'ADMIN'}">
-                  <input type="radio" v-model="newUserForm.role" value="ADMIN" />
-                  <div class="role-icon">🔑</div>
-                  <span>Admin</span>
-                </label>
-                <label class="role-card" :class="{active: newUserForm.role === 'INSTRUCTOR'}">
-                  <input type="radio" v-model="newUserForm.role" value="INSTRUCTOR" />
-                  <div class="role-icon">👨‍🏫</div>
-                  <span>Instructor</span>
-                </label>
-                <label class="role-card" :class="{active: newUserForm.role === 'APRENDIZ'}">
-                  <input type="radio" v-model="newUserForm.role" value="APRENDIZ" />
-                  <div class="role-icon">🎓</div>
-                  <span>Aprendiz</span>
-                </label>
+          <div class="form-section-premium mt-6">
+            <h3 class="section-title">🔑 Bloque 3: Rol en el Sistema</h3>
+            <div class="role-selector-grid">
+              <label class="role-card" :class="{active: newUserForm.role === 'ADMIN'}">
+                <input type="radio" v-model="newUserForm.role" value="ADMIN" />
+                <div class="role-icon">🔑</div>
+                <div class="role-info">
+                  <strong>Administrador</strong>
+                  <p>Control total del sistema</p>
+                </div>
+              </label>
+              <label class="role-card" :class="{active: newUserForm.role === 'INSTRUCTOR'}">
+                <input type="radio" v-model="newUserForm.role" value="INSTRUCTOR" />
+                <div class="role-icon">👨‍🏫</div>
+                <div class="role-info">
+                  <strong>Instructor</strong>
+                  <p>Seguimiento de aprendices</p>
+                </div>
+              </label>
+              <label class="role-card" :class="{active: newUserForm.role === 'APRENDIZ'}">
+                <input type="radio" v-model="newUserForm.role" value="APRENDIZ" />
+                <div class="role-icon">🎓</div>
+                <div class="role-info">
+                  <strong>Aprendiz</strong>
+                  <p>Carga de evidencias</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-section-premium mt-6" v-if="newUserForm.role === 'APRENDIZ'">
+            <h3 class="section-title">🎓 Bloque 4: Información Académica</h3>
+            <div class="form-grid-2">
+              <div class="field-group">
+                <label class="label-premium">Ficha #</label>
+                <input type="text" v-model="newUserForm.ficha" placeholder="Ej: 2670687" class="input-premium" />
+              </div>
+              <div class="field-group">
+                <label class="label-premium">Programa de Formación</label>
+                <input type="text" v-model="newUserForm.programa" placeholder="Ej: ADSO" class="input-premium" />
               </div>
             </div>
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="showAddUserModal = false">Cancelar</button>
-          <button class="btn-primary-sena btn-lg" @click="handleAddUser" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Registrando...' : 'Crear Usuario' }}
+        <div class="modal-footer footer-premium">
+          <button class="btn-cancel-premium" @click="showAddUserModal = false">Cancelar</button>
+          <button class="btn-confirm-premium" @click="handleAddUser" :disabled="isSubmitting">
+            <span v-if="!isSubmitting">Registrar Usuario</span>
+            <div v-else class="spin-mini"></div>
           </button>
         </div>
       </div>
@@ -553,11 +586,13 @@ const newUserForm = ref({
   documento: '',
   name: '',
   email: '',
-  role: 'APRENDIZ'
+  role: 'APRENDIZ',
+  ficha: '',
+  programa: ''
 });
 
 const openAddUserModal = () => {
-  newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ' };
+  newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ', ficha: '', programa: '' };
   showAddUserModal.value = true;
 };
 
@@ -799,7 +834,9 @@ const saveEdit = async () => {
       email: editModal.value.data.email,
       documento: editModal.value.data.documento,
       role: editModal.value.data.role,
-      status: editModal.value.data.status
+      status: editModal.value.data.status,
+      ficha: editModal.value.data.ficha,
+      programa: editModal.value.data.programa
     });
     editModal.value.show = false;
     fetchUsers();
@@ -1222,63 +1259,66 @@ const handleLogout = () => {
 
 /* Topbar */
 .topbar {
-  height: 52px;
+  height: 48px;
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 20px;
 }
-.topbar-left, .topbar-right { display: flex; align-items: center; height: 100%; }
-.top-nav { display: flex; gap: 24px; height: 100%; }
+.topbar-left { display: flex; align-items: flex-end; height: 100%; }
+.topbar-right { display: flex; align-items: flex-end; height: 100%; padding-bottom: 8px; }
+.top-nav { display: flex; gap: 20px; height: 100%; }
 .top-nav-item {
   text-decoration: none;
   color: #64748b;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   height: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  padding-bottom: 8px;
   position: relative;
 }
 .top-nav-item.active { color: var(--color_button); }
 .top-nav-item.active::after {
-  content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: var(--color_button);
+  content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: var(--color_button);
 }
 
 .search-box { position: relative; }
 .search-box input {
-  width: 100%; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px 6px 32px; font-size: 0.8rem; outline: none; transition: 0.2s;
+  width: 100%; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px 5px 28px; font-size: 0.75rem; outline: none; transition: 0.2s;
 }
 .search-box input:focus { border-color: var(--color_button); background: #fff; }
-.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; color: #94a3b8; }
+.search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 12px; color: #94a3b8; }
 
 .admin-avatar {
-  width: 34px;
-  height: 34px;
-  background: #1e293b;
-  color: #fff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 0.8rem;
+  width: 32px !important;
+  height: 32px !important;
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 800 !important;
+  font-size: 0.8rem !important;
   cursor: pointer;
   border: 2px solid #e2e8f0;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
-.admin-avatar:hover { border-color: var(--color_button); }
+.admin-avatar:hover { border-color: var(--color_button); transform: scale(1.05); }
 
 /* Page Content */
-.page-body { flex: 1; overflow-y: auto; padding: 16px 24px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-.page-title { font-size: 1.4rem; font-weight: 800; margin: 0; }
-.page-description { font-size: 0.8rem; color: #64748b; }
+.page-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 20px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 32px; }
+.page-title { font-size: 1.1rem; font-weight: 800; margin: 0; }
+.page-description { font-size: 0.75rem; color: #64748b; }
 
 .btn-primary { 
-  background: var(--color_button); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; 
-  font-weight: 700; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; 
+  background: var(--color_button); color: #fff; border: none; padding: 5px 10px; border-radius: 6px; 
+  font-weight: 700; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; 
 }
 .btn-primary:hover { background: #1b5e20; }
 
@@ -1479,7 +1519,7 @@ const handleLogout = () => {
 .filter-btn.active { background: #f0fdf4; color: var(--color_button); border-color: #bbf7d0; }
 
 .user-table { width: 100%; border-collapse: collapse; }
-.user-table th { background: var(--color_header); text-align: left; padding: 12px 16px; font-size: 0.75rem; color: white; text-transform: uppercase; font-weight: 700; }
+.user-table th { background: #1b5e20; text-align: left; padding: 12px 16px; font-size: 0.75rem; color: white; text-transform: uppercase; font-weight: 700; }
 .user-table td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; }
 .user-table tbody tr:nth-child(even) { background: #f8fafc; }
 .user-table tbody tr:hover { background: #f1f5f9; }
@@ -1487,12 +1527,20 @@ const handleLogout = () => {
 
 .user-cell { display: flex; align-items: center; gap: 12px; }
 .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.75rem; }
-.bg-green { background: var(--color_button); }
+.bg-green { background: #1b5e20; }
 .bg-pink { background: #db2777; }
-.bg-blue { background: #3b82f6; }
-.bg-orange { background: #f97316; }
+.bg-blue { background: #0284c7; }
+.bg-orange { background: #ea580c; }
+
+.status-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+.status-pill.activo { background: #1b5e20; color: white; }
+.status-pill.en_curso { background: #1b5e20; color: white; }
+.status-pill.contract_ended { background: #ea580c; color: white; }
+.status-pill.inactivo { background: #c10015; color: white; }
+
 .u-name { font-weight: 700; margin: 0; }
 .u-email { font-size: 0.75rem; color: #94a3b8; margin: 0; }
+
 .role-badge { font-size: 0.65rem; font-weight: 800; padding: 4px 10px; border-radius: 4px; }
 .role-badge.admin { background: #dcfce7; color: #15803d; }
 .role-badge.instructor { background: #fce7f3; color: #9d174d; }
@@ -1517,20 +1565,20 @@ const handleLogout = () => {
 .act-btn.delete:hover { background: #fce4e4; border-color: #f4b4b4; }
 
 /* Header & Stats */
-.header-left-group { display: flex; align-items: center; gap: 40px; flex: 1; }
-.header-stats.stats-row { gap: 16px; margin-bottom: 0; }
-.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-.stat-box { background: #fff; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 4px solid; }
+.header-left-group { display: flex; align-items: center; gap: 32px; flex: 1; }
+.header-info { min-width: 200px; }
+.stats-row { display: flex; gap: 20px; }
+.stat-box { background: #fff; padding: 10px 14px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 4px solid; min-width: 140px; flex-shrink: 0; }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-left: 60px; /* Espacio extra para alejar los botones */
+  flex-shrink: 0;
 }
-.border-green { border-left-color: var(--color_button); }
-.border-pink { border-left-color: #1b5e20; }
-.border-dark { border-left-color: #4caf50; }
+.border-green { border-left-color: #1b5e20; }
+.border-pink { border-left-color: #db2777; }
+.border-dark { border-left-color: #1e293b; }
 .stat-box p { font-size: 0.65rem; font-weight: 800; color: #64748b; margin-bottom: 4px; }
 .stat-box h2 { font-size: 1.4rem; margin: 0 0 2px 0; font-weight: 800; }
 .stat-box small { font-size: 0.65rem; color: #22c55e; font-weight: 600; }

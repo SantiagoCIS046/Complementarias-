@@ -10,6 +10,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const User = require('./src/modules/users-dev1/user.model');
 const Company = require('./src/modules/companies-dev2/company.model');
 const ProductiveStage = require('./src/modules/productive-stages-dev2/productive-stage.model');
+const Batch = require('./src/modules/batches-dev1/batch.model');
 
 // Usa la MISMA conexión que el backend (MongoDB Atlas)
 const MONGO_URI = process.env.MONGO_URI;
@@ -24,6 +25,7 @@ async function runSeed() {
     await User.deleteMany({});
     await Company.deleteMany({});
     await ProductiveStage.deleteMany({});
+    await Batch.deleteMany({});
     console.log('🗑️  Colecciones limpiadas.');
 
     // CONTRASEÑA EN TEXTO PLANO - el modelo real la hashea automáticamente
@@ -39,15 +41,29 @@ async function runSeed() {
     });
     console.log('✅ Admin creado:', admin.email);
 
-    // 2. INSTRUCTOR
+    // 2. INSTRUCTOR (Especialista en ADSO)
     const instructor = await User.create({
-      name: 'Martin',
+      name: 'Martin Pérez',
       email: 'martin@gmail.com',
       password: PASSWORD,
       role: 'INSTRUCTOR',
-      documento: '123475869'
+      documento: '123475869',
+      programa: 'Análisis y Desarrollo de Software',
+      status: 'ACTIVO'
     });
-    console.log('✅ Instructor creado:', instructor.email);
+    console.log('✅ Instructor ADSO creado:', instructor.email);
+
+    // INSTRUCTOR 2 (Especialista en Multimedia)
+    const instructor2 = await User.create({
+      name: 'Elena Rodríguez',
+      email: 'elena@gmail.com',
+      password: PASSWORD,
+      role: 'INSTRUCTOR',
+      documento: '987654321',
+      programa: 'Multimedia',
+      status: 'ACTIVO'
+    });
+    console.log('✅ Instructor Multimedia creado:', instructor2.email);
 
     // 3. APRENDICES (vinculados al instructor)
     const a1 = await User.create({
@@ -69,10 +85,60 @@ async function runSeed() {
     });
     console.log('✅ Aprendices creados: Juan Mancilla, Daniela Palacio');
 
-    // 4. EMPRESAS
-    const co1 = await Company.create({ razonSocial: 'Bancolombia S.A.', nit: '890.903.938-8' });
-    const co2 = await Company.create({ razonSocial: 'Software Innovación S.A.S', nit: '900.123.456-7' });
-    console.log('✅ Empresas creadas: Bancolombia, Software Innovación');
+    // 4. EMPRESAS (Alineadas con el nuevo modelo de REPFORA)
+    const companiesData = [
+      { 
+        razon_social: 'TechSolutions S.A.S.', 
+        nit: '900123456-1',
+        direccion: 'Calle 10 #15-20, San Gil',
+        municipio: 'San Gil',
+        sector_economico: 'Tecnología',
+        estado: 'HABILITADA',
+        datos_contacto: { telefono: '6077240000', correo_corporativo: 'contacto@techsolutions.com' },
+        jefe_inmediato: { nombre_completo: 'Juan Pérez', cargo: 'Director de IT', telefono: '3154445566', correo: 'jperez@techsolutions.com' }
+      },
+      { 
+        razon_social: 'Global Logistica Ltda', 
+        nit: '901.442.110-3',
+        direccion: 'Av. Industrial 45',
+        municipio: 'Bucaramanga',
+        estado: 'EN_REVISION'
+      },
+      { 
+        razon_social: 'Inversiones Delta', 
+        nit: '880.992.451-0',
+        estado: 'HABILITADA'
+      },
+      { 
+        razon_social: 'Constructora Bolívar', 
+        nit: '830.005.123-4',
+        estado: 'HABILITADA'
+      },
+      { 
+        razon_social: 'Servicios Integrales SAS', 
+        nit: '900.551.442-8',
+        estado: 'RECHAZADA'
+      },
+      { 
+        razon_social: 'BioMedica Research', 
+        nit: '880.112.990-2',
+        estado: 'EN_REVISION'
+      },
+      { 
+        razon_social: 'Bancolombia S.A.', 
+        nit: '890.903.938-8',
+        estado: 'HABILITADA'
+      }
+    ];
+
+    const createdCompanies = [];
+    for (const co of companiesData) {
+      const created = await Company.create(co);
+      createdCompanies.push(created);
+    }
+    const co1 = createdCompanies[6]; // Bancolombia para la vinculación
+    const co2 = createdCompanies[0]; // TechSolutions
+    console.log(`✅ ${createdCompanies.length} Empresas creadas.`);
 
     // 5. ETAPAS PRODUCTIVAS (valores del enum real: enums.js)
     await ProductiveStage.create({
@@ -99,6 +165,47 @@ async function runSeed() {
       horasRequeridas: 864
     });
     console.log('✅ Etapas productivas vinculadas.');
+
+    // 6. FICHAS (NUEVO MODELO)
+    await Batch.create({
+      codigo_ficha: '2670687',
+      programa: 'Análisis y Desarrollo de Software',
+      nivel_formacion: 'Tecnólogo',
+      fecha_inicio_ep: new Date('2026-02-15'),
+      fecha_fin_ep: new Date('2026-08-15'),
+      instructor_asignado: {
+        instructor_id: instructor._id,
+        nombre: instructor.name
+      },
+      estado: 'ACTIVA',
+      aprendices_ids: [a1._id]
+    });
+
+    await Batch.create({
+      codigo_ficha: '2558342',
+      programa: 'Multimedia',
+      nivel_formacion: 'Tecnólogo',
+      fecha_inicio_ep: new Date('2026-01-10'),
+      fecha_fin_ep: new Date('2026-07-10'),
+      instructor_asignado: {
+        instructor_id: instructor2._id,
+        nombre: instructor2.name
+      },
+      estado: 'ACTIVA',
+      aprendices_ids: [a2._id]
+    });
+    
+    await Batch.create({
+      codigo_ficha: '2800111',
+      programa: 'Sistemas',
+      nivel_formacion: 'Técnico',
+      fecha_inicio_ep: new Date('2026-05-20'),
+      fecha_fin_ep: new Date('2026-11-20'),
+      estado: 'PENDIENTE_INSTRUCTOR',
+      aprendices_ids: []
+    });
+
+    console.log('✅ Fichas creadas y vinculadas.');
 
     console.log('\n--- ✅ SINCRONIZACIÓN EXITOSA ---');
     console.log('🔑 ADMIN:      santiagocisneros046@gmail.com / sena2024');

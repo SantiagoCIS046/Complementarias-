@@ -13,6 +13,7 @@ const { checkRole }   = require('../../core/middlewares/roles.middleware');
 router.use(verifyToken);
 router.use(checkRole(['ADMIN']));
 
+router.get('/fichas/stats', controller.getFichasSummary);
 router.get('/',    controller.getAll);
 router.get('/:id', controller.getById);
 router.put('/:id', controller.actualizar);

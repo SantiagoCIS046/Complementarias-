@@ -12,7 +12,8 @@ const getAll = async (filtros = {}) => {
   const query = {};
 
   if (filtros.role)     query.role = filtros.role;
-  if (filtros.status !== undefined) query.status = filtros.status;
+  if (filtros.status)   query.status = filtros.status;
+  if (filtros.programa) query.programa = filtros.programa;
   if (filtros.busqueda) {
     query.$or = [
       { name:  { $regex: filtros.busqueda, $options: 'i' } },
@@ -66,9 +67,39 @@ const desactivar = async (id) => {
   return usuario;
 };
 
+/**
+ * Obtener lista de fichas únicas con estadísticas básicas.
+ */
+const getFichasSummary = async () => {
+  // Obtenemos todos los valores únicos del campo 'ficha'
+  const fichas = await User.distinct('ficha', { ficha: { $ne: null, $exists: true } });
+  
+  const results = await Promise.all(fichas.map(async (f) => {
+    // Para cada ficha, buscamos el primer usuario para obtener el programa
+    const sampleUser = await User.findOne({ ficha: f });
+    const count = await User.countDocuments({ ficha: f });
+    
+    // Intentamos encontrar un instructor asignado a algún aprendiz de esta ficha
+    const userWithInstructor = await User.findOne({ ficha: f, instructorAsignado: { $ne: null } })
+      .populate('instructorAsignado');
+    
+    return {
+      codigo: f,
+      programa: sampleUser ? sampleUser.programa || 'Programa no definido' : 'Sin programa',
+      aprendices: count,
+      instructor: userWithInstructor?.instructorAsignado?.name || 'Por asignar',
+      jornada: 'Diurna', // Valor por defecto ya que no está en el modelo original
+      estado: 'LECTIVA'
+    };
+  }));
+  
+  return results;
+};
+
 module.exports = {
   getAll,
   getById,
   actualizar,
   desactivar,
+  getFichasSummary,
 };

@@ -9,7 +9,8 @@ import {
   Settings, 
   LogOut,
   ShieldCheck,
-  GraduationCap
+  GraduationCap,
+  Building2
 } from 'lucide-vue-next';
 import { useAuthStore } from '../../core/store/auth.store';
 
@@ -24,6 +25,7 @@ const menuItems = computed(() => {
   if (role === 'ADMIN') {
     return [
       { name: 'USUARIOS', icon: ShieldCheck, path: '/usuarios' },
+      { name: 'EMPRESAS', icon: Building2, path: '/gestion-empresas' },
       { name: 'CONFIG', icon: Settings, path: '/configuracion' },
     ];
   }

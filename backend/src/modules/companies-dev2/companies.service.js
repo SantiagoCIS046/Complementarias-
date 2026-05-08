@@ -20,18 +20,23 @@ const crear = async (data) => {
 };
 
 /**
- * Listar todas las empresas activas.
+ * Listar todas las empresas.
  */
 const getAll = async (filtros = {}) => {
-  const query = { activa: true };
+  const query = {}; // Eliminamos activa: true ya que ahora usamos 'estado'
+  
   if (filtros.busqueda) {
     query.$or = [
-      { razonSocial: { $regex: filtros.busqueda, $options: 'i' } },
+      { razon_social: { $regex: filtros.busqueda, $options: 'i' } },
       { nit: { $regex: filtros.busqueda, $options: 'i' } },
     ];
   }
 
-  const empresas = await Company.find(query).sort({ razonSocial: 1 });
+  if (filtros.estado) {
+    query.estado = filtros.estado;
+  }
+
+  const empresas = await Company.find(query).sort({ razon_social: 1 });
   return empresas;
 };
 

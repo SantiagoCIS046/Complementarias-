@@ -27,6 +27,11 @@ const routes = [
     component: () => import('@/modules/ep-management-dev2/views/CompanyList.vue')
   },
   {
+    path: '/gestion-empresas',
+    name: 'gestion-empresas',
+    component: () => import('@/modules/admin-auth-dev1/views/CompanyManagement.vue')
+  },
+  {
     path: '/certificacion',
     name: 'certificacion',
     component: () => import('@/modules/operation-tracking-dev3/views/Certifications.vue')

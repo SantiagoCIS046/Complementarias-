@@ -30,6 +30,7 @@ app.use('/api/bitacoras', require('./modules/bitacoras-dev3/bitacoras.routes'));
 app.use('/api/trackings', require('./modules/trackings-dev3/trackings.routes'));
 app.use('/api/hours', require('./modules/hours-dev3/hours.routes'));
 app.use('/api/novelties', require('./modules/novelties-dev3/novelties.routes'));
+app.use('/api/fichas', require('./modules/batches-dev1/batches.routes'));
 
 // --- Ruta de salud ---
 app.get('/api/health', (_req, res) => res.json({ status: 'OK', timestamp: new Date() }));

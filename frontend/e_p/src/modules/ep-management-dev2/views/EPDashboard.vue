@@ -21,10 +21,10 @@ const aprendiz = computed(() => {
     horasCompletadas: s.horasCompletadas || 0,
     horasTotales: s.horasRequeridas || 864,
     progresoPorcentaje: s.horasRequeridas > 0 ? Math.round((s.horasCompletadas / s.horasRequeridas) * 100) : 0,
-    razonSocial: s.companyId?.razonSocial || s.companySnapshot?.razonSocial || '---',
+    razonSocial: s.companyId?.razon_social || s.companySnapshot?.razonSocial || '---',
     nit: s.companyId?.nit || s.companySnapshot?.nit || '---',
-    jefe: s.companySnapshot?.jefeInmediato || '---',
-    telefono: s.companySnapshot?.telefonoJefe || s.companySnapshot?.telefonoContacto || '---'
+    jefe: s.companyId?.jefe_inmediato?.nombre_completo || s.companySnapshot?.jefeInmediato || '---',
+    telefono: s.companyId?.jefe_inmediato?.telefono || s.companySnapshot?.telefonoJefe || '---'
   }
 })
 

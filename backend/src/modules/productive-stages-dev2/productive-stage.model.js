@@ -48,6 +48,11 @@ const productiveStageSchema = new mongoose.Schema(
       unique: true,
       sparse: true, // Permite nulls múltiples antes de asignarlo
     },
+    ficha: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     tipoFormacion: {
       type: String,
       enum: Object.values(TIPO_FORMACION),

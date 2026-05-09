@@ -64,15 +64,16 @@ const fetchApprentices = async () => {
         name: item.apprenticeId?.name || 'Aprendiz sin nombre',
         initials: (item.apprenticeId?.name || 'A').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
         avatarColor: '#E6F4EA',
-        company: item.companyId?.razonSocial || item.companySnapshot?.razonSocial || item.razonSocial || 'Sin empresa',
+        company: item.companyId?.razon_social || item.companySnapshot?.razonSocial || 'Sin empresa',
         hours: item.horasCompletadas || 0,
         limit: item.horasRequeridas || 864,
         progress: item.horasRequeridas > 0 ? Math.min(Math.round(((item.horasCompletadas || 0) / item.horasRequeridas) * 100), 100) : 0,
         status: item.estado === 'COMPLETADA' ? 'AL DÍA' : 'EN CURSO',
         lastReport: item.seguimientos?.length || 0,
-        phase: item.estadoEP || 'ACTIVO',
+        phase: item.estado || 'ACTIVO',
         modality: item.modalidad || 'CONTRATO',
         ficha: item.ficha || item.apprenticeId?.ficha || 'S/F',
+        programa: item.apprenticeId?.programa || 'Sin programa',
         createdAt: item.createdAt
       })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Orden Cronológico (Más reciente primero)
     } else {

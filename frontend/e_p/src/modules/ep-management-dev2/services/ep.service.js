@@ -26,6 +26,7 @@ export const epService = {
   getBitacoras:       ()            => http.get('/bitacoras'),
   getBitacorasByStage:(stageId)     => http.get(`/bitacoras/stage/${stageId}`),
   crearBitacora:      (data)        => http.post('/bitacoras', data),
+  actualizarBitacora: (id, data)    => http.put(`/bitacoras/${id}`, data),
 
   // ── Certificación ─────────────────────────────────────────────
   getEstadoCertificacion: (id)      => http.get(`/productive-stages/${id}/certificacion`),

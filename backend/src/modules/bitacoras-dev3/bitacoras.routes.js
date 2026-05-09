@@ -34,4 +34,10 @@ router.get('/stage/:stageId', checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), co
  */
 router.patch('/:id/review', checkRole(['ADMIN', 'INSTRUCTOR']), controller.revisar);
 
+/**
+ * @route   PUT /api/bitacoras/:id
+ * @access  Private (APRENDIZ)
+ */
+router.put('/:id', checkRole(['APRENDIZ']), controller.actualizar);
+
 module.exports = router;

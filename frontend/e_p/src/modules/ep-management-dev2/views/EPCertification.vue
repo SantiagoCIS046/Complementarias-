@@ -83,7 +83,7 @@ const totalAprobados = computed(() => documentos.value.filter(d => d.estado === 
       <main class="flex-1 overflow-y-auto p-6 lg:p-8">
         <div class="w-full space-y-4">
           <!-- 1. Botón volver -->
-          <BtnBack route="/dashboard" />
+          <BtnBack route="/mi-ep" />
 
           <!-- 2. Título de sección con separador verde -->
           <HeaderLayout title="Certificación Final de Etapa Productiva" />

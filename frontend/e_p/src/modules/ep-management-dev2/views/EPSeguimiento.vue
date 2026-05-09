@@ -97,6 +97,7 @@
                   <tr>
                     <th>APRENDIZ</th>
                     <th>EMPRESA / FICHA</th>
+                    <th>INSTRUCTOR</th>
                     <th>TIPO VISITA</th>
                     <th>ESTADO BITÁCORAS</th>
                     <th>FECHA VISITA</th>
@@ -118,6 +119,7 @@
                         <span class="ficha-tag">FICHA: {{ seg.ficha }}</span>
                       </div>
                     </td>
+                    <td><span class="text-xs font-bold text-gray-600">{{ seg.instructor }}</span></td>
                     <td><span class="badge-type" :class="seg.type.toLowerCase()">{{ seg.type }}</span></td>
                     <td><span class="badge-logs" :class="seg.logsStatus.replace(' ', '-').toLowerCase()">{{ seg.logsStatus }}</span></td>
                     <td><span class="visit-date">{{ seg.date }}</span></td>
@@ -137,7 +139,7 @@
                     </td>
                   </tr>
                   <tr v-if="filteredSeguimientos.length === 0">
-                    <td colspan="7" class="p-12 text-center text-gray-400 font-medium italic">
+                    <td colspan="8" class="p-12 text-center text-gray-400 font-medium italic">
                       No se encontraron seguimientos para los filtros aplicados.
                     </td>
                   </tr>
@@ -312,10 +314,12 @@ const fetchData = async () => {
           initials: (apprentice.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
           company: company.razonSocial || 'Sin empresa',
           ficha: stage.radicado || 'S/N',
+          instructor: apprentice.instructorAsignado?.name || 'No asignado',
           type: tipo.label,
           numVisita: tipo.num,
           logsStatus: logsStatus,
           date: trackingRealizado ? new Date(trackingRealizado.fechaVisita).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : visitDate,
+          rawDate: trackingRealizado ? new Date(trackingRealizado.fechaVisita) : (stage.fechaInicio ? new Date(new Date(stage.fechaInicio).setMonth(new Date(stage.fechaInicio).getMonth() + tipo.months)) : new Date(0)),
           status: trackingRealizado ? 'REALIZADA' : (stage.fechaInicio ? 'PROGRAMADA' : 'PENDIENTE'),
           trackingId: trackingRealizado ? trackingRealizado._id : null,
           evidenciaUrl: trackingRealizado ? trackingRealizado.evidenciaUrl : '',
@@ -324,7 +328,8 @@ const fetchData = async () => {
       })
     })
 
-    seguimientos.value = results
+    // Orden Cronológico: Primero los más recientes o próximos
+    seguimientos.value = results.sort((a, b) => b.rawDate - a.rawDate)
   } catch (error) {
     console.error('Error fetching trackings:', error)
   } finally {

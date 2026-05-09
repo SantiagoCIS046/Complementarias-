@@ -11,7 +11,7 @@ const { checkRole }   = require('../../core/middlewares/roles.middleware');
 
 // Todas las rutas de usuarios requieren autenticación y rol ADMIN
 router.use(verifyToken);
-router.use(checkRole(['ADMIN']));
+router.use(checkRole(['ADMIN', 'INSTRUCTOR']));
 
 router.get('/fichas/stats', controller.getFichasSummary);
 router.get('/',    controller.getAll);

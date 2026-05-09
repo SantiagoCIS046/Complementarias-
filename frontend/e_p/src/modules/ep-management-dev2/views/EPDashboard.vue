@@ -181,7 +181,7 @@ onMounted(load)
             <span class="material-symbols-outlined">app_registration</span> Formalizar EP
           </button>
         </router-link>
-        <router-link to="/seguimiento" custom v-slot="{ navigate, isActive }">
+        <router-link to="/seguimiento-ep" custom v-slot="{ navigate, isActive }">
           <button @click="navigate" :class="['nav-item', { active: isActive }]">
             <span class="material-symbols-outlined">assessment</span> Seguimientos Técnicos
           </button>
@@ -194,9 +194,6 @@ onMounted(load)
       </nav>
 
       <div class="sidebar-footer">
-        <button class="btn-new-visit-sidebar">
-          <span class="material-symbols-outlined">add_circle</span> New Technical Visit
-        </button>
         <button @click="handleLogout" class="nav-item logout-btn">
           <span class="material-symbols-outlined">logout</span> Cerrar Sesión
         </button>

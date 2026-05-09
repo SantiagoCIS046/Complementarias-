@@ -115,10 +115,10 @@ const routes = [
   },
 
   {
-    // Vista de seguimiento EP — exclusiva del aprendiz
+    // Vista de seguimiento EP — accesible para ver la agenda de visitas
     path: '/seguimiento-ep',
     name: 'EPDashboardSeg',
-    component: () => import('../../modules/ep-management-dev2/views/EPDashboard.vue'),
+    component: () => import('../../modules/ep-management-dev2/views/EPSeguimiento.vue'),
     meta: { requiresAuth: true, roles: ['APRENDIZ'] },
   },
 

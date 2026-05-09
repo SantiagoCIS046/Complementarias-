@@ -149,7 +149,11 @@ const getAll = async (filtros = {}) => {
   }
 
   const stages = await ProductiveStage.find(query)
-    .populate('apprenticeId', 'name email role documento')
+    .populate({
+      path: 'apprenticeId',
+      select: 'name email role documento instructorAsignado',
+      populate: { path: 'instructorAsignado', select: 'name' }
+    })
     .populate('companyId', 'razonSocial nit')
     .sort({ createdAt: -1 });
 

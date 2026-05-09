@@ -14,6 +14,7 @@ const isAuthenticated = computed(() => !!authStore.user)
 
 // ── Estado REAL ──────────────────────────────────
 const apprentices = ref([])
+const fichasMaster = ref([])
 const isLoading = ref(true)
 const errorMsg = ref(null)
 
@@ -48,8 +49,13 @@ const fetchApprentices = async () => {
   errorMsg.value = null
   
   try {
-    const res = await trackingService.getMyApprentices()
-    const data = res.data.data || []
+    const [stagesRes, fichasRes] = await Promise.all([
+      trackingService.getMyApprentices(),
+      trackingService.getFichas()
+    ])
+    
+    const data = stagesRes.data.data || []
+    fichasMaster.value = fichasRes.data.data || []
     
     if (data.length > 0) {
       apprentices.value = data.map(item => ({
@@ -58,7 +64,7 @@ const fetchApprentices = async () => {
         name: item.apprenticeId?.name || 'Aprendiz sin nombre',
         initials: (item.apprenticeId?.name || 'A').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
         avatarColor: '#E6F4EA',
-        company: item.companyId?.razonSocial || item.razonSocial || 'Sin empresa',
+        company: item.companyId?.razonSocial || item.companySnapshot?.razonSocial || item.razonSocial || 'Sin empresa',
         hours: item.horasCompletadas || 0,
         limit: item.horasRequeridas || 864,
         progress: item.horasRequeridas > 0 ? Math.min(Math.round(((item.horasCompletadas || 0) / item.horasRequeridas) * 100), 100) : 0,
@@ -66,8 +72,9 @@ const fetchApprentices = async () => {
         lastReport: item.seguimientos?.length || 0,
         phase: item.estadoEP || 'ACTIVO',
         modality: item.modalidad || 'CONTRATO',
-        ficha: item.ficha || 'S/F'
-      }))
+        ficha: item.ficha || item.apprenticeId?.ficha || 'S/F',
+        createdAt: item.createdAt
+      })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Orden Cronológico (Más reciente primero)
     } else {
       errorMsg.value = 'No se encontraron aprendices asignados en la base de datos.'
     }
@@ -85,24 +92,41 @@ const availableFichas = computed(() => [...new Set(apprentices.value.map(a => a.
 
 // ── Lógica de Agrupación para Módulo FICHAS ──────────────────
 const groupedFichas = computed(() => {
+  // Primero mapeamos todas las fichas maestras
   const groups = {}
+  
+  fichasMaster.value.forEach(f => {
+    groups[f.codigo] = {
+      numero: f.codigo,
+      programa: f.programa,
+      total: f.aprendices || 0,
+      alDia: 0,
+      retrasados: 0,
+      enEP: 0
+    }
+  })
+
+  // Luego sumamos los estados de los aprendices que están en etapa productiva
   apprentices.value.forEach(app => {
     if (!groups[app.ficha]) {
       groups[app.ficha] = {
         numero: app.ficha,
-        total: 0,
+        programa: 'Programa No Definido',
+        total: 1,
         alDia: 0,
-        retrasados: 0
+        retrasados: 0,
+        enEP: 0
       }
     }
-    groups[app.ficha].total++
+    
+    groups[app.ficha].enEP++
     if (app.status === 'AL DÍA') groups[app.ficha].alDia++
     else groups[app.ficha].retrasados++
   })
   
   return Object.values(groups).filter(f => {
     const q = searchQuery.value.toLowerCase()
-    return f.numero.includes(q)
+    return f.numero.toLowerCase().includes(q) || f.programa.toLowerCase().includes(q)
   })
 })
 
@@ -262,7 +286,7 @@ const getPhaseStyle = (phase) => {
                 <thead>
                   <!-- Encabezados para FICHAS -->
                   <tr v-if="filters.module === 'FICHAS'">
-                    <th>FICHA #</th>
+                    <th>FICHA # / PROGRAMA</th>
                     <th class="text-center">TOTAL APRENDICES</th>
                     <th class="text-center">AL DÍA</th>
                     <th class="text-center">PENDIENTES</th>
@@ -282,7 +306,12 @@ const getPhaseStyle = (phase) => {
                   <!-- Render para FICHAS -->
                   <template v-if="filters.module === 'FICHAS'">
                     <tr v-for="f in groupedFichas" :key="f.numero">
-                      <td><div class="ficha-cell-premium"><span class="ficha-number">#{{ f.numero }}</span></div></td>
+                      <td>
+                        <div class="ficha-cell-premium">
+                          <span class="ficha-number">#{{ f.numero }}</span>
+                          <div class="text-[9px] font-bold text-gray-500 mt-1 uppercase">{{ f.programa }}</div>
+                        </div>
+                      </td>
                       <td class="text-center font-bold">{{ f.total }} Alumnos</td>
                       <td class="text-center"><span class="text-green font-bold">{{ f.alDia }}</span></td>
                       <td class="text-center"><span class="text-red font-bold">{{ f.retrasados }}</span></td>

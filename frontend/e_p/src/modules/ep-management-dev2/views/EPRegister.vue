@@ -1,222 +1,591 @@
-  <script setup>
-  import { ref, reactive, watch, computed } from 'vue'
-  import { useRouter } from 'vue-router'
-  import Sidebar from '@/components/layout/Sidebar.vue'
-  import Header from '@/components/layout/Header.vue'
-  import BtnBack from '@/layouts/btnBackLayout.vue'
-  import HeaderLayout from '@/layouts/headerViewsLayout.vue'
-  import { epService } from '../services/ep.service'
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../../../core/store/auth.store'
+import { epService } from '../services/ep.service'
 
-  const router = useRouter()
+const router = useRouter()
+const authStore = useAuthStore()
+const currentUser = computed(() => authStore.user || { name: 'Usuario', role: 'Invitado' })
 
-  // --- Lógica de Estado ---
-  const currentStep = ref(1)
-  const totalSteps = 3
-  const isSubmitting = ref(false)
-  const submitError = ref('')
-  
-  // Buscar empresas
-  const companies = ref([])
-  const isLoadingCompanies = ref(false)
+// --- Navegación ---
+const activeTab = ref('EP') // 'EP' | 'Empresas' | 'Certificados'
 
-  const loadCompanies = async () => {
-    try {
-      isLoadingCompanies.value = true
-      const res = await epService.getCompanies()
-      companies.value = res.data?.data || []
-    } catch (e) {
-      console.error('Error cargando empresas:', e)
-    } finally {
-      isLoadingCompanies.value = false
-    }
+// --- Registro (Etapa Productiva) ---
+const currentStep = ref(1)
+const totalSteps = 3
+const isSubmitting = ref(false)
+const formData = reactive({
+  modalidad: 'Contrato de Aprendizaje',
+  nit: '',
+  empresaSeleccionada: null,
+  supervisor: { nombre: '', email: '' },
+  observaciones: '',
+  rutFile: null,
+  camaraFile: null
+})
+
+const errors = reactive({
+  nit: '',
+  empresa: '',
+  supervisorNombre: '',
+  supervisorEmail: '',
+  files: ''
+})
+
+// --- Control de UI ---
+const showSuggestions = ref(false)
+const companies = ref([])
+const isLoadingCompanies = ref(false)
+const searchCompany = ref('')
+const certData = ref(null)
+const isLoadingCert = ref(false)
+
+// --- Notificaciones ---
+const notifications = ref([])
+const notify = (text, type = 'success') => {
+  const id = Date.now()
+  notifications.value.push({ id, text, type })
+  setTimeout(() => { notifications.value = notifications.value.filter(n => n.id !== id) }, 4000)
+}
+
+const validateEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+// --- Servicios ---
+const loadData = async () => {
+  try {
+    isLoadingCompanies.value = true
+    const resComp = await epService.getCompanies()
+    const dataComp = resComp.data?.data || resComp.data || []
+    companies.value = Array.isArray(dataComp) ? dataComp : []
+    
+    isLoadingCert.value = true
+    const resCert = await epService.getEstadoCertificacion('current')
+    certData.value = resCert.data?.data || { estado: 'Pendiente', mensaje: 'Debes formalizar para continuar.', habilitado: false }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    isLoadingCompanies.value = false
+    isLoadingCert.value = false
+  }
+}
+
+// --- Lógica de Filtros ---
+const filteredSuggestions = computed(() => {
+  if (!formData.nit || formData.nit.length < 2) return []
+  const clean = formData.nit.replace(/\D/g, '')
+  return companies.value.filter(c => (c.nit || '').replace(/\D/g, '').includes(clean)).slice(0, 5)
+})
+
+const filteredCompaniesList = computed(() => {
+  if (!searchCompany.value) return companies.value
+  const q = searchCompany.value.toLowerCase()
+  return companies.value.filter(c => 
+    (c.razonSocial?.toLowerCase().includes(q)) || 
+    (c.nit?.includes(q)) || 
+    (c.sector?.toLowerCase().includes(q))
+  )
+})
+
+// --- Acciones ---
+const selectCompany = (c) => {
+  formData.nit = c.nit
+  formData.empresaSeleccionada = { _id: c._id, nombre: c.razonSocial, nit: c.nit, ubicacion: c.direccion || 'Bogotá' }
+  errors.empresa = ''
+  errors.nit = ''
+  showSuggestions.value = false 
+}
+
+const handleFileChange = (e, type) => {
+  const file = e.target.files[0]
+  if (!file) return
+
+  // Validaciones
+  if (file.type !== 'application/pdf') {
+    notify('Solo se permiten archivos PDF.', 'error')
+    e.target.value = ''
+    return
   }
 
-  const formData = reactive({
-    tipoFormacion: 'PRACTICA',
-    modalidad: 'Contrato de Aprendizaje',
-    nit: '',
-    empresaSeleccionada: null,
-    observaciones: ''
-  })
+  if (file.size > 2 * 1024 * 1024) { // 2MB
+    notify('El archivo es demasiado grande (máximo 2MB).', 'error')
+    e.target.value = ''
+    return
+  }
 
-  // Detectar empresa automáticamente por NIT
-  watch(() => formData.nit, (newNit) => {
-    if (!newNit || newNit.length < 5) {
-      formData.empresaSeleccionada = null
-      return
-    }
-    const found = companies.value.find(c => c.nit.includes(newNit) || c.nit === newNit)
-    if (found) {
-      formData.empresaSeleccionada = {
-        _id: found._id,
-        nombre: found.razonSocial,
-        ubicacion: found.direccion || 'Colombia',
-        registrada: true
-      }
-    } else {
-      formData.empresaSeleccionada = null
-    }
-  })
+  if (type === 'rut') formData.rutFile = file
+  if (type === 'camara') formData.camaraFile = file
+  errors.files = ''
+  notify(`Archivo ${type.toUpperCase()} cargado correctamente.`, 'info')
+}
 
-  const nextStep = () => { if (currentStep.value < totalSteps) currentStep.value++ }
-  const prevStep = () => { if (currentStep.value > 1) currentStep.value-- }
-  
-  const handleFinish = async () => {
+const onNitInput = (e) => {
+  formData.nit = e.target.value.replace(/\D/g, '') // Solo números
+}
+
+const onNameInput = (e) => {
+  formData.supervisor.nombre = e.target.value.replace(/[^a-zA-Z\s]/g, '') // Solo letras y espacios
+}
+
+const validateStep = () => {
+  let isValid = true
+  // Reset errors
+  Object.keys(errors).forEach(k => errors[k] = '')
+
+  if (currentStep.value === 1) {
     if (!formData.empresaSeleccionada) {
-      submitError.value = 'Debe seleccionar una empresa válida.'
-      return
+      errors.empresa = 'Debes seleccionar una empresa válida.'
+      isValid = false
     }
-    isSubmitting.value = true
-    submitError.value = ''
-    try {
-      const payload = {
-        companyId: formData.empresaSeleccionada._id,
-        tipoFormacion: formData.tipoFormacion,
-        modalidad: formData.modalidad,
-        documentos: [], // Empty docs for now
-        observaciones: 'Registrado desde portal Aprendiz'
-      }
-      await epService.create(payload)
-      alert('¡Registro de Etapa Productiva completado exitosamente!')
-      router.push('/dashboard')
-    } catch (error) {
-      submitError.value = error.response?.data?.message || 'Error al registrar la etapa productiva.'
-    } finally {
-      isSubmitting.value = false
+  } else if (currentStep.value === 2) {
+    if (!formData.supervisor.nombre || formData.supervisor.nombre.length < 3) {
+      errors.supervisorNombre = 'Ingresa el nombre completo del jefe.'
+      isValid = false
+    }
+    if (!formData.supervisor.email) {
+      errors.supervisorEmail = 'El correo es obligatorio.'
+      isValid = false
+    } else if (!validateEmail(formData.supervisor.email)) {
+      errors.supervisorEmail = 'Formato de correo inválido.'
+      isValid = false
+    }
+  } else if (currentStep.value === 3) {
+    if (!formData.rutFile && !formData.camaraFile) {
+      errors.files = 'Faltan ambos documentos obligatorios (RUT y Cámara).'
+      isValid = false
+    } else if (!formData.rutFile) {
+      errors.files = 'Falta adjuntar el RUT de la empresa.'
+      isValid = false
+    } else if (!formData.camaraFile) {
+      errors.files = 'Falta adjuntar la Cámara de Comercio.'
+      isValid = false
     }
   }
+  return isValid
+}
 
-  // Load initially
-  loadCompanies()
-  </script>
+const handleNext = () => {
+  if (validateStep()) {
+    currentStep.value++
+  } else {
+    notify('Por favor corrige los errores.', 'error')
+  }
+}
 
-  <template>
-    <div class="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
-      <Sidebar />
+const handleFinish = async () => {
+  if (!validateStep()) return
+  
+  isSubmitting.value = true
+  try {
+    const fData = new FormData()
+    fData.append('companyId', formData.empresaSeleccionada._id)
+    fData.append('modalidad', formData.modalidad)
+    fData.append('jefeInmediato', formData.supervisor.nombre)
+    fData.append('emailContacto', formData.supervisor.email)
+    fData.append('observaciones', formData.observaciones)
+    fData.append('rutFile', formData.rutFile)
+    fData.append('camaraFile', formData.camaraFile)
 
-      <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header />
+    await epService.create(fData)
+    notify('¡Etapa Productiva registrada con éxito!', 'success')
+    setTimeout(() => router.push('/mi-ep'), 2000)
+  } catch (e) { 
+    const msg = e.response?.data?.message || 'Error al procesar el registro.'
+    notify(msg, 'error') 
+  } finally { 
+    isSubmitting.value = false 
+  }
+}
 
-        <main class="flex-1 overflow-y-auto p-6 lg:p-8">
-          <div class="w-full space-y-4">
-            <!-- 1. Botón volver -->
-            <BtnBack route="/mi-ep" />
+const handleDownload = async () => {
+  try {
+    notify('Generando documento...', 'info')
+    const res = await epService.descargarCertificado('current')
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Certificado_${currentUser.value.name}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    notify('Descarga iniciada.', 'success')
+  } catch (e) { notify('No disponible aún.', 'error') }
+}
 
-            <!-- 2. Título de sección con separador verde -->
-            <HeaderLayout title="Registro de Etapa Productiva" />
+onMounted(loadData)
+</script>
 
-            <p class="text-gray-500 font-medium q-mb-lg">Completa los pasos para formalizar tu proceso institucional.</p>
-
-          <!-- Stepper -->
-          <div class="bg-white rounded-3xl p-8 mb-8 shadow-sm border border-gray-100">
-            <div class="relative w-full">
-              <div class="absolute top-6 left-16 right-16 h-0.5 bg-gray-100 -z-0"></div>
-              <div class="absolute top-6 left-16 h-0.5 bg-green-700 z-0 transition-all duration-700" :style="{ width: ((currentStep - 1) / (totalSteps - 1)) * 100 + '%' }"></div>
-              <div class="relative z-10 flex justify-between items-center px-4">
-                <div v-for="step in totalSteps" :key="step" class="flex flex-col items-center gap-3 w-32">
-                  <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all" :class="currentStep >= step ? 'bg-green-700 text-white shadow-lg' : 'bg-gray-100 text-gray-400 border border-gray-200'">
-                    <span v-if="currentStep > step" class="material-symbols-outlined">check</span>
-                    <span v-else>{{ step }}</span>
-                  </div>
-                  <span class="text-[10px] uppercase tracking-widest font-bold" :class="currentStep >= step ? 'text-green-800' : 'text-gray-400'">
-                    {{ step === 1 ? 'Modalidad' : step === 2 ? 'Supervisor' : 'Finalizar' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card Form -->
-          <div class="bg-white rounded-3xl p-10 shadow-sm border border-gray-100 min-h-[400px]">
-            <Transition name="fade" mode="out-in">
-              <div v-if="currentStep === 1">
-                <div class="flex items-center gap-4 mb-8">
-                  <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-green-700 border border-green-100">
-                    <span class="material-symbols-outlined text-2xl">corporate_fare</span>
-                  </div>
-                  <h3 class="text-xl font-bold text-gray-900">Selección de Empresa</h3>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div class="space-y-4">
-                    <div class="space-y-2">
-                      <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Modalidad</label>
-                      <select v-model="formData.modalidad" class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-gray-900 focus:ring-2 focus:ring-green-500 transition-all">
-                        <option>Contrato de Aprendizaje</option>
-                        <option>Vínculo Laboral</option>
-                        <option>Pasantía</option>
-                      </select>
-                    </div>
-                    <div class="space-y-2">
-                      <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">NIT Empresa</label>
-                      <input v-model="formData.nit" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-green-500 transition-all" placeholder="Ej: 900.452.123-5" />
-                    </div>
-                  </div>
-                  <div class="bg-green-50/30 rounded-3xl p-6 border border-green-100 flex items-center justify-center">
-                    <div v-if="formData.empresaSeleccionada" class="text-center">
-                      <p class="text-[9px] font-bold text-green-700 uppercase tracking-widest mb-1">Empresa Encontrada</p>
-                      <h4 class="font-bold text-gray-900">{{ formData.empresaSeleccionada.nombre }}</h4>
-                      <p class="text-xs text-gray-500 mt-2">{{ formData.empresaSeleccionada.ubicacion }}</p>
-                    </div>
-                    <div v-else-if="formData.nit && formData.nit.length > 3" class="text-center text-red-500">
-                      <span class="material-symbols-outlined text-3xl mb-2">error</span>
-                      <p class="text-sm font-bold">Empresa no encontrada</p>
-                      <p class="text-xs mt-1">Verifica el NIT ingresado.</p>
-                    </div>
-                    <p v-else class="text-sm text-gray-400 italic text-center">Ingresa el NIT para buscar en la base de datos...</p>
-                  </div>
-                </div>
-              </div>
-
-              <div v-else-if="currentStep === 2">
-                <div class="flex items-center gap-4 mb-8">
-                  <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-green-700 border border-green-100">
-                    <span class="material-symbols-outlined text-2xl">person_pin</span>
-                  </div>
-                  <h3 class="text-xl font-bold text-gray-900">Datos del Supervisor</h3>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nombre</label>
-                    <input v-model="formData.supervisor.nombre" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-green-500 transition-all" />
-                  </div>
-                  <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Email</label>
-                    <input v-model="formData.supervisor.email" type="email" class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-green-500 transition-all" />
-                  </div>
-                </div>
-              </div>
-
-              <div v-else-if="currentStep === 3" class="text-center py-6">
-                <div class="w-16 h-16 bg-green-100 text-green-700 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span class="material-symbols-outlined text-3xl">task_alt</span>
-                </div>
-                <h3 class="text-2xl font-extrabold text-gray-900 mb-2">¡Todo listo!</h3>
-                <p class="text-gray-500 text-sm mb-4">Verifica tus datos antes de formalizar la Etapa Productiva.</p>
-                <div v-if="submitError" class="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-bold max-w-md mx-auto mb-4">
-                  {{ submitError }}
-                </div>
-              </div>
-            </Transition>
-
-            <!-- Buttons -->
-            <div class="mt-12 flex justify-between items-center border-t border-gray-100 pt-8">
-              <button @click="prevStep" :disabled="currentStep === 1 || isSubmitting" class="px-6 py-3 rounded-xl text-sm font-bold text-gray-400 hover:text-gray-900 transition-all disabled:opacity-0">Atrás</button>
-              <button @click="currentStep === totalSteps ? handleFinish() : nextStep()" :disabled="isSubmitting" class="px-8 py-3.5 rounded-2xl bg-green-9 text-white font-bold shadow-lg hover:bg-green-10 transition-all flex items-center gap-3">
-                {{ currentStep === totalSteps ? (isSubmitting ? 'Enviando...' : 'Enviar Registro') : 'Siguiente Paso' }}
-                <span class="material-symbols-outlined text-[20px]">{{ currentStep === totalSteps ? 'send' : 'arrow_forward' }}</span>
-              </button>
-            </div>
-            </div>
-          </div>
-        </main>
+<template>
+  <div class="repfora-dashboard">
+    <!-- SIDEBAR SINCRONIZADO CON DASHBOARD -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon"><span class="material-symbols-outlined">school</span></div>
+        <div class="logo-text">
+          <span class="title">Administración Académica</span>
+          <span class="subtitle">DIVISIÓN REGIONAL</span>
+        </div>
       </div>
+      
+      <nav class="sidebar-nav">
+        <router-link to="/mi-ep" custom v-slot="{ navigate, isActive }">
+          <button @click="navigate" :class="['nav-item', { active: isActive }]">
+            <span class="material-symbols-outlined">grid_view</span> Mi Etapa Productiva
+          </button>
+        </router-link>
+        <router-link to="/registro-ep" custom v-slot="{ navigate, isActive }">
+          <button @click="navigate" :class="['nav-item', { active: isActive || activeTab === 'EP' }]">
+            <span class="material-symbols-outlined">app_registration</span> Formalizar EP
+          </button>
+        </router-link>
+        <router-link to="/seguimiento-ep" custom v-slot="{ navigate, isActive }">
+          <button @click="navigate" :class="['nav-item', { active: isActive }]">
+            <span class="material-symbols-outlined">assessment</span> Seguimientos Técnicos
+          </button>
+        </router-link>
+        <router-link to="/certificacion" custom v-slot="{ navigate, isActive }">
+          <button @click="navigate" :class="['nav-item', { active: isActive }]">
+            <span class="material-symbols-outlined">workspace_premium</span> Certificación Final
+          </button>
+        </router-link>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button @click="authStore.logout(); router.push('/login')" class="nav-item logout-btn">
+          <span class="material-symbols-outlined">logout</span> Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <!-- BARRA SUPERIOR CON TABS -->
+      <header class="topbar-white">
+        <div class="topbar-left">
+          <div class="top-logo">REPFORA</div>
+          <nav class="top-tabs">
+            <span :class="['tab', { active: activeTab === 'EP' }]" @click="activeTab = 'EP'">Etapa Productiva</span>
+            <span :class="['tab', { active: activeTab === 'Empresas' }]" @click="activeTab = 'Empresas'">Empresas</span>
+            <span :class="['tab', { active: activeTab === 'Certificados' }]" @click="activeTab = 'Certificados'">Certificación</span>
+          </nav>
+        </div>
+        <div class="topbar-right">
+          <div class="user-profile">
+            <span class="user-name">{{ currentUser.name }}</span>
+            <div class="user-avatar-small"><img :src="`https://ui-avatars.com/api/?name=${currentUser.name}&background=2e7d32&color=fff`" alt="U"></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-scrollable">
+        <div class="content-container">
+          
+          <!-- SECCIÓN: REGISTRO (EP) -->
+          <div v-if="activeTab === 'EP'" class="fade-in">
+            <div class="page-header-text"><h1>Registro de Etapa Productiva</h1><p>Formaliza tu proceso institucional ante el SENA.</p></div>
+            <div class="stepper-box card">
+              <div class="stepper-line"><div class="stepper-progress" :style="{ width: ((currentStep - 1) / (totalSteps - 1)) * 100 + '%' }"></div></div>
+              <div class="steps-container">
+                <div v-for="s in 3" :key="s" :class="['step-item', { active: currentStep === s, completed: currentStep > s }]">
+                  <div class="step-num">{{ s }}</div>
+                  <div class="step-desc">{{ s === 1 ? 'Empresa' : s === 2 ? 'Jefe' : 'Finalizar' }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="main-grid">
+              <div class="side-col">
+                <div class="card instruction-card"><h3>Instrucciones</h3><p>Busca tu empresa por NIT e ingresa los datos de contacto del supervisor.</p></div>
+                <div class="card smart-validation-card"><span class="material-symbols-outlined">verified</span><p>NIT validado automáticamente.</p></div>
+              </div>
+              <div class="form-col">
+                <div class="card form-card">
+                  <div v-if="currentStep === 1">
+                    <div class="form-group"><label>MODALIDAD</label><select v-model="formData.modalidad" class="custom-select"><option>Contrato de Aprendizaje</option><option>Vínculo Laboral</option><option>Pasantía</option></select></div>
+                    <div v-if="!formData.empresaSeleccionada" class="form-group mt-32">
+                      <label>NIT EMPRESA</label>
+                      <input 
+                        v-model="formData.nit" 
+                        :class="['search-input', { 'has-error': errors.empresa }]" 
+                        @focus="showSuggestions = true" 
+                        @input="onNitInput"
+                        placeholder="NIT sin puntos ni guiones..."
+                      >
+                      <span v-if="errors.empresa" class="error-text">{{ errors.empresa }}</span>
+                      <div v-if="showSuggestions && filteredSuggestions.length > 0" class="suggestions-list">
+                        <div v-for="c in filteredSuggestions" :key="c._id" class="suggestion-item" @click="selectCompany(c)">
+                          <strong>{{ c.razonSocial }}</strong> (NIT: {{ c.nit }})
+                        </div>
+                      </div>
+                    </div>
+
+                    <div v-if="formData.empresaSeleccionada" class="company-result-card">
+                      <div class="res-content">
+                        <span>Empresa: <strong>{{ formData.empresaSeleccionada.nombre }}</strong></span>
+                      </div>
+                      <button class="btn-change" @click="formData.empresaSeleccionada = null; formData.nit = ''">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div v-if="currentStep === 2">
+                    <div class="form-group">
+                      <label>NOMBRE JEFE</label>
+                      <input 
+                        v-model="formData.supervisor.nombre" 
+                        :class="['search-input no-icon', { 'has-error': errors.supervisorNombre }]" 
+                        @input="onNameInput"
+                        placeholder="Nombre completo"
+                      >
+                      <span v-if="errors.supervisorNombre" class="error-text">{{ errors.supervisorNombre }}</span>
+                    </div>
+                    <div class="form-group mt-32">
+                      <label>CORREO ELECTRÓNICO</label>
+                      <input v-model="formData.supervisor.email" :class="['search-input no-icon', { 'has-error': errors.supervisorEmail }]" placeholder="correo@empresa.com">
+                      <span v-if="errors.supervisorEmail" class="error-text">{{ errors.supervisorEmail }}</span>
+                    </div>
+                  </div>
+                  <div v-if="currentStep === 3">
+                    <div class="summary-card">
+                      <p><strong>Empresa:</strong> {{ formData.empresaSeleccionada?.nombre }}</p>
+                      <p><strong>Modalidad:</strong> {{ formData.modalidad }}</p>
+                      <p><strong>Jefe:</strong> {{ formData.supervisor.nombre }}</p>
+                    </div>
+
+                    <div class="doc-upload-section mt-32">
+                      <div class="form-group">
+                        <label>RUT DE LA EMPRESA (PDF)</label>
+                        <div class="file-input-wrapper">
+                          <input type="file" @change="handleFileChange($event, 'rut')" accept=".pdf" class="file-input">
+                          <div v-if="formData.rutFile" class="file-selected-tag">
+                            <span class="material-symbols-outlined">check_circle</span> {{ formData.rutFile.name }}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="form-group mt-16">
+                        <label>CÁMARA DE COMERCIO (PDF)</label>
+                        <div class="file-input-wrapper">
+                          <input type="file" @change="handleFileChange($event, 'camara')" accept=".pdf" class="file-input">
+                          <div v-if="formData.camaraFile" class="file-selected-tag">
+                            <span class="material-symbols-outlined">check_circle</span> {{ formData.camaraFile.name }}
+                          </div>
+                        </div>
+                      </div>
+                      <span v-if="errors.files" class="error-text">{{ errors.files }}</span>
+                    </div>
+
+                    <textarea v-model="formData.observaciones" class="custom-textarea mt-32" placeholder="Observaciones adicionales..."></textarea>
+                  </div>
+                  <div class="form-footer">
+                    <button v-if="currentStep > 1" class="btn-text" @click="currentStep--">VOLVER</button>
+                    <div v-else></div> <!-- Espaciador para mantener SIGUIENTE a la derecha -->
+                    <button class="btn-primary" @click="currentStep === 3 ? handleFinish() : handleNext()" :disabled="isSubmitting">{{ currentStep === 3 ? 'FINALIZAR' : 'SIGUIENTE' }}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: EMPRESAS -->
+          <div v-if="activeTab === 'Empresas'" class="fade-in">
+            <div class="page-header-text"><h1>Directorio de Empresas</h1></div>
+            <div class="card table-card">
+              <div class="search-bar"><span class="material-symbols-outlined">search</span><input v-model="searchCompany" placeholder="Filtrar empresas..."></div>
+              <table class="modern-table">
+                <thead><tr><th>EMPRESA</th><th>NIT</th><th>SECTOR</th><th>UBICACIÓN</th></tr></thead>
+                <tbody>
+                  <tr v-if="isLoadingCompanies"><td colspan="4">Cargando datos...</td></tr>
+                  <tr v-for="c in filteredCompaniesList" :key="c._id"><td><strong>{{ c.razonSocial }}</strong></td><td>{{ c.nit }}</td><td>{{ c.sector || 'General' }}</td><td>{{ c.direccion || 'Colombia' }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: CERTIFICADO -->
+          <div v-if="activeTab === 'Certificados'" class="fade-in">
+            <div class="page-header-text"><h1>Certificación</h1></div>
+            <div class="card cert-view">
+              <div class="cert-status-box">
+                <div class="cert-icon"><span class="material-symbols-outlined">workspace_premium</span></div>
+                <div class="cert-details"><h3>Estado: {{ certData?.estado || 'Pendiente' }}</h3><p>{{ certData?.mensaje || 'Aún no disponible.' }}</p></div>
+              </div>
+              <button class="btn-primary" @click="handleDownload" :disabled="!certData?.habilitado">Descargar Certificado</button>
+            </div>
+          </div>
+
+        </div>
+      </main>
     </div>
+    <div class="notification-center">
+      <TransitionGroup name="toast"><div v-for="n in notifications" :key="n.id" class="toast-card" :class="n.type">{{ n.text }}</div></TransitionGroup>
+    </div>
+  </div>
 </template>
 
-  <style scoped>
-  .font-sans { font-family: 'Inter', system-ui, sans-serif; }
-  .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-  .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
-  .fade-enter-from { opacity: 0; transform: translateX(15px); }
-  .fade-leave-to { opacity: 0; transform: translateX(-15px); }
-  </style>
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
+
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+.repfora-dashboard { display: flex; height: 100vh; background: #F8FAFC; font-family: 'Inter', sans-serif; overflow: hidden; }
+.sidebar { width: 230px; background: #FFF; border-right: 1px solid #F1F5F9; display: flex; flex-direction: column; flex-shrink: 0; position: fixed; height: 100vh; z-index: 100; }
+.sidebar-header { padding: 32px 20px; display: flex; align-items: center; gap: 12px; }
+.logo-icon { width: 44px; height: 44px; background: #1A4D2E; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #FFF; flex-shrink: 0; box-shadow: 0 4px 12px rgba(26, 77, 46, 0.2); }
+.logo-icon span { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 24px; }
+.logo-text .title { display: block; font-size: 13px; font-weight: 900; color: #0F172A; line-height: 1.2; letter-spacing: -0.2px; }
+.logo-text .subtitle { font-size: 9px; font-weight: 800; color: #94A3B8; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; display: block; }
+
+.sidebar-nav { padding: 8px 12px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; font-size: 13px; font-weight: 600; color: #94A3B8; border-radius: 14px; text-decoration: none; cursor: pointer; border:none; background:none; width:100%; text-align:left; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+.nav-item span.material-symbols-outlined { font-size: 22px; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; transition: all 0.3s; }
+.nav-item:hover { color: #1A4D2E; background: #F8FAFC; }
+  
+.nav-item.active { background: #F0FDF4; color: #1A4D2E; border-radius: 4px 14px 14px 4px; font-weight: 800; }
+.nav-item.active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #1A4D2E; border-radius: 0 4px 4px 0; }
+.nav-item.active span.material-symbols-outlined { color: #1A4D2E; font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+.sidebar-footer { padding: 24px 12px; border-top: 1px solid #F1F5F9; margin-top: auto; }
+.logout-btn { color: #94A3B8; display: flex; align-items: center; gap: 12px; padding: 12px 16px; font-size: 13px; font-weight: 700; border: none; background: none; width: 100%; cursor: pointer; transition: all 0.2s; }
+.logout-btn:hover { color: #EF4444; background: #FFF1F2; border-radius: 14px; }
+.logout-btn span { font-size: 22px; }
+
+.main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-left: 230px; }
+.topbar-white { height: 64px; background: #FFF; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; position: sticky; top: 0; z-index: 90; }
+.topbar-left { display: flex; align-items: center; gap: 48px; }
+.top-logo { font-size: 20px; font-weight: 900; color: #16A34A; }
+.top-tabs { display: flex; gap: 32px; } 
+.tab { font-size: 14px; font-weight: 700; color: #64748B; cursor: pointer; padding: 20px 0; border-bottom: 3px solid transparent; }
+.tab.active { color: #16A34A; border-bottom-color: #16A34A; }
+.user-profile { display: flex; align-items: center; gap: 12px; }
+.user-name { font-size: 12px; font-weight: 800; color: #1E293B; }
+.user-avatar-small { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid #F1F5F9; }
+
+.content-scrollable { flex: 1; overflow-y: auto; background: #F8FAFC; }
+.content-container { padding: 24px; max-width: 1400px; width: 100%; box-sizing: border-box; margin: 0; }
+
+.card { background: #FFF; border-radius: 24px; padding: 32px; border: 1px solid #F1F5F9; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+.stepper-box { margin-bottom: 40px; position: relative; padding: 32px 64px !important; }
+.stepper-line { position: absolute; top: 52px; left: 100px; right: 100px; height: 4px; background: #F1F5F9; }
+.stepper-progress { height: 100%; background: #16A34A; transition: 0.5s; }
+.steps-container { display: flex; justify-content: space-between; position: relative; z-index: 1; }
+.step-num { width: 40px; height: 40px; border-radius: 10px; background: #F8FAFC; border: 2px solid #E2E8F0; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #94A3B8; }
+.step-item.active .step-num { background: #1A4D2E; color: #FFF; border-color: #1A4D2E; }
+.step-desc { font-size: 10px; font-weight: 800; text-align: center; margin-top: 8px; color: #94A3B8; }
+
+.main-grid { display: grid; grid-template-columns: 300px 1fr; gap: 32px; }
+.form-group label { font-size: 11px; font-weight: 900; color: #94A3B8; display: block; margin-bottom: 10px; }
+.custom-select, .search-input { width: 100%; background: #F8FAFC; border: 2px solid #F1F5F9; border-radius: 16px; padding: 16px 20px; outline: none; font-size: 14px; font-weight: 600; }
+.no-icon { padding-left: 20px; }
+.suggestions-list { position: absolute; background: #FFF; border: 1px solid #E2E8F0; border-radius: 12px; z-index: 100; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+.suggestion-item { padding: 12px 20px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #F8FAFC; }
+.suggestion-item:hover { background: #F0FDF4; }
+.company-result-card { 
+  margin-top: 16px; 
+  border: 1px solid #16A34A; 
+  border-radius: 14px; 
+  padding: 10px 16px; 
+  background: #F0FDF4; 
+  color: #166534; 
+  font-weight: 700; 
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+.res-content { display: flex; align-items: center; gap: 8px; }
+.res-content::before {
+  content: 'check_circle';
+  font-family: 'Material Symbols Outlined';
+  font-size: 18px;
+}
+.btn-change {
+  background: none;
+  border: none;
+  color: #16A34A;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.btn-change:hover { background: #DCFCE7; color: #14532D; }
+.search-input.has-error { border-color: #EF4444; background-color: #FEF2F2; }
+.file-input { 
+  width: 100%; 
+  padding: 8px 12px; 
+  border: 1px solid #E2E8F0; 
+  border-radius: 12px; 
+  font-size: 13px; 
+  color: #64748B; 
+  background: #F8FAFC; 
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.file-selected-tag { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  color: #16A34A; 
+  font-size: 12px; 
+  font-weight: 700; 
+  margin-top: 8px; 
+}
+.file-selected-tag span { font-size: 18px; }
+
+.form-footer { 
+  margin-top: auto; 
+  padding-top: 40px; 
+  border-top: 2px solid #F8FAFC; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  gap: 20px;
+}
+.btn-primary { 
+  background: #1A4D2E; 
+  color: #FFF; 
+  border: none; 
+  padding: 18px 40px; 
+  border-radius: 18px; 
+  font-weight: 800; 
+  font-size: 15px;
+  cursor: pointer; 
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 160px;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(26, 77, 46, 0.2); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-text { 
+  background: none; 
+  border: none; 
+  color: #94A3B8; 
+  font-weight: 800; 
+  font-size: 15px;
+  cursor: pointer; 
+  padding: 10px 20px;
+  transition: color 0.2s;
+}
+.btn-text:hover { color: #0F172A; }
+
+.modern-table { width: 100%; border-collapse: collapse; }
+.modern-table th { text-align: left; padding: 16px; border-bottom: 1px solid #F1F5F9; font-size: 11px; color: #94A3B8; }
+.modern-table td { padding: 16px; border-bottom: 1px solid #F1F5F9; font-size: 13px; font-weight: 600; }
+
+.notification-center { position: fixed; top: 24px; right: 24px; z-index: 2000; }
+.toast-card { background: #1A4D2E; color: #FFF; padding: 12px 24px; border-radius: 12px; margin-bottom: 8px; font-weight: 700; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+.toast-card.error { background: #EF4444; }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+.mt-32 { margin-top: 32px; }
+.cert-view { display: flex; justify-content: space-between; align-items: center; }
+.cert-status-box { display: flex; gap: 20px; align-items: center; }
+.cert-icon { width: 60px; height: 60px; background: #DCFCE7; color: #16A34A; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+.cert-icon span { font-size: 32px; }
+.custom-textarea { width: 100%; background: #F8FAFC; border: 2px solid #F1F5F9; border-radius: 16px; padding: 16px; outline: none; min-height: 100px; font-family: inherit; }
+</style>

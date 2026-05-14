@@ -17,6 +17,6 @@ router.get('/fichas/stats', controller.getFichasSummary);
 router.get('/',    controller.getAll);
 router.get('/:id', controller.getById);
 router.put('/:id', controller.actualizar);
-router.delete('/:id', controller.eliminar);
+router.patch('/:id/toggle-status', controller.toggleStatus);
 
 module.exports = router;

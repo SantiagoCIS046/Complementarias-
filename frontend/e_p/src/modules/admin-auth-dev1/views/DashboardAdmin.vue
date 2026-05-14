@@ -1,62 +1,12 @@
 <template>
-  <div class="admin-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-area" style="display: flex; flex-direction: column;">
-          <span class="logo-text" style="font-size: 1.1rem; font-weight: 900; color: #1b5e20; line-height: 1.1;">REPFORA</span>
-          <span class="logo-subtext" style="font-size: 0.5rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">ARQUITECTO INSTITUCIONAL</span>
-        </div>
-      </div>
+  <div class="repfora-dashboard">
+    <Sidebar />
+    
+    <div class="main-wrapper">
+      <Header title="Gestión de Usuarios" />
 
-      <nav class="sidebar-nav">
-        <div class="nav-group">
-          <router-link to="/usuarios" class="nav-item" :class="{ active: $route.path === '/usuarios' || $route.path === '/dashboard' }">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            <span>Gestión de Usuarios</span>
-          </router-link>
-          <router-link to="/gestion-empresas" class="nav-item" :class="{ active: $route.path === '/gestion-empresas' }">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7"/><path d="M4 21V10"/><path d="M10 21V10"/><path d="M16 21V10"/><path d="M20 21V10"/><path d="M9 2l1 5h4l1-5z"/>
-            </svg>
-            <span>Gestión de Empresas</span>
-          </router-link>
-          <router-link to="/fichas" class="nav-item" :class="{ active: $route.path === '/fichas' }">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-            <span>Gestión de Fichas</span>
-          </router-link>
-        </div>
-      </nav>
-
-      <div class="sidebar-footer">
-        <a href="#" class="nav-item" @click.prevent="showPasswordModal = true">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <span>Cambiar Clave</span>
-        </a>
-        <a href="#" class="nav-item logout" @click.prevent="handleLogout">Cerrar Sesión</a>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-      <header class="topbar">
-        <div class="topbar-left">
-        </div>
-        
-        <div class="topbar-right">
-          <div class="user-profile">
-            <div class="admin-avatar" :title="adminName">{{ adminInitials }}</div>
-          </div>
-        </div>
-      </header>
-
-      <div class="page-body">
+      <main class="content">
+        <div class="page-body">
         <!-- Alerta Global Flotante (Bootstrap Style) -->
         <Transition name="fade">
           <div v-if="alertBox.show" class="alert-bootstrap-global" :class="alertBox.type">
@@ -97,6 +47,13 @@
           </div>
 
           <div class="header-actions">
+            <!-- ⚠️ BOTÓN TEMPORAL DE PRUEBA — Eliminar en producción -->
+            <button class="btn btn-test-email icon-only" @click="sendTestEmail" :disabled="testEmailSending" :title="testEmailSending ? 'Enviando...' : 'Enviar correo de prueba'">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 16px;">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </button>
+
             <button class="btn btn-export-outline" @click="handleExport">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; margin-right: 8px;">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -180,13 +137,7 @@
                 </div>
               </div>
 
-              <!-- Loading -->
-              <div v-if="isLoading" class="table-loading">
-                <div class="spin-ring-lg"></div>
-                <p>Cargando usuarios...</p>
-              </div>
-
-              <table class="user-table" v-else>
+              <table class="user-table">
                 <thead>
                   <tr>
                     <th>MIEMBRO</th>
@@ -195,7 +146,8 @@
                     <th>ACCIONES</th>
                   </tr>
                 </thead>
-                <tbody>
+                <SkeletonLoader v-if="isLoading" variant="table-tbody" :rows="6" :columns="4" tag="tbody" />
+                <tbody v-else>
                   <tr v-for="user in users.filter(u => u && u._id)" :key="user._id">
                     <td>
                       <div class="user-cell">
@@ -220,8 +172,15 @@
                         <button class="act-btn edit" @click="openEditModal(user)" title="Editar">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
-                        <button class="act-btn delete" @click="confirmDelete(user)" title="Eliminar">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <!-- Toggle Activar / Desactivar -->
+                        <button
+                          class="act-btn toggle-status"
+                          :class="user.activo !== false ? 'toggle-active' : 'toggle-inactive'"
+                          :title="user.activo !== false ? 'Desactivar usuario' : 'Activar usuario'"
+                          @click="confirmToggle(user)"
+                        >
+                          <svg v-if="user.activo !== false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+                          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
                         </button>
                       </div>
                     </td>
@@ -251,9 +210,9 @@
           </div>
         </div>
 
-        <!-- Las estadísticas fueron movidas a la cabecera -->
       </div>
-    </main>
+      </main>
+    </div>
 
     <!-- ═══════ MODAL: Editar Usuario ═══════ -->
     <div class="modal-overlay" v-if="editModal.show" @click.self="editModal.show = false">
@@ -314,21 +273,34 @@
       </div>
     </div>
 
-    <!-- ═══════ MODAL: Confirmar Eliminación ═══════ -->
-    <div class="modal-overlay" v-if="deleteModal.show" @click.self="deleteModal.show = false">
+    <!-- ═══════ MODAL: Confirmar Cambio de Estado ═══════ -->
+    <div class="modal-overlay" v-if="toggleModal.show" @click.self="toggleModal.show = false">
       <div class="modal-card modal-sm">
         <div class="modal-head">
-          <h2>Eliminar Usuario</h2>
-          <button class="modal-close" @click="deleteModal.show = false">&times;</button>
+          <h2>{{ toggleModal.user?.activo !== false ? 'Desactivar Usuario' : 'Activar Usuario' }}</h2>
+          <button class="modal-close" @click="toggleModal.show = false">&times;</button>
         </div>
         <div class="modal-body">
-          <p class="delete-warning">¿Estás seguro de que deseas eliminar a <strong>{{ deleteModal.user?.name }}</strong>?</p>
-          <p class="delete-sub">Esta acción no se puede deshacer.</p>
+          <div class="toggle-confirm-icon" :class="toggleModal.user?.activo !== false ? 'icon-deactivate' : 'icon-activate'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:32px"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+          </div>
+          <p class="delete-warning" style="text-align:center;margin-top:12px">
+            <span v-if="toggleModal.user?.activo !== false">
+              ¿Desactivar a <strong>{{ toggleModal.user?.name }}</strong>? El usuario no podrá iniciar sesión pero su información se conserva.
+            </span>
+            <span v-else>
+              ¿Activar nuevamente a <strong>{{ toggleModal.user?.name }}</strong>? Recuperará acceso al sistema.
+            </span>
+          </p>
         </div>
         <div class="modal-footer">
-          <button class="btn-cancel" @click="deleteModal.show = false">Cancelar</button>
-          <button class="btn btn-danger" @click="executeDelete" :disabled="deleteModal.deleting">
-            {{ deleteModal.deleting ? 'Eliminando...' : 'Eliminar' }}
+          <button class="btn-cancel" @click="toggleModal.show = false">Cancelar</button>
+          <button
+            :class="toggleModal.user?.activo !== false ? 'btn btn-danger' : 'btn btn-success-action'"
+            @click="executeToggle"
+            :disabled="toggleModal.toggling"
+          >
+            {{ toggleModal.toggling ? 'Procesando...' : (toggleModal.user?.activo !== false ? 'Sí, desactivar' : 'Sí, activar') }}
           </button>
         </div>
       </div>
@@ -562,6 +534,11 @@ import { useAuthStore } from '../../../core/store/auth.store';
 import { useUiStore } from '../../../core/store/ui.store';
 import { usersService } from '../services/users.service';
 import { authService } from '../services/auth.service';
+import { notificationsService } from '../services/notifications.service';
+import { useNotificationsStore } from '../../../core/store/notifications.store';
+import Sidebar from '../../../components/layout/Sidebar.vue';
+import Header from '../../../components/layout/Header.vue';
+import SkeletonLoader from '../../../components/ui/SkeletonLoader.vue';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -726,6 +703,36 @@ const alertBox = ref({ show: false, message: '', type: 'success' });
 // Export Modal state
 const exportModal = ref({ show: false, target: '' });
 
+// Notifications store
+const notifStore = useNotificationsStore();
+
+// ⚠️ TEMPORAL — Estado del botón de prueba de correo
+const testEmailSending = ref(false);
+
+const sendTestEmail = async () => {
+  testEmailSending.value = true;
+  try {
+    const res = await notificationsService.sendTestEmail();
+    alertBox.value = {
+      show: true,
+      message: `✅ ${res.data.message}`,
+      type: 'success'
+    };
+    // Actualizar el badge de notificaciones
+    notifStore.fetchUnreadCount();
+    notifStore.fetchNotifications();
+  } catch (err) {
+    alertBox.value = {
+      show: true,
+      message: `❌ Error: ${err.response?.data?.message || err.message}`,
+      type: 'danger'
+    };
+  } finally {
+    testEmailSending.value = false;
+    setTimeout(() => alertBox.value.show = false, 6000);
+  }
+};
+
 // ── Cargar Usuarios ──────────────────────────────────
 const fetchUsers = async () => {
   uiStore.showLoader(); // Muestra el cargador real inmediatamente
@@ -824,6 +831,36 @@ const editModal = ref({ show: false, data: {}, saving: false });
 const openEditModal = (user) => {
   editModal.value.data = { ...user };
   editModal.value.show = true;
+};
+
+// ── Toggle Activar/Desactivar (Soft — nunca elimina) ──────────────────────────────
+const toggleModal = ref({ show: false, user: null, toggling: false });
+
+const confirmToggle = (user) => {
+  toggleModal.value.user = user;
+  toggleModal.value.show = true;
+};
+
+const executeToggle = async () => {
+  toggleModal.value.toggling = true;
+  try {
+    const res = await usersService.toggleStatus(toggleModal.value.user._id);
+    // Actualizar localmente sin recargar toda la tabla
+    const idx = users.value.findIndex(u => u._id === toggleModal.value.user._id);
+    if (idx !== -1) {
+      users.value[idx].activo  = res.data.data.activo;
+      users.value[idx].status  = res.data.data.status;
+    }
+    toggleModal.value.show = false;
+    const accion = res.data.data.activo ? 'activado' : 'desactivado';
+    alertBox.value = { show: true, message: `Usuario ${accion} correctamente. Los datos se conservan en la base de datos.`, type: 'success' };
+    setTimeout(() => alertBox.value.show = false, 5000);
+    fetchStats();
+  } catch (err) {
+    alert('Error: ' + (err.response?.data?.message || err.message));
+  } finally {
+    toggleModal.value.toggling = false;
+  }
 };
 
 const saveEdit = async () => {
@@ -1066,30 +1103,6 @@ const handleLogout = () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
 
-.admin-container {
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  background: #f8fafc;
-  font-family: 'Inter', sans-serif;
-  overflow: hidden;
-  font-size: 13px;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 200px;
-  background: #fff;
-  border-right: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  padding: 16px 0;
-  flex-shrink: 0;
-}
-.sidebar-header { padding: 0 20px 20px; }
-.logo-text { font-size: 1.1rem; font-weight: 800; color: #1e293b; }
-.logo-subtext { font-size: 0.55rem; color: #94a3b8; font-weight: 700; display: block; }
-
 /* ── Estados & Badges (Objetivo 1) ── */
 .status-pill {
   padding: 4px 12px;
@@ -1312,7 +1325,7 @@ const handleLogout = () => {
 
 /* Page Content */
 .page-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 20px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 32px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
 .page-title { font-size: 1.1rem; font-weight: 800; margin: 0; }
 .page-description { font-size: 0.75rem; color: #64748b; }
 
@@ -1356,6 +1369,56 @@ const handleLogout = () => {
   transform: translateY(-1px);
 }
 .btn-danger { background: #dc2626; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.75rem; cursor: pointer; }
+.btn-success-action { background: #1b5e20; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.75rem; cursor: pointer; }
+.btn-success-action:hover { background: #144d1a; }
+
+/* ⚠️ TEMPORAL — Botón de prueba de correo (eliminar en producción) */
+.btn-test-email {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.25);
+}
+.btn-test-email.icon-only {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+}
+.btn-test-email:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9, #5b21b6);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px -3px rgba(124, 58, 237, 0.35);
+}
+.btn-test-email:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Toggle Activar/Desactivar ── */
+.act-btn.toggle-status { border: none; }
+.act-btn.toggle-active  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.act-btn.toggle-active:hover  { background: #fee2e2; }
+.act-btn.toggle-inactive { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.act-btn.toggle-inactive:hover { background: #dcfce7; }
+
+.toggle-confirm-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 4px;
+}
+.toggle-confirm-icon.icon-deactivate { background: #fee2e2; color: #dc2626; }
+.toggle-confirm-icon.icon-activate   { background: #dcfce7; color: #16a34a; }
+
 /* Alertas Globales Flotantes */
 .alert-bootstrap-global {
   position: fixed;
@@ -1492,11 +1555,7 @@ const handleLogout = () => {
 .error-info-text h3 { font-size: 0.9rem; margin: 0; }
 .error-info-text p { font-size: 0.7rem; color: #ef4444; font-weight: 700; margin: 0; }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* header-actions defined below in Header & Stats section */
 .error-detail-pill { background: #fff; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; padding: 8px; border-radius: 8px; display: flex; gap: 12px; }
 .error-code { font-weight: 800; color: #f97316; font-size: 0.75rem; }
 .error-txt strong { display: block; font-size: 0.75rem; }
@@ -1565,16 +1624,17 @@ const handleLogout = () => {
 .act-btn.delete:hover { background: #fce4e4; border-color: #f4b4b4; }
 
 /* Header & Stats */
-.header-left-group { display: flex; align-items: center; gap: 32px; flex: 1; }
+.header-left-group { display: flex; align-items: center; gap: 24px; flex: 1; min-width: 0; }
 .header-info { min-width: 200px; }
-.stats-row { display: flex; gap: 20px; }
-.stat-box { background: #fff; padding: 10px 14px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 4px solid; min-width: 140px; flex-shrink: 0; }
+.stats-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.stat-box { background: #fff; padding: 10px 14px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 4px solid; min-width: 120px; flex: 1 1 120px; }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 .border-green { border-left-color: #1b5e20; }
 .border-pink { border-left-color: #db2777; }
@@ -1620,4 +1680,116 @@ const handleLogout = () => {
 
 .error-msg { color: #dc2626; font-size: 0.8rem; background: #fef2f2; padding: 8px 12px; border-radius: 6px; margin-top: 8px; }
 .success-msg { color: #166534; font-size: 0.8rem; background: #f0fdf4; padding: 8px 12px; border-radius: 6px; margin-top: 8px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   RESPONSIVE — DASHBOARD ADMIN
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Laptops ≤1280px ── */
+@media (max-width: 1280px) {
+  .header-left-group { gap: 16px; flex-wrap: wrap; }
+  .stats-row { gap: 8px; }
+  .stat-box { min-width: 100px; padding: 8px 12px; }
+  .stat-box h2 { font-size: 1.15rem; }
+  .header-actions { gap: 8px; }
+  .header-actions .btn { font-size: 0.75rem; padding: 7px 12px; }
+}
+
+/* ── Tablets ≤1024px ── */
+@media (max-width: 1024px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .header-left-group {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header-info { min-width: auto; width: 100%; }
+  .stats-row { width: 100%; }
+  .stat-box { flex: 1 1 100px; }
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .table-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+  .table-search { width: 100%; }
+  .filter-tabs { width: 100%; overflow-x: auto; }
+
+  .user-table { display: block; overflow-x: auto; white-space: nowrap; }
+
+  .modal-card { width: 90vw; max-width: 90vw; }
+  .modal-sm { width: 85vw; }
+  .field-row { grid-template-columns: 1fr; }
+}
+
+/* ── Tablets portrait ≤768px ── */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 12px;
+  }
+  .stats-row {
+    flex-direction: column;
+  }
+  .stat-box {
+    flex: 1 1 auto;
+    min-width: auto;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .header-actions .btn {
+    font-size: 0.7rem;
+    padding: 6px 10px;
+  }
+  .btn-test-email {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table-footer { flex-direction: column; gap: 8px; text-align: center; }
+  .page-description { font-size: 0.75rem; }
+  .admin-avatar { width: 28px !important; height: 28px !important; font-size: 0.7rem !important; }
+
+  .modal-card { width: 96vw; max-width: 96vw; }
+  .modal-sm { width: 96vw; }
+  .modal-head { padding: 14px 16px; }
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 12px 16px; flex-wrap: wrap; }
+}
+
+/* ── Mobile ≤480px ── */
+@media (max-width: 480px) {
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .header-actions .btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  .stats-row .stat-box {
+    padding: 8px 10px;
+  }
+  .stat-box p { font-size: 0.6rem; }
+  .stat-box h2 { font-size: 1rem; }
+  .stat-box small { font-size: 0.55rem; }
+
+  .user-table th, .user-table td { padding: 8px 10px; font-size: 0.7rem; }
+  .user-cell { gap: 8px; }
+  .avatar { width: 26px; height: 26px; font-size: 0.6rem; }
+  .act-btn { width: 26px; height: 26px; }
+  .act-btn svg { width: 12px; height: 12px; }
+  .status-pill { font-size: 0.6rem; padding: 3px 8px; }
+  .role-badge { font-size: 0.55rem; padding: 3px 6px; }
+
+  .modal-card { width: 100vw; border-radius: 12px; }
+  .modal-head h2 { font-size: 0.95rem; }
+}
 </style>

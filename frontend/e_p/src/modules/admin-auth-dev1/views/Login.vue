@@ -28,14 +28,16 @@
 
             <!-- Email -->
             <div class="field">
-              <label class="field-label" for="login-email">Correo electrónico</label>
+              <label class="field-label" for="login-email">Correo electrónico institucional</label>
               <div class="input-box-repfora">
                 <span class="material-symbols-outlined icon-prepend">mail</span>
                 <input
                   id="login-email"
                   v-model="form.email"
                   type="email"
-                  placeholder="nombre@sena.edu.co"
+                  name="email"
+                  autocomplete="username"
+                  placeholder="usuario@sena.edu.co"
                   class="field-input-native"
                 />
               </div>
@@ -52,6 +54,7 @@
                   :type="showPass ? 'text' : 'password'"
                   placeholder="••••••••"
                   class="field-input-native"
+                  @keydown.enter="handleLogin"
                 />
                 <button type="button" class="eye-btn" @click="showPass = !showPass">
                   <span class="material-symbols-outlined">{{ showPass ? 'visibility' : 'visibility_off' }}</span>
@@ -123,7 +126,7 @@
 
     <!-- PANEL DERECHO -->
     <div class="right-panel">
-      <img src="https://edoingenieria.com/wp-content/uploads/2023/08/Sena_-sangil.jpg" alt="SENA" class="sena-bg" />
+      <img src="@/assets/loginbg.png" alt="SENA" class="sena-bg" />
       <div class="right-overlay">
         <div class="right-badge">SENA Colombia</div>
         <h2 class="right-title">Gestión de Etapa<br/>Productiva</h2>

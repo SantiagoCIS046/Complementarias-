@@ -22,9 +22,9 @@ function resolveRole(auth) {
  * Devuelve la ruta de inicio según el rol.
  */
 function homeForRole(role) {
-  if (role === 'ADMIN') return { name: 'Dashboard' }
+  if (role === 'ADMIN')      return { name: 'Dashboard' }
   if (role === 'INSTRUCTOR') return { name: 'InstructorDashboard' }
-  if (role === 'APRENDIZ') return { name: 'EPDashboard' }
+  if (role === 'APRENDIZ')   return { name: 'EPDashboard' }
   return { name: 'Login' }
 }
 
@@ -126,7 +126,7 @@ const routes = [
   {
     path: '/',
     redirect: () => {
-      const token = localStorage.getItem('repfora_token')
+      const token    = localStorage.getItem('repfora_token')
       const userData = localStorage.getItem('repfora_user')
       if (!token || !userData || userData === 'undefined') {
         return { name: 'Login' }
@@ -153,15 +153,15 @@ const router = createRouter({
 // ─────────────────────────────────────────────────────────────────────────────
 router.beforeEach((to, from) => {
   const auth = useAuthStore()
-  const ui = useUiStore()
+  const ui   = useUiStore()
 
   // Iniciar el loader visual en cada navegación
   ui.startLoading(3000)
 
   // ── 1. Resolver sesión ────────────────────────────────────────────
-  const token = auth.token || localStorage.getItem('repfora_token')
+  const token      = auth.token || localStorage.getItem('repfora_token')
   const isLoggedIn = !!token
-  const userRole = resolveRole(auth)
+  const userRole   = resolveRole(auth)
 
   // ── 2. Verificar expiración de sesión (24 horas de inactividad) ───
   //    Solo aplica si el usuario tiene token pero ya caducó su sesión
@@ -203,6 +203,21 @@ router.beforeEach((to, from) => {
 router.afterEach(() => {
   const ui = useUiStore()
   ui.stopLoading()
+})
+
+// ── Animaciones de Transición con View Transitions API ─────────────
+router.beforeResolve((to, from, next) => {
+  if (to.path !== from.path && document.startViewTransition) {
+    document.startViewTransition(() => {
+      return new Promise((resolve) => {
+        next()
+        // Damos un pequeño margen para que Vue renderice el nuevo DOM
+        setTimeout(resolve, 50)
+      })
+    })
+  } else {
+    next()
+  }
 })
 
 export default router

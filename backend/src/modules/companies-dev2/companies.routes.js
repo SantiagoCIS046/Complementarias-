@@ -9,6 +9,14 @@ const { verifyToken } = require('../../core/middlewares/auth.middleware');
 const { checkRole }   = require('../../core/middlewares/roles.middleware');
 const controller      = require('./companies.controller');
 
+// POST /api/companies/bulk - Importar empresas desde archivo plano SGVA (solo ADMIN)
+router.post(
+  '/bulk',
+  verifyToken,
+  checkRole(['ADMIN']),
+  controller.bulkCrear
+);
+
 // POST /api/companies - Crear empresa (ADMIN, APRENDIZ)
 router.post(
   '/',

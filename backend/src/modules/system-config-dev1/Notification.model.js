@@ -17,9 +17,25 @@ const notificationSchema = new mongoose.Schema({
   },
   tipo: { 
     type: String, 
-    enum: ['INFO', 'SUCCESS', 'WARNING', 'ERROR'],
+    enum: ['INFO', 'SUCCESS', 'WARNING', 'ERROR', 'SEGUIMIENTO'],
     default: 'INFO'
+  },
+  resuelta: {
+    type: Boolean,
+    default: false
+  },
+  referencia: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
+  },
+  referenciaModelo: {
+    type: String,
+    enum: ['Tracking', 'ProductiveStage', null],
+    default: null
   }
 }, { timestamps: true });
+
+// Índice para consultas rápidas por usuario + no leídas
+notificationSchema.index({ usuario: 1, leido: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

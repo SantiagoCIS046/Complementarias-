@@ -19,5 +19,10 @@ export const companiesService = {
     /**
      * Actualizar una empresa
      */
-    update: (id, data) => http.put(`/companies/${id}`, data)
+    update: (id, data) => http.put(`/companies/${id}`, data),
+
+    /**
+     * Importar múltiples empresas desde archivo plano SGVA
+     */
+    bulkCreate: (data) => http.post('/companies/bulk', data)
 }

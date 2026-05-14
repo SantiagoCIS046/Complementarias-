@@ -20,6 +20,43 @@ const crear = async (data) => {
 };
 
 /**
+ * Crear múltiples empresas (Bulk)
+ * Ignora las empresas que ya existan por NIT.
+ */
+const bulkCrear = async (empresasData) => {
+  if (!Array.isArray(empresasData) || empresasData.length === 0) {
+    throw new Error('No se proporcionaron datos de empresas para carga masiva.');
+  }
+
+  const creadas = [];
+  const omitidas = [];
+
+  for (const data of empresasData) {
+    if (!data.nit || !data.razon_social) {
+      omitidas.push({ data, motivo: 'Faltan campos obligatorios (nit, razon_social)' });
+      continue;
+    }
+
+    const existe = await Company.findOne({ nit: data.nit });
+    if (existe) {
+      omitidas.push({ nit: data.nit, motivo: 'El NIT ya existe' });
+    } else {
+      try {
+        // Asignar estado por defecto si no viene
+        if(!data.estado) data.estado = 'HABILITADA';
+        const empresa = await Company.create(data);
+        creadas.push(empresa);
+      } catch (err) {
+        omitidas.push({ nit: data.nit, motivo: err.message });
+      }
+    }
+  }
+
+  return { creadas, omitidas };
+};
+
+
+/**
  * Listar todas las empresas.
  */
 const getAll = async (filtros = {}) => {
@@ -69,6 +106,7 @@ const actualizar = async (id, data) => {
 
 module.exports = {
   crear,
+  bulkCrear,
   getAll,
   getById,
   actualizar,

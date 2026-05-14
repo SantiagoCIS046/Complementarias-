@@ -21,9 +21,9 @@ export const usersService = {
     update: (id, data) => http.put(`/users/${id}`, data),
 
     /**
-     * Eliminar un usuario
+     * Activar o desactivar un usuario (soft toggle, nunca elimina de la BD)
      */
-    remove: (id) => http.delete(`/users/${id}`),
+    toggleStatus: (id) => http.patch(`/users/${id}/toggle-status`),
 
     /**
      * Importar usuarios desde archivo Excel

@@ -1,20 +1,17 @@
 <template>
-  <div class="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
+  <div class="repfora-dashboard">
     <Sidebar />
 
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <Header />
+    <div class="main-wrapper">
+      <Header title="Gestión de Bitácoras" />
 
-      <main class="flex-1 overflow-y-auto p-8 lg:p-12">
+      <main class="content">
         <div class="w-full space-y-2">
-
-          <!-- 2. Título de sección con separador verde -->
-          <HeaderLayout title="Gestión de Bitácoras" icon="assignment" />
 
       <div class="content-columns">
         <!-- Columna 1: Fichas -->
         <aside class="column-fichas">
-          <button class="btn-new-bitacora">
+          <button class="btn-new-bitacora" @click="showNewBitacoraModal = true">
             <span class="material-symbols-outlined">add</span> Nueva Bitácora
           </button>
           
@@ -141,24 +138,20 @@
               </div>
             </div>
 
-            <!-- Visor PDF Dummy -->
-            <div class="pdf-viewer-container">
-              <div class="pdf-header">
-                <div class="pdf-name"><span class="material-symbols-outlined">picture_as_pdf</span> bitacora_4_antonio.pdf</div>
-                <div class="pdf-zoom">
-                  <button><span class="material-symbols-outlined">search</span></button>
-                  <span>100%</span>
-                  <button><span class="material-symbols-outlined">zoom_in</span></button>
+            <!-- PDF Access Box -->
+            <div class="pdf-access-box">
+              <div class="pdf-info-group">
+                <div class="pdf-icon-wrapper">
+                  <span class="material-symbols-outlined icon-pdf">picture_as_pdf</span>
+                </div>
+                <div class="pdf-info">
+                  <h4>bitacora_4_antonio.pdf</h4>
+                  <p>2.4 MB • Subido hoy, 08:30 AM</p>
                 </div>
               </div>
-              <div class="pdf-mockup">
-                <div class="pdf-page">
-                  <div class="pdf-skeleton title"></div>
-                  <div class="pdf-skeleton line"></div>
-                  <div class="pdf-skeleton line short"></div>
-                  <div class="pdf-skeleton block"></div>
-                </div>
-              </div>
+              <button class="btn-view-pdf" @click="showPdfModal = true">
+                Ver Documento
+              </button>
             </div>
 
             <!-- Acciones Finales -->
@@ -175,15 +168,79 @@
       </div>
     </div>
   </main>
+
+  <!-- ═══════ MODAL: Nueva Bitácora ═══════ -->
+  <div class="modal-overlay" v-if="showNewBitacoraModal" @click.self="showNewBitacoraModal = false">
+    <div class="modal-card modal-md">
+      <div class="modal-head">
+        <div class="head-info">
+          <h2>Nueva Bitácora</h2>
+          <p class="u-email">Registrar una nueva entrega de bitácora</p>
+        </div>
+        <button class="modal-close" @click="showNewBitacoraModal = false">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group-premium mb-4">
+          <label class="label-premium">Ficha / Programa</label>
+          <select class="select-premium">
+            <option>Ficha 2670687 - ADSO</option>
+            <option>Ficha 2558342 - Sistemas</option>
+            <option>Ficha 2441092 - Multimedia</option>
+          </select>
+        </div>
+        <div class="form-group-premium mb-4">
+          <label class="label-premium">Asunto / Título</label>
+          <input type="text" class="input-premium" placeholder="Ej: Bitácora Quincena 5" />
+        </div>
+        <div class="form-group-premium mb-4">
+          <label class="label-premium">Archivo PDF</label>
+          <input type="file" class="input-premium" accept="application/pdf" />
+        </div>
+      </div>
+      <div class="modal-footer footer-premium">
+        <button class="btn-cancel-premium" @click="showNewBitacoraModal = false">Cancelar</button>
+        <button class="btn-confirm-premium" @click="showNewBitacoraModal = false">Subir Bitácora</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ MODAL: Visor PDF ═══════ -->
+  <div class="modal-overlay" v-if="showPdfModal" @click.self="showPdfModal = false">
+    <div class="modal-card modal-full pdf-modal">
+      <div class="pdf-header">
+        <div class="pdf-name"><span class="material-symbols-outlined">picture_as_pdf</span> bitacora_4_antonio.pdf</div>
+        <div class="pdf-zoom">
+          <button><span class="material-symbols-outlined">zoom_out</span></button>
+          <span>100%</span>
+          <button><span class="material-symbols-outlined">zoom_in</span></button>
+        </div>
+        <button class="modal-close-pdf" @click="showPdfModal = false">&times;</button>
+      </div>
+      <div class="pdf-mockup-full">
+        <div class="pdf-page">
+          <div class="pdf-skeleton title"></div>
+          <div class="pdf-skeleton line"></div>
+          <div class="pdf-skeleton line short"></div>
+          <div class="pdf-skeleton block"></div>
+          <div class="pdf-skeleton line mt-4"></div>
+          <div class="pdf-skeleton line"></div>
+          <div class="pdf-skeleton line short"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
-import BtnBack from '@/layouts/btnBackLayout.vue'
-import HeaderLayout from '@/layouts/headerViewsLayout.vue'
+
+const showNewBitacoraModal = ref(false)
+const showPdfModal = ref(false)
 </script>
 
 <style scoped>
@@ -282,20 +339,55 @@ import HeaderLayout from '@/layouts/headerViewsLayout.vue'
 .t-content p { font-size: 0.75rem; font-weight: 700; color: #2d3748; margin: 0; }
 .t-time { font-size: 0.65rem; color: #a0aec0; font-weight: 600; }
 
-/* PDF Viewer */
-.pdf-viewer-container { background: #1e1e1e; border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
-.pdf-header { background: #2d2d2d; padding: 6px 1rem; display: flex; justify-content: space-between; align-items: center; color: white; }
-.pdf-name { display: flex; align-items: center; gap: 6px; font-size: 0.65rem; font-weight: 600; }
-.pdf-zoom { display: flex; align-items: center; gap: 8px; font-size: 0.6rem; }
-.pdf-zoom button { background: none; border: none; color: #a0aec0; cursor: pointer; }
+/* PDF Access Box (Replace Viewer) */
+.pdf-access-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+.pdf-access-box:hover { border-color: #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.pdf-info-group { display: flex; align-items: center; gap: 16px; }
+.pdf-icon-wrapper { width: 48px; height: 48px; background: #fef2f2; color: #ef4444; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.pdf-icon-wrapper .material-symbols-outlined { font-size: 1.5rem; }
+.pdf-info h4 { font-size: 0.85rem; font-weight: 800; color: #1e293b; margin: 0 0 4px 0; }
+.pdf-info p { font-size: 0.7rem; color: #64748b; margin: 0; font-weight: 600; }
+.btn-view-pdf { background: white; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.75rem; color: #475569; cursor: pointer; transition: all 0.2s; }
+.btn-view-pdf:hover { background: #f8fafc; color: var(--color_button); border-color: var(--color_button); }
 
-.pdf-mockup { background: #1e1e1e; padding: 1rem; min-height: 300px; display: flex; justify-content: center; }
-.pdf-page { background: white; width: 100%; padding: 1.5rem; border-radius: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-.pdf-skeleton { background: #f1f5f9; border-radius: 4px; margin-bottom: 6px; }
-.pdf-skeleton.title { height: 12px; width: 40%; margin-bottom: 14px; }
-.pdf-skeleton.line { height: 6px; width: 100%; }
+/* Modals General */
+.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-card { background: #fff; border-radius: 16px; width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+.modal-md { width: 500px; }
+.modal-full { width: 90vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+.modal-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 24px; border-bottom: 1px solid #e2e8f0; }
+.head-info h2 { font-size: 1.1rem; font-weight: 800; margin: 0; color: #1e293b; }
+.head-info p { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+.modal-close { background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1; }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Premium Form Styles */
+.form-group-premium { margin-bottom: 16px; }
+.label-premium { display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px; }
+.input-premium, .select-premium { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; outline: none; transition: 0.2s; background: #f8fafc; box-sizing: border-box; }
+.input-premium:focus, .select-premium:focus { border-color: var(--color_button); background: #fff; box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1); }
+.btn-cancel-premium { background: #f1f5f9; color: #475569; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.btn-cancel-premium:hover { background: #e2e8f0; }
+.btn-confirm-premium { background: var(--color_button); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2); }
+.btn-confirm-premium:hover { background: #1b5e20; }
+
+/* PDF Modal (Full Screen) */
+.pdf-modal { background: #1e1e1e; border: none; }
+.pdf-header { background: #2d2d2d; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; color: white; border-radius: 16px 16px 0 0; }
+.pdf-name { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; }
+.pdf-zoom { display: flex; align-items: center; gap: 12px; font-size: 0.75rem; background: #1e1e1e; padding: 4px 12px; border-radius: 20px; }
+.pdf-zoom button { background: none; border: none; color: #a0aec0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.pdf-zoom button:hover { color: white; }
+.modal-close-pdf { background: none; border: none; font-size: 1.5rem; color: #a0aec0; cursor: pointer; }
+.modal-close-pdf:hover { color: white; }
+.pdf-mockup-full { flex: 1; padding: 24px; overflow-y: auto; display: flex; justify-content: center; }
+.pdf-mockup-full .pdf-page { background: white; width: 100%; max-width: 800px; min-height: 1000px; padding: 3rem; border-radius: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+.pdf-skeleton { background: #f1f5f9; border-radius: 4px; margin-bottom: 12px; }
+.pdf-skeleton.title { height: 24px; width: 50%; margin-bottom: 24px; }
+.pdf-skeleton.line { height: 12px; width: 100%; }
 .pdf-skeleton.short { width: 70%; }
-.pdf-skeleton.block { height: 60px; width: 100%; margin-top: 14px; }
+.pdf-skeleton.block { height: 120px; width: 100%; margin-top: 24px; margin-bottom: 24px; }
 
 /* Revision Actions */
 .revision-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #edf2f7; }

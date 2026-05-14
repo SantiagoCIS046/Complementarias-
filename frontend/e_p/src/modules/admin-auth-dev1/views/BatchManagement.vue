@@ -1,60 +1,10 @@
 <template>
-  <div class="admin-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-area" style="display: flex; flex-direction: column;">
-          <span class="logo-text" style="font-size: 1.1rem; font-weight: 900; color: #1b5e20; line-height: 1.1;">REPFORA</span>
-          <span class="logo-subtext" style="font-size: 0.5rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">ARQUITECTO INSTITUCIONAL</span>
-        </div>
-      </div>
-
-      <nav class="sidebar-nav">
-        <div class="nav-group">
-          <router-link to="/usuarios" class="nav-item" :class="{ active: $route.path === '/usuarios' || $route.path === '/dashboard' }">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            <span>Gestión de Usuarios</span>
-          </router-link>
-          <router-link to="/gestion-empresas" class="nav-item" :class="{ active: $route.path === '/gestion-empresas' }">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7"/><path d="M4 21V10"/><path d="M10 21V10"/><path d="M16 21V10"/><path d="M20 21V10"/><path d="M9 2l1 5h4l1-5z"/>
-            </svg>
-            <span>Gestión de Empresas</span>
-          </router-link>
-          <router-link to="/fichas" class="nav-item" :class="{ active: $route.path === '/fichas' }">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-            <span>Gestión de Fichas</span>
-          </router-link>
-        </div>
-      </nav>
-
-      <div class="sidebar-footer">
-        <a href="#" class="nav-item">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <span>Cambiar Clave</span>
-        </a>
-        <a href="#" class="nav-item logout" @click.prevent="handleLogout">Cerrar Sesión</a>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-      <header class="topbar">
-        <div class="topbar-left"></div>
-        <div class="topbar-right">
-          <div class="user-profile">
-            <div class="admin-avatar" :title="adminName">{{ adminInitials }}</div>
-          </div>
-        </div>
-      </header>
-
-      <div class="page-body">
+  <div class="repfora-dashboard">
+    <Sidebar />
+    <div class="main-wrapper">
+      <Header title="Gestión de Fichas" />
+      <main class="content">
+        <div class="page-body">
         <header class="page-header">
           <div class="header-left-group">
             <div class="header-info">
@@ -115,12 +65,7 @@
                 </div>
               </div>
 
-              <div v-if="isLoading" class="table-loading">
-                <div class="spin-ring-lg"></div>
-                <p>Cargando fichas...</p>
-              </div>
-
-              <table class="user-table" v-else>
+              <table class="user-table">
                 <thead>
                   <tr>
                     <th>FICHA / PROGRAMA</th>
@@ -130,7 +75,8 @@
                     <th>ACCIONES</th>
                   </tr>
                 </thead>
-                <tbody>
+                <SkeletonLoader v-if="isLoading" variant="table-tbody" :rows="5" :columns="5" tag="tbody" />
+                <tbody v-else>
                   <tr v-for="ficha in filteredFichas" :key="ficha._id">
                     <td>
                       <div class="user-cell">
@@ -328,6 +274,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -336,6 +283,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../core/store/auth.store';
 import { batchesService } from '../services/batches.service';
+import Sidebar from '../../../components/layout/Sidebar.vue';
+import Header from '../../../components/layout/Header.vue';
+import SkeletonLoader from '../../../components/ui/SkeletonLoader.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -507,74 +457,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.admin-container {
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  background: #f8fafc;
-  font-family: 'Inter', sans-serif;
-  overflow: hidden;
-  font-size: 13px;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 200px;
-  background: #fff;
-  border-right: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  padding: 16px 0;
-  flex-shrink: 0;
-}
-.sidebar-header { padding: 0 20px 20px; }
-.logo-text { font-size: 1.1rem; font-weight: 800; color: #1b5e20; }
-.logo-subtext { font-size: 0.55rem; color: #94a3b8; font-weight: 700; display: block; }
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
-  text-decoration: none;
-  color: #64748b;
-  font-weight: 500;
-  font-size: 0.85rem;
-}
-.nav-item.active { background: #f0fdf4; color: #1b5e20; font-weight: 700; border-right: 3px solid #1b5e20; }
-.nav-icon { width: 16px; height: 16px; }
-.sidebar-footer { margin-top: auto; padding: 16px 0; border-top: 1px solid #f1f5f9; }
-.logout { color: #dc2626 !important; }
-
-.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
-/* Topbar */
-.topbar {
-  height: 48px;
-  background: #fff;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 20px;
-}
-.topbar-right { display: flex; align-items: flex-end; height: 100%; padding-bottom: 8px; }
-
-.admin-avatar {
-  width: 32px !important;
-  height: 32px !important;
-  background-color: #1e293b !important;
-  color: #ffffff !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-weight: 800 !important;
-  font-size: 0.8rem !important;
-  cursor: pointer;
-  border: 2px solid #e2e8f0;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
 
 /* Page Content */
 .page-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 20px; }

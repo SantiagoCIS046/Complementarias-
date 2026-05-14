@@ -76,14 +76,15 @@ const actualizar = async (req, res) => {
 };
 
 /**
- * DELETE /api/users/:id
+ * PATCH /api/users/:id/toggle-status
+ * Activa o desactiva un usuario (soft toggle, nunca elimina).
  */
-const eliminar = async (req, res) => {
+const toggleStatus = async (req, res) => {
   try {
-    const data = await service.desactivar(req.params.id);
+    const data = await service.toggleStatus(req.params.id);
     res.json({
       success: true,
-      message: 'Usuario eliminado permanentemente del sistema.',
+      message: `Usuario ${data.activo ? 'activado' : 'desactivado'} correctamente.`,
       data,
     });
   } catch (error) {
@@ -117,6 +118,6 @@ module.exports = {
   getAll,
   getById,
   actualizar,
-  eliminar,
+  toggleStatus,
   getFichasSummary,
 };

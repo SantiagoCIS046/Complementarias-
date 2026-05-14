@@ -3,6 +3,9 @@ import { useRouter } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { epService } from '../services/ep.service'
+import Sidebar from '../../../components/layout/Sidebar.vue'
+import Header from '../../../components/layout/Header.vue'
+import SkeletonLoader from '../../../components/ui/SkeletonLoader.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -21,10 +24,10 @@ const aprendiz = computed(() => {
     horasCompletadas: s.horasCompletadas || 0,
     horasTotales: s.horasRequeridas || 864,
     progresoPorcentaje: s.horasRequeridas > 0 ? Math.round((s.horasCompletadas / s.horasRequeridas) * 100) : 0,
-    razonSocial: s.companyId?.razon_social || s.companySnapshot?.razonSocial || '---',
+    razonSocial: s.companyId?.razonSocial || s.companySnapshot?.razonSocial || '---',
     nit: s.companyId?.nit || s.companySnapshot?.nit || '---',
-    jefe: s.companyId?.jefe_inmediato?.nombre_completo || s.companySnapshot?.jefeInmediato || '---',
-    telefono: s.companyId?.jefe_inmediato?.telefono || s.companySnapshot?.telefonoJefe || '---'
+    jefe: s.companySnapshot?.jefeInmediato || '---',
+    telefono: s.companySnapshot?.telefonoJefe || s.companySnapshot?.telefonoContacto || '---'
   }
 })
 
@@ -160,64 +163,17 @@ onMounted(load)
 
 <template>
   <div class="repfora-dashboard">
-    <!-- BARRA LATERAL -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-icon"><span class="material-symbols-outlined">school</span></div>
-        <div class="logo-text">
-          <span class="title">Administración Académica</span>
-          <span class="subtitle">DIVISIÓN REGIONAL</span>
-        </div>
-      </div>
-      
-      <nav class="sidebar-nav">
-        <router-link to="/mi-ep" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">grid_view</span> Mi Etapa Productiva
-          </button>
-        </router-link>
-        <router-link to="/registro-ep" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">app_registration</span> Formalizar EP
-          </button>
-        </router-link>
-        <router-link to="/seguimiento-ep" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">assessment</span> Seguimientos Técnicos
-          </button>
-        </router-link>
-        <router-link to="/certificacion" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">workspace_premium</span> Certificación Final
-          </button>
-        </router-link>
-      </nav>
-
-      <div class="sidebar-footer">
-        <button @click="handleLogout" class="nav-item logout-btn">
-          <span class="material-symbols-outlined">logout</span> Cerrar Sesión
-        </button>
-      </div>
-    </aside>
+    <Sidebar />
 
     <!-- CONTENIDO -->
     <div class="main-wrapper">
-      <header class="topbar">
-        <h2 class="page-title">Seguimiento de Aprendiz</h2>
-        <div class="topbar-actions">
+      <Header title="Seguimiento de Aprendiz">
+        <template #actions>
           <button v-if="puedeEnviarRevision" @click="enviarRevision" :disabled="enviando" class="btn-new" style="background:#3B82F6">{{ enviando ? 'Enviando...' : 'Enviar a Revisión' }}</button>
           <button @click="showModal = true" class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
           <div v-if="msgRevision" :style="{ fontSize:'11px', fontWeight:'700', padding:'6px 12px', borderRadius:'8px', background: msgRevision.type==='ok'?'#F0FDF4':'#FFF1F2', color: msgRevision.type==='ok'?'#16A34A':'#E11D48' }">{{ msgRevision.text }}</div>
-          <div class="divider"></div>
-          <span class="material-symbols-outlined notification">notifications</span>
-          <div class="user-profile">
-            <span class="user-name">{{ currentUser.name }}</span>
-            <div class="user-avatar">
-              <img src="https://ui-avatars.com/api/?name=Usuario&background=2e7d32&color=fff" alt="Avatar del Usuario">
-            </div>
-          </div>
-        </div>
-      </header>
+        </template>
+      </Header>
 
       <main class="content">
         <!-- SECCIÓN INFO + PROGRESO -->
@@ -228,10 +184,11 @@ onMounted(load)
                 <span class="label">INFORMACIÓN DE LA EMPRESA</span>
                 <span class="desc">Detalles del convenio de etapa productiva</span>
               </div>
-              <span class="status-badge">ESTADO: {{ aprendiz.estadoActual }}</span>
+              <span v-if="!loading" class="status-badge">ESTADO: {{ aprendiz.estadoActual }}</span>
+              <div v-else class="skel-badge"></div>
             </div>
             
-            <div class="company-details">
+            <div class="company-details" v-if="!loading">
               <div class="detail-item">
                 <div class="icon"><span class="material-symbols-outlined">corporate_fare</span></div>
                 <div class="txt">
@@ -261,15 +218,34 @@ onMounted(load)
                 </div>
               </div>
             </div>
+            <div class="company-details" v-else>
+              <div class="detail-item" v-for="i in 4" :key="i">
+                <div class="icon skel-anim" style="width: 36px; height: 36px; border-radius: 10px;"></div>
+                <div class="txt" style="width: 100%;">
+                  <div class="skel-line" style="width: 40%; height: 8px; margin-bottom: 4px;"></div>
+                  <div class="skel-line" style="width: 80%; height: 12px;"></div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="progress-card">
             <span class="label">PROGRESO DE ETAPA</span>
-            <h1 class="percent">{{ aprendiz.progresoPorcentaje }}%</h1>
-            <p class="stats">Has completado {{ aprendiz.horasCompletadas }} de {{ aprendiz.horasTotales }} horas totales requeridas.</p>
-            <div class="progress-bar-container">
-              <div class="progress-bar" :style="{ width: aprendiz.progresoPorcentaje + '%' }"></div>
-            </div>
+            <template v-if="!loading">
+              <h1 class="percent">{{ aprendiz.progresoPorcentaje }}%</h1>
+              <p class="stats">Has completado {{ aprendiz.horasCompletadas }} de {{ aprendiz.horasTotales }} horas totales requeridas.</p>
+              <div class="progress-bar-container">
+                <div class="progress-bar" :style="{ width: aprendiz.progresoPorcentaje + '%' }"></div>
+              </div>
+            </template>
+            <template v-else>
+              <div class="skel-line" style="width: 40%; height: 48px; margin: 8px 0; background: rgba(255,255,255,0.2);"></div>
+              <div class="skel-line" style="width: 90%; height: 12px; background: rgba(255,255,255,0.1); margin-bottom: 4px;"></div>
+              <div class="skel-line" style="width: 60%; height: 12px; background: rgba(255,255,255,0.1);"></div>
+              <div class="progress-bar-container">
+                <div class="progress-bar" style="width: 0%"></div>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -285,7 +261,7 @@ onMounted(load)
               <span class="material-symbols-outlined action-btn">filter_list</span>
             </div>
           </div>
-          <table class="bitacora-table">
+          <table class="bitacora-table" v-if="!loading">
             <thead>
               <tr>
                 <th>NÚMERO</th>
@@ -321,6 +297,9 @@ onMounted(load)
               </tr>
             </tbody>
           </table>
+          <div v-else style="padding: 24px;">
+            <SkeletonLoader variant="table" :rows="4" :columns="5" />
+          </div>
           <div class="table-footer">
             <span class="footer-stats">PÁGINA {{ currentPage }} DE {{ totalPages }} ({{ filteredBitacoras.length }} REGISTROS)</span>
             <div class="pagination">
@@ -342,12 +321,6 @@ onMounted(load)
           <button @click="showCalendarModal = true" class="btn-cal">Ver Calendario de Fechas</button>
         </div>
       </main>
-
-      <!-- LOADING -->
-      <div v-if="loading" style="position:fixed;inset:0;background:rgba(255,255,255,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:300">
-        <div class="ep-spinner"></div>
-        <p style="font-size:13px;color:#64748B;font-weight:600">Cargando información...</p>
-      </div>
 
       <!-- ERROR -->
       <div v-if="error && !loading" style="margin:24px;padding:16px 20px;background:#FFF1F2;border-radius:12px;color:#E11D48;font-size:13px;font-weight:600;display:flex;align-items:center;gap:12px">
@@ -708,6 +681,24 @@ onMounted(load)
   .info-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 768px) {
+  .company-details { grid-template-columns: 1fr; gap: 12px; }
+  .table-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .table-icons { width: 100%; justify-content: space-between; }
+  .table-icons > div { width: 100%; }
+  .table-icons input { width: 100% !important; }
+  
+  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .bitacora-table { min-width: 600px; }
+  
+  .progress-card .percent { font-size: 36px; }
+  .progress-card .stats { font-size: 11px; }
+  
+  .reminder-banner { flex-direction: column; text-align: center; gap: 16px; padding: 24px 16px; }
+  .reminder-content { flex-direction: column; gap: 12px; }
+  .btn-cal { width: 100%; }
+}
+
 .action-btn-hover:hover { background: #F1F5F9 !important; }
 .pag-btn.disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -716,6 +707,17 @@ onMounted(load)
 .toast-notification.ok { background: #16A34A; color: #FFF; }
 .toast-notification.err { background: #E11D48; color: #FFF; }
 .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skel-line, .skel-badge, .skel-anim {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: 6px;
+}
+.skel-badge { width: 80px; height: 24px; border-radius: 8px; }
+.progress-card .skel-line { background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 37%, rgba(255,255,255,0.1) 63%); }
 </style>
 

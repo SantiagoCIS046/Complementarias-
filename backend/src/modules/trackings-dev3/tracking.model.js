@@ -56,6 +56,15 @@ const trackingSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    estadoVisita: {
+      type: String,
+      enum: ['PROGRAMADO', 'REALIZADO', 'PENDIENTE', 'CANCELADO'],
+      default: 'PROGRAMADO',
+    },
+    alertaEnviada: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

@@ -56,14 +56,20 @@ const actualizar = async (id, data) => {
 };
 
 /**
- * Eliminar permanentemente un usuario (Hard delete).
+ * Activar o desactivar un usuario (Soft toggle — nunca se elimina de la BD).
+ * Cambia activo entre true/false y ajusta el status a ACTIVO/INACTIVO.
  */
-const desactivar = async (id) => {
-  const usuario = await User.findByIdAndDelete(id);
+const toggleStatus = async (id) => {
+  const usuario = await User.findById(id);
+  if (!usuario) throw new Error('Usuario no encontrado.');
 
-  if (!usuario) {
-    throw new Error('Usuario no encontrado.');
-  }
+  const nuevoActivo = !usuario.activo;
+  const nuevoStatus = nuevoActivo ? 'ACTIVO' : 'INACTIVO';
+
+  usuario.activo = nuevoActivo;
+  usuario.status = nuevoStatus;
+  await usuario.save();
+
   return usuario;
 };
 
@@ -100,6 +106,6 @@ module.exports = {
   getAll,
   getById,
   actualizar,
-  desactivar,
+  toggleStatus,
   getFichasSummary,
 };

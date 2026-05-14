@@ -151,10 +151,10 @@ const getAll = async (filtros = {}) => {
   const stages = await ProductiveStage.find(query)
     .populate({
       path: 'apprenticeId',
-      select: 'name email role documento ficha programa instructorAsignado',
+      select: 'name email role documento instructorAsignado',
       populate: { path: 'instructorAsignado', select: 'name' }
     })
-    .populate('companyId', 'razon_social nit direccion municipio jefe_inmediato datos_contacto estado')
+    .populate('companyId', 'razonSocial nit')
     .sort({ createdAt: -1 });
 
   // Inyectar resumen de cronograma (ritmo/estado) para cada EP

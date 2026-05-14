@@ -5,7 +5,7 @@ import { useAuthStore } from '../../../core/store/auth.store'
 import { trackingService } from '../services/tracking.service'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
-import HeaderLayout from '@/layouts/headerViewsLayout.vue'
+import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -64,16 +64,15 @@ const fetchApprentices = async () => {
         name: item.apprenticeId?.name || 'Aprendiz sin nombre',
         initials: (item.apprenticeId?.name || 'A').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
         avatarColor: '#E6F4EA',
-        company: item.companyId?.razon_social || item.companySnapshot?.razonSocial || 'Sin empresa',
+        company: item.companyId?.razonSocial || item.companySnapshot?.razonSocial || item.razonSocial || 'Sin empresa',
         hours: item.horasCompletadas || 0,
         limit: item.horasRequeridas || 864,
         progress: item.horasRequeridas > 0 ? Math.min(Math.round(((item.horasCompletadas || 0) / item.horasRequeridas) * 100), 100) : 0,
         status: item.estado === 'COMPLETADA' ? 'AL DÍA' : 'EN CURSO',
         lastReport: item.seguimientos?.length || 0,
-        phase: item.estado || 'ACTIVO',
+        phase: item.estadoEP || 'ACTIVO',
         modality: item.modalidad || 'CONTRATO',
         ficha: item.ficha || item.apprenticeId?.ficha || 'S/F',
-        programa: item.apprenticeId?.programa || 'Sin programa',
         createdAt: item.createdAt
       })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Orden Cronológico (Más reciente primero)
     } else {
@@ -192,23 +191,17 @@ const getPhaseStyle = (phase) => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
+  <div class="repfora-dashboard">
     <Sidebar />
 
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <Header />
+    <div class="main-wrapper">
+      <Header :title="'Panel del Instructor: ' + instructorName" />
 
-      <main class="flex-1 overflow-y-auto p-8 lg:p-12">
+      <main class="content">
         <div class="w-full space-y-2">
-          <!-- Título de sección con separador verde -->
-          <HeaderLayout :title="'Panel del Instructor: ' + instructorName" icon="dashboard" />
 
           <div class="flex items-center justify-between gap-4 mb-2">
             <p class="text-gray-500 font-medium text-xs">Visualización en tiempo real de la base de datos oficial.</p>
-            <button class="bg-green-9 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-green-10 transition-all" @click="fetchApprentices">
-              <span class="material-symbols-outlined text-sm">sync</span>
-              Sincronizar BD
-            </button>
           </div>
 
           <!-- Filtros -->
@@ -281,7 +274,7 @@ const getPhaseStyle = (phase) => {
           </div>
 
           <div class="table-container-card">
-            <div v-if="isLoading" class="loading-state-overlay"><div class="spin-ring-lg"></div><p>Consultando MongoDB...</p></div>
+            <SkeletonLoader v-if="isLoading" variant="table" :rows="6" :columns="6" />
             <div class="scrollable-table" v-else>
               <table class="apprentices-table">
                 <thead>

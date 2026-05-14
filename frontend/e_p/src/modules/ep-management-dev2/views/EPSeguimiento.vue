@@ -3,6 +3,8 @@ import { useRouter } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { epService } from '../services/ep.service'
+import Sidebar from '../../../components/layout/Sidebar.vue'
+import Header from '../../../components/layout/Header.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -119,64 +121,16 @@ onMounted(loadData)
 
 <template>
   <div class="repfora-dashboard">
-    <!-- BARRA LATERAL -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-icon"><span class="material-symbols-outlined">school</span></div>
-        <div class="logo-text">
-          <span class="title">Administración Académica</span>
-          <span class="subtitle">DIVISIÓN REGIONAL</span>
-        </div>
-      </div>
-      
-      <nav class="sidebar-nav">
-        <router-link to="/mi-ep" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">grid_view</span> Mi Etapa Productiva
-          </button>
-        </router-link>
-        <router-link to="/registro-ep" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">app_registration</span> Formalizar EP
-          </button>
-        </router-link>
-        <router-link to="/seguimiento-ep" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">assessment</span> Seguimientos Técnicos
-          </button>
-        </router-link>
-        <router-link to="/certificacion" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">workspace_premium</span> Certificación Final
-          </button>
-        </router-link>
-      </nav>
+    <Sidebar />
 
-      <div class="sidebar-footer">
-        <button @click="handleLogout" class="nav-item logout-btn">
-          <span class="material-symbols-outlined">logout</span> Cerrar Sesión
-        </button>
-      </div>
-    </aside>
-
-    <!-- CONTENIDO -->
     <div class="main-wrapper">
-      <header class="topbar">
-        <h2 class="page-title">Seguimiento de Aprendiz</h2>
-        <div class="topbar-actions">
+      <Header title="Seguimiento de Aprendiz">
+        <template #actions>
           <button class="btn-new" style="background:#1A4D2E" @click="downloadReport">
             <span class="material-symbols-outlined">download</span> Descargar Reporte
           </button>
-          <div class="divider"></div>
-          <span class="material-symbols-outlined notification" @click="notify('Sincronización en tiempo real activa.', 'info')">notifications</span>
-          <div class="user-profile">
-            <span class="user-name">{{ currentUser.name }}</span>
-            <div class="user-avatar">
-              <img :src="`https://ui-avatars.com/api/?name=${currentUser.name}&background=2e7d32&color=fff`" alt="Avatar">
-            </div>
-          </div>
-        </div>
-      </header>
+        </template>
+      </Header>
 
       <main class="content">
         <!-- Subtítulo de Monitoreo -->
@@ -408,224 +362,6 @@ onMounted(loadData)
 
   </div>
 </template>
-
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import Sidebar from '@/components/layout/Sidebar.vue'
-import Header from '@/components/layout/Header.vue'
-import HeaderLayout from '@/layouts/headerViewsLayout.vue'
-import { trackingService } from '../../operation-tracking-dev3/services/tracking.service'
-
-const currentDate = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
-const searchQuery = ref('')
-const typeFilter = ref('TODOS')
-const statusFilter = ref('TODOS')
-const isLoading = ref(true)
-const isSaving = ref(false)
-
-const seguimientos = ref([])
-
-// Estado del Modal
-const showModal = ref(false)
-const isEditing = ref(false)
-const currentSeg = ref(null)
-const formData = ref({
-  fechaVisita: new Date().toISOString().split('T')[0],
-  lugarVisita: '',
-  observaciones: '',
-  compromisos: '',
-  calificacion: 'EXCELENTE',
-  archivo: null
-})
-
-const fetchData = async () => {
-  isLoading.value = true
-  console.log('📡 Iniciando sincronización de datos...')
-  try {
-    const [stagesRes, trackingsRes] = await Promise.all([
-      trackingService.getMyApprentices(),
-      trackingService.getAllTrackings()
-    ])
-    
-    console.log('✅ Respuesta de Etapas:', stagesRes.data)
-    console.log('✅ Respuesta de Seguimientos:', trackingsRes.data)
-
-    const stages = stagesRes.data.data || []
-    const allTrackings = trackingsRes.data.data || []
-
-    const results = []
-
-    stages.forEach(stage => {
-      const apprentice = stage.apprenticeId || {}
-      const company = stage.companyId || stage.companySnapshot || {}
-      
-      const tiposVisita = [
-        { label: 'INICIAL', months: 1, num: 1 },
-        { label: 'PARCIAL', months: 3, num: 2 },
-        { label: 'FINAL', months: 6, num: 3 }
-      ]
-
-      tiposVisita.forEach((tipo) => {
-        const trackingRealizado = allTrackings.find(t => 
-          (t.stageId?._id === stage._id || t.stageId === stage._id) && t.numeroVisita === tipo.num
-        )
-
-        let visitDate = 'Sin programar'
-        if (stage.fechaInicio) {
-          const date = new Date(stage.fechaInicio)
-          date.setMonth(date.getMonth() + tipo.months)
-          visitDate = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
-        }
-
-        const logsStatus = stage.cronograma?.ritmo?.estado?.replace('_', ' ') || 'PENDIENTE'
-
-        results.push({
-          id: `${stage._id}-${tipo.label}`,
-          stageId: stage._id,
-          apprenticeId: apprentice._id,
-          name: apprentice.name || 'Desconocido',
-          initials: (apprentice.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
-          company: company.razon_social || company.razonSocial || 'Sin empresa',
-          ficha: stage.ficha || apprentice.ficha || stage.radicado || 'S/N',
-          instructor: apprentice.instructorAsignado?.name || 'No asignado',
-          type: tipo.label,
-          numVisita: tipo.num,
-          logsStatus: logsStatus,
-          date: trackingRealizado ? new Date(trackingRealizado.fechaVisita).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : visitDate,
-          rawDate: trackingRealizado ? new Date(trackingRealizado.fechaVisita) : (stage.fechaInicio ? new Date(new Date(stage.fechaInicio).setMonth(new Date(stage.fechaInicio).getMonth() + tipo.months)) : new Date(0)),
-          status: trackingRealizado ? 'REALIZADA' : (stage.fechaInicio ? 'PROGRAMADA' : 'PENDIENTE'),
-          trackingId: trackingRealizado ? trackingRealizado._id : null,
-          evidenciaUrl: trackingRealizado ? trackingRealizado.evidenciaUrl : '',
-          rawTracking: trackingRealizado
-        })
-      })
-    })
-
-    // Orden Cronológico: Primero los más recientes o próximos
-    seguimientos.value = results.sort((a, b) => b.rawDate - a.rawDate)
-  } catch (error) {
-    console.error('Error fetching trackings:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(fetchData)
-
-// Lógica de Modal y Acciones
-const openTrackingModal = (seg, editing = false) => {
-  currentSeg.value = seg
-  isEditing.value = editing
-  
-  if (editing && seg.rawTracking) {
-    formData.value = {
-      fechaVisita: new Date(seg.rawTracking.fechaVisita).toISOString().split('T')[0],
-      lugarVisita: seg.rawTracking.lugarVisita || '',
-      observaciones: seg.rawTracking.observaciones || '',
-      compromisos: seg.rawTracking.compromisos || '',
-      calificacion: seg.rawTracking.calificacion || 'EXCELENTE',
-      archivo: null
-    }
-  } else {
-    formData.value = {
-      fechaVisita: new Date().toISOString().split('T')[0],
-      lugarVisita: '',
-      observaciones: '',
-      compromisos: '',
-      calificacion: 'EXCELENTE',
-      archivo: null
-    }
-  }
-  
-  showModal.value = true
-}
-
-const closeModal = () => {
-  showModal.value = false
-  currentSeg.value = null
-}
-
-const handleFileChange = (e) => {
-  formData.value.archivo = e.target.files[0]
-}
-
-const saveTracking = async () => {
-  if (!formData.value.observaciones) {
-    alert('Por favor ingrese las observaciones de la visita.')
-    return
-  }
-
-  isSaving.value = true
-  try {
-    let evidenciaUrl = currentSeg.value.evidenciaUrl
-
-    // 1. Subir archivo si hay uno nuevo
-    if (formData.value.archivo) {
-      const fData = new FormData()
-      fData.append('archivo', formData.value.archivo)
-      fData.append('stageId', currentSeg.value.stageId)
-      fData.append('tipoDocumento', `SEGUIMIENTO_${currentSeg.value.numVisita}`)
-      
-      const uploadRes = await trackingService.uploadDocument(fData)
-      // El backend devuelve el objeto documento en data.data
-      evidenciaUrl = uploadRes.data.data?.url || uploadRes.data.url
-    }
-
-    const payload = {
-      stageId: currentSeg.value.stageId,
-      apprenticeId: currentSeg.value.apprenticeId,
-      numeroVisita: currentSeg.value.numVisita,
-      fechaVisita: formData.value.fechaVisita,
-      lugarVisita: formData.value.lugarVisita,
-      observaciones: formData.value.observaciones,
-      compromisos: formData.value.compromisos,
-      calificacion: formData.value.calificacion,
-      evidenciaUrl
-    }
-
-    if (isEditing.value && currentSeg.value.trackingId) {
-      await trackingService.updateTracking(currentSeg.value.trackingId, payload)
-    } else {
-      await trackingService.createTracking(payload)
-    }
-
-    await fetchData()
-    closeModal()
-  } catch (error) {
-    console.error('Error saving tracking:', error)
-    alert('Error al guardar el seguimiento: ' + (error.response?.data?.message || error.message))
-  } finally {
-    isSaving.value = false
-  }
-}
-
-const viewActa = (seg) => {
-  if (seg.evidenciaUrl) {
-    window.open(seg.evidenciaUrl, '_blank')
-  } else {
-    alert('No hay acta disponible para este seguimiento.')
-  }
-}
-
-const filteredSeguimientos = computed(() => {
-  return seguimientos.value.filter(s => {
-    const q = searchQuery.value.toLowerCase()
-    const matchesSearch = s.name.toLowerCase().includes(q) || s.ficha.toLowerCase().includes(q)
-    const matchesType = typeFilter.value === 'TODOS' || s.type === typeFilter.value
-    const matchesStatus = statusFilter.value === 'TODOS' || s.status === statusFilter.value
-    return matchesSearch && matchesType && matchesStatus
-  })
-})
-
-const stats = computed(() => {
-  return {
-    pendientes: seguimientos.value.filter(s => s.status === 'PENDIENTE' || s.status === 'PROGRAMADA').length,
-    realizadas: seguimientos.value.filter(s => s.status === 'REALIZADA').length,
-    atrasadas: seguimientos.value.filter(s => s.logsStatus === 'ATRASADO').length
-  }
-})
-</script>
-
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');

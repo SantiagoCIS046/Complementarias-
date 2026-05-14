@@ -26,6 +26,28 @@ const crear = async (req, res) => {
 };
 
 /**
+ * POST /api/companies/bulk
+ * Crear múltiples empresas desde archivo plano (SGVA).
+ */
+const bulkCrear = async (req, res) => {
+  try {
+    const empresasData = req.body;
+    if (!Array.isArray(empresasData)) {
+      return res.status(400).json({ success: false, message: 'El cuerpo debe ser un arreglo de empresas.' });
+    }
+    const result = await service.bulkCrear(empresasData);
+    res.status(201).json({
+      success: true,
+      creadas: result.creadas.length,
+      omitidas: result.omitidas.length,
+      detalle_omitidas: result.omitidas,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+/**
  * GET /api/companies
  * Listar empresas (con busqueda opcional via query ?busqueda=).
  */
@@ -90,6 +112,7 @@ const actualizar = async (req, res) => {
 
 module.exports = {
   crear,
+  bulkCrear,
   getAll,
   getById,
   actualizar,

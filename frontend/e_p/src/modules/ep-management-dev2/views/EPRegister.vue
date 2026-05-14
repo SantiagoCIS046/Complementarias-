@@ -3,6 +3,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { epService } from '../services/ep.service'
+import Sidebar from '../../../components/layout/Sidebar.vue'
+import Header from '../../../components/layout/Header.vue'
+import SkeletonLoader from '../../../components/ui/SkeletonLoader.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -218,64 +221,21 @@ onMounted(loadData)
 
 <template>
   <div class="repfora-dashboard">
-    <!-- SIDEBAR SINCRONIZADO CON DASHBOARD -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-icon"><span class="material-symbols-outlined">school</span></div>
-        <div class="logo-text">
-          <span class="title">Administración Académica</span>
-          <span class="subtitle">DIVISIÓN REGIONAL</span>
-        </div>
-      </div>
-      
-      <nav class="sidebar-nav">
-        <router-link to="/mi-ep" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">grid_view</span> Mi Etapa Productiva
-          </button>
-        </router-link>
-        <router-link to="/registro-ep" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive || activeTab === 'EP' }]">
-            <span class="material-symbols-outlined">app_registration</span> Formalizar EP
-          </button>
-        </router-link>
-        <router-link to="/seguimiento-ep" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">assessment</span> Seguimientos Técnicos
-          </button>
-        </router-link>
-        <router-link to="/certificacion" custom v-slot="{ navigate, isActive }">
-          <button @click="navigate" :class="['nav-item', { active: isActive }]">
-            <span class="material-symbols-outlined">workspace_premium</span> Certificación Final
-          </button>
-        </router-link>
-      </nav>
-
-      <div class="sidebar-footer">
-        <button @click="authStore.logout(); router.push('/login')" class="nav-item logout-btn">
-          <span class="material-symbols-outlined">logout</span> Cerrar Sesión
-        </button>
-      </div>
-    </aside>
+    <Sidebar />
 
     <div class="main-wrapper">
-      <!-- BARRA SUPERIOR CON TABS -->
-      <header class="topbar-white">
-        <div class="topbar-left">
-          <div class="top-logo">REPFORA</div>
-          <nav class="top-tabs">
-            <span :class="['tab', { active: activeTab === 'EP' }]" @click="activeTab = 'EP'">Etapa Productiva</span>
-            <span :class="['tab', { active: activeTab === 'Empresas' }]" @click="activeTab = 'Empresas'">Empresas</span>
-            <span :class="['tab', { active: activeTab === 'Certificados' }]" @click="activeTab = 'Certificados'">Certificación</span>
-          </nav>
-        </div>
-        <div class="topbar-right">
-          <div class="user-profile">
-            <span class="user-name">{{ currentUser.name }}</span>
-            <div class="user-avatar-small"><img :src="`https://ui-avatars.com/api/?name=${currentUser.name}&background=2e7d32&color=fff`" alt="U"></div>
+      <Header>
+        <template #title-area>
+          <div class="topbar-left" style="display:flex;align-items:center;gap:48px;">
+            <div class="top-logo">REPFORA</div>
+            <nav class="top-tabs">
+              <span :class="['tab', { active: activeTab === 'EP' }]" @click="activeTab = 'EP'">Etapa Productiva</span>
+              <span :class="['tab', { active: activeTab === 'Empresas' }]" @click="activeTab = 'Empresas'">Empresas</span>
+              <span :class="['tab', { active: activeTab === 'Certificados' }]" @click="activeTab = 'Certificados'">Certificación</span>
+            </nav>
           </div>
-        </div>
-      </header>
+        </template>
+      </Header>
 
       <main class="content-scrollable">
         <div class="content-container">
@@ -393,7 +353,7 @@ onMounted(loadData)
               <table class="modern-table">
                 <thead><tr><th>EMPRESA</th><th>NIT</th><th>SECTOR</th><th>UBICACIÓN</th></tr></thead>
                 <tbody>
-                  <tr v-if="isLoadingCompanies"><td colspan="4">Cargando datos...</td></tr>
+                  <tr v-if="isLoadingCompanies"><td colspan="4" style="padding:0; border:none;"><SkeletonLoader variant="table" :rows="5" :columns="4" /></td></tr>
                   <tr v-for="c in filteredCompaniesList" :key="c._id"><td><strong>{{ c.razonSocial }}</strong></td><td>{{ c.nit }}</td><td>{{ c.sector || 'General' }}</td><td>{{ c.direccion || 'Colombia' }}</td></tr>
                 </tbody>
               </table>

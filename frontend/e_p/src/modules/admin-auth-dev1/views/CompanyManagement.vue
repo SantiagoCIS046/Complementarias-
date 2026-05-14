@@ -1,60 +1,10 @@
 <template>
-  <div class="admin-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-area" style="display: flex; flex-direction: column;">
-          <span class="logo-text" style="font-size: 1.1rem; font-weight: 900; color: #1b5e20; line-height: 1.1;">REPFORA</span>
-          <span class="logo-subtext" style="font-size: 0.5rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">ARQUITECTO INSTITUCIONAL</span>
-        </div>
-      </div>
-
-      <nav class="sidebar-nav">
-        <div class="nav-group">
-          <router-link to="/usuarios" class="nav-item" :class="{ active: $route.path === '/usuarios' || $route.path === '/dashboard' }">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            <span>Gestión de Usuarios</span>
-          </router-link>
-          <router-link to="/gestion-empresas" class="nav-item" :class="{ active: $route.path === '/gestion-empresas' }">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7"/><path d="M4 21V10"/><path d="M10 21V10"/><path d="M16 21V10"/><path d="M20 21V10"/><path d="M9 2l1 5h4l1-5z"/>
-            </svg>
-            <span>Gestión de Empresas</span>
-          </router-link>
-          <router-link to="/fichas" class="nav-item" :class="{ active: $route.path === '/fichas' }">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-            <span>Gestión de Fichas</span>
-          </router-link>
-        </div>
-      </nav>
-
-      <div class="sidebar-footer">
-        <a href="#" class="nav-item">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <span>Cambiar Clave</span>
-        </a>
-        <a href="#" class="nav-item logout" @click.prevent="handleLogout">Cerrar Sesión</a>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-      <header class="topbar">
-        <div class="topbar-left"></div>
-        <div class="topbar-right">
-          <div class="user-profile">
-            <div class="admin-avatar" :title="adminName">{{ adminInitials }}</div>
-          </div>
-        </div>
-      </header>
-
-      <div class="page-body">
+  <div class="repfora-dashboard">
+    <Sidebar />
+    <div class="main-wrapper">
+      <Header title="Gestión de Empresas" />
+      <main class="content">
+        <div class="page-body">
         <header class="page-header">
           <div class="header-left-group">
             <div class="header-info">
@@ -115,12 +65,7 @@
                 </div>
               </div>
 
-              <div v-if="isLoading" class="table-loading">
-                <div class="spin-ring-lg"></div>
-                <p>Cargando empresas...</p>
-              </div>
-
-              <table class="user-table" v-else>
+              <table class="user-table">
                 <thead>
                   <tr>
                     <th>EMPRESA / NIT</th>
@@ -129,7 +74,8 @@
                     <th>ACCIONES</th>
                   </tr>
                 </thead>
-                <tbody>
+                <SkeletonLoader v-if="isLoading" variant="table-tbody" :rows="5" :columns="4" tag="tbody" />
+                <tbody v-else>
                   <tr v-for="c in filteredCompanies" :key="c._id">
                     <td>
                       <div class="user-cell">
@@ -260,10 +206,87 @@
                 <h2>Registrar Nueva Empresa</h2>
                 <p class="u-email">Vinculación institucional al Centro Agroturístico.</p>
               </div>
+              <div class="modal-tabs">
+                <button class="modal-tab" :class="{active: registroTab === 'manual'}" @click="registroTab = 'manual'">
+                  <span class="material-symbols-outlined" style="font-size: 1.1rem;">edit</span> Registro Manual
+                </button>
+                <button class="modal-tab" :class="{active: registroTab === 'bulk'}" @click="registroTab = 'bulk'">
+                  <span class="material-symbols-outlined" style="font-size: 1.1rem;">bolt</span> Carga Rápida (SGVA)
+                </button>
+              </div>
               <button class="modal-close-premium" @click="showAddModal = false">&times;</button>
             </div>
 
             <div class="modal-body modal-body-scroll">
+
+              <!-- ===== TAB: CARGA RÁPIDA (SGVA) ===== -->
+              <div v-if="registroTab === 'bulk'">
+                <div class="bulk-info-banner">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span>Cargue el archivo <strong>.csv</strong> exportado desde el <strong>SGVA</strong>. Columnas esperadas: <code>nit, razon_social, sector_economico, direccion, municipio, telefono, correo, jefe_nombre, jefe_cargo, jefe_telefono, jefe_correo</code></span>
+                </div>
+
+                <!-- Zona drag & drop -->
+                <div
+                  class="drop-zone"
+                  :class="{ 'drop-zone-over': isDragOver }"
+                  @dragover.prevent="isDragOver = true"
+                  @dragleave="isDragOver = false"
+                  @drop.prevent="handleFileDrop"
+                  @click="$refs.csvFileInput.click()"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;color:#1b5e20;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <p class="drop-text">Arrastra tu archivo CSV aquí<br><span>o haz clic para seleccionar</span></p>
+                  <input ref="csvFileInput" type="file" accept=".csv,.txt" style="display:none" @change="handleFileSelect" />
+                </div>
+
+                <!-- Vista previa de datos -->
+                <div v-if="csvPreview.length > 0" class="bulk-preview">
+                  <div class="preview-header">
+                    <span class="preview-count">📋 {{ csvPreview.length }} empresa(s) detectadas en el archivo</span>
+                    <button class="btn-clear-csv" @click="clearCsv">✕ Limpiar</button>
+                  </div>
+                  <div class="preview-table-wrap">
+                    <table class="preview-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>NIT</th>
+                          <th>Razón Social</th>
+                          <th>Sector</th>
+                          <th>Municipio</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(row, i) in csvPreview" :key="i">
+                          <td>{{ i + 1 }}</td>
+                          <td>{{ row.nit }}</td>
+                          <td>{{ row.razon_social }}</td>
+                          <td>{{ row.sector_economico || '---' }}</td>
+                          <td>{{ row.municipio || '---' }}</td>
+                          <td><span class="status-pill activo">HABILITADA</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Resultado de la importación -->
+                <div v-if="bulkResult" class="bulk-result">
+                  <div class="result-row success-row">
+                    <span>✅ Empresas registradas exitosamente:</span>
+                    <strong>{{ bulkResult.creadas }}</strong>
+                  </div>
+                  <div class="result-row warn-row" v-if="bulkResult.omitidas > 0">
+                    <span>⚠️ Omitidas (ya existían o error):</span>
+                    <strong>{{ bulkResult.omitidas }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ===== TAB: REGISTRO MANUAL ===== -->
+              <div v-else>
               <!-- Bloque 1: Información Legal -->
               <div class="form-section-premium">
                 <h3 class="section-title">🏢 Bloque 1: Información Legal (Obligatorio)</h3>
@@ -366,11 +389,17 @@
                   </div>
                 </div>
               </div>
+              </div>
             </div>
 
             <div class="modal-footer footer-premium">
               <button class="btn-cancel-premium" @click="showAddModal = false">Descartar</button>
-              <button class="btn-confirm-premium" @click="handleAddCompany" :disabled="isSubmitting">
+              <button v-if="registroTab === 'bulk'" class="btn-confirm-premium btn-bulk" @click="handleBulkImport" :disabled="isSubmitting || csvPreview.length === 0">
+                <span v-if="!isSubmitting" style="display: flex; align-items: center; gap: 6px; justify-content: center;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">upload</span> Importar {{ csvPreview.length }} Empresa(s)</span>
+                <div v-else class="spin-mini"></div>
+              </button>
+              <!-- Botón para Registro Manual -->
+              <button v-else class="btn-confirm-premium" @click="handleAddCompany" :disabled="isSubmitting">
                 <span v-if="!isSubmitting">Finalizar Registro</span>
                 <div v-else class="spin-mini"></div>
               </button>
@@ -378,7 +407,8 @@
           </div>
         </div>
       </Transition>
-    </main>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -387,6 +417,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../core/store/auth.store';
 import { companiesService } from '../services/companies.service';
+import Sidebar from '../../../components/layout/Sidebar.vue';
+import Header from '../../../components/layout/Header.vue';
+import SkeletonLoader from '../../../components/ui/SkeletonLoader.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -440,6 +473,14 @@ const showAddModal = ref(false);
 const isSubmitting = ref(false);
 const selectedCompany = ref(null);
 
+// Tab del modal de registro
+const registroTab = ref('manual');
+
+// Bulk upload state
+const csvPreview = ref([]);
+const isDragOver = ref(false);
+const bulkResult = ref(null);
+
 // Formulario Nueva Empresa (Flat para v-model, se mapea al enviar)
 const nuevaEmpresa = ref({
   nit: '',
@@ -469,6 +510,9 @@ const openAddModal = () => {
     telefono: '', correo_corporativo: '', jefe_nombre: '', jefe_cargo: '', jefe_telefono: '',
     jefe_correo: '', rut_url: '', camara_comercio_url: '', estado: 'EN_REVISION'
   };
+  registroTab.value = 'manual';
+  csvPreview.value = [];
+  bulkResult.value = null;
   showAddModal.value = true;
 };
 
@@ -524,6 +568,96 @@ const handleAddCompany = async () => {
 const setFilter = (f) => currentFilter.value = f;
 const handleLogout = () => { authStore.logout(); router.push('/login'); };
 
+// ── CSV / Bulk helpers ─────────────────────────────────────────────────
+const parseCsv = (text) => {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  // Detectar si la primera fila es cabecera (contiene letras)
+  const firstLine = lines[0].toLowerCase();
+  const hasHeader = firstLine.includes('nit') || firstLine.includes('razon') || firstLine.includes('empresa');
+  const dataLines = hasHeader ? lines.slice(1) : lines;
+
+  return dataLines
+    .filter(l => l.trim() !== '')
+    .map(line => {
+      // Soporte para ; o ,
+      const sep = line.includes(';') ? ';' : ',';
+      const cols = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+      return {
+        nit:              cols[0] || '',
+        razon_social:     cols[1] || '',
+        sector_economico: cols[2] || '',
+        direccion:        cols[3] || '',
+        municipio:        cols[4] || 'San Gil',
+        datos_contacto: {
+          telefono:          cols[5] || '',
+          correo_corporativo: cols[6] || ''
+        },
+        jefe_inmediato: {
+          nombre_completo: cols[7] || '',
+          cargo:           cols[8] || '',
+          telefono:        cols[9] || '',
+          correo:          cols[10] || ''
+        },
+        estado: 'HABILITADA'
+      };
+    })
+    .filter(row => row.nit && row.razon_social);
+};
+
+const loadCsvText = (text) => {
+  const parsed = parseCsv(text);
+  if (parsed.length === 0) {
+    alert('No se encontraron filas válidas en el archivo. Verifique el formato.');
+    return;
+  }
+  csvPreview.value = parsed;
+  bulkResult.value = null;
+};
+
+const handleFileSelect = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => loadCsvText(ev.target.result);
+  reader.readAsText(file, 'utf-8');
+};
+
+const handleFileDrop = (e) => {
+  isDragOver.value = false;
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => loadCsvText(ev.target.result);
+  reader.readAsText(file, 'utf-8');
+};
+
+const clearCsv = () => {
+  csvPreview.value = [];
+  bulkResult.value = null;
+};
+
+const handleBulkImport = async () => {
+  if (csvPreview.value.length === 0) return;
+  isSubmitting.value = true;
+  try {
+    const response = await companiesService.bulkCreate(csvPreview.value);
+    bulkResult.value = {
+      creadas: response.data.creadas,
+      omitidas: response.data.omitidas
+    };
+    csvPreview.value = [];
+    loadCompanies();
+  } catch (err) {
+    console.error('Error en importación masiva:', err);
+    alert('Error al importar: ' + (err.response?.data?.message || err.message));
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+// ────────────────────────────────────────────────────────────────────────
+
 const adminName = computed(() => authStore.user?.name || 'Admin');
 const adminInitials = computed(() => {
   const parts = adminName.value.split(' ');
@@ -532,80 +666,12 @@ const adminInitials = computed(() => {
 </script>
 
 <style scoped>
-.admin-container {
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  background: #f8fafc;
-  font-family: 'Inter', sans-serif;
-  overflow: hidden;
-  font-size: 13px;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 200px;
-  background: #fff;
-  border-right: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  padding: 16px 0;
-  flex-shrink: 0;
-}
-.sidebar-header { padding: 0 20px 20px; }
-.logo-text { font-size: 1.1rem; font-weight: 800; color: #1b5e20; }
-.logo-subtext { font-size: 0.55rem; color: #94a3b8; font-weight: 700; display: block; }
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
-  text-decoration: none;
-  color: #64748b;
-  font-weight: 500;
-  font-size: 0.85rem;
-}
-.nav-item.active { background: #f0fdf4; color: #1b5e20; font-weight: 700; border-right: 3px solid #1b5e20; }
-.nav-icon { width: 16px; height: 16px; }
-.sidebar-footer { margin-top: auto; padding: 16px 0; border-top: 1px solid #f1f5f9; }
-.logout { color: #dc2626 !important; }
-
-.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
-/* Topbar */
-.topbar {
-  height: 48px;
-  background: #fff;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 20px;
-}
-.topbar-right { display: flex; align-items: flex-end; height: 100%; padding-bottom: 8px; }
-
-.admin-avatar {
-  width: 32px !important;
-  height: 32px !important;
-  background-color: #1e293b !important;
-  color: #ffffff !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-weight: 800 !important;
-  font-size: 0.8rem !important;
-  cursor: pointer;
-  border: 2px solid #e2e8f0;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
 
 /* Page Content */
 .page-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 20px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 32px; }
-.page-title { font-size: 1.1rem; font-weight: 800; margin: 0; }
-.page-description { font-size: 0.75rem; color: #64748b; }
+.page-title { font-size: 1.35rem; font-weight: 800; margin: 0; }
+.page-description { font-size: 0.88rem; color: #64748b; }
 
 .header-left-group { display: flex; align-items: center; gap: 32px; flex: 1; }
 .header-info { min-width: 200px; }
@@ -614,18 +680,18 @@ const adminInitials = computed(() => {
 .border-green { border-left-color: #1b5e20; }
 .border-pink { border-left-color: #db2777; }
 .border-dark { border-left-color: #1e293b; }
-.stat-box p { font-size: 0.65rem; font-weight: 800; color: #64748b; margin-bottom: 4px; }
-.stat-box h2 { font-size: 1.4rem; margin: 0 0 2px 0; font-weight: 800; }
-.stat-box small { font-size: 0.65rem; color: #22c55e; font-weight: 600; }
+.stat-box p { font-size: 0.72rem; font-weight: 800; color: #64748b; margin-bottom: 4px; }
+.stat-box h2 { font-size: 1.6rem; margin: 0 0 2px 0; font-weight: 800; }
+.stat-box small { font-size: 0.72rem; color: #22c55e; font-weight: 600; }
 
 .header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .btn-primary-sena {
-  background: #1b5e20; color: #fff; border: none; padding: 8px 14px; border-radius: 8px;
-  font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center;
+  background: #1b5e20; color: #fff; border: none; padding: 9px 16px; border-radius: 8px;
+  font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center;
 }
 .btn-export-outline {
-  background: #fff; color: #1e293b; border: 1px solid #e2e8f0; padding: 8px 14px; border-radius: 8px;
-  font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center;
+  background: #fff; color: #1e293b; border: 1px solid #e2e8f0; padding: 9px 16px; border-radius: 8px;
+  font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center;
 }
 
 /* Table Section */
@@ -637,25 +703,25 @@ const adminInitials = computed(() => {
   width: 100%; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px 5px 28px; font-size: 0.75rem; outline: none;
 }
 .filter-tabs { display: flex; gap: 8px; }
-.filter-btn { background: transparent; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: #64748b; cursor: pointer; }
+.filter-btn { background: transparent; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.83rem; font-weight: 600; color: #64748b; cursor: pointer; }
 .filter-btn.active { background: #f0fdf4; color: #1b5e20; }
 
 .user-table { width: 100%; border-collapse: collapse; }
-.user-table th { background: #1b5e20; text-align: left; padding: 12px 16px; font-size: 0.75rem; color: white; text-transform: uppercase; font-weight: 700; }
-.user-table td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; }
+.user-table th { background: #1b5e20; text-align: left; padding: 13px 16px; font-size: 0.82rem; color: white; text-transform: uppercase; font-weight: 700; }
+.user-table td { padding: 13px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
 .user-table tbody tr:nth-child(even) { background: #f8fafc; }
 
 .user-cell { display: flex; align-items: center; gap: 12px; }
-.avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.75rem; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.82rem; }
 .bg-green { background: #1b5e20; }
-.u-name { font-weight: 700; margin: 0; }
-.u-email { font-size: 0.75rem; color: #94a3b8; margin: 0; }
+.u-name { font-weight: 700; margin: 0; font-size: 0.88rem; }
+.u-email { font-size: 0.8rem; color: #94a3b8; margin: 0; }
 
 .supervisor-info { display: flex; flex-direction: column; gap: 2px; }
-.s-name { font-weight: 600; font-size: 0.8rem; margin: 0; color: #1e293b; }
-.s-role { font-size: 0.7rem; color: #94a3b8; margin: 0; text-transform: uppercase; }
+.s-name { font-weight: 600; font-size: 0.88rem; margin: 0; color: #1e293b; }
+.s-role { font-size: 0.76rem; color: #94a3b8; margin: 0; text-transform: uppercase; }
 
-.status-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+.status-pill { padding: 5px 13px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
 .status-pill.activo { background: #1b5e20; color: white; }
 .status-pill.contract_ended { background: #ea580c; color: white; }
 .status-pill.inactivo { background: #c10015; color: white; }
@@ -672,4 +738,156 @@ const adminInitials = computed(() => {
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* ─── Modal Tabs ─────────────────────────────────────────────────── */
+.modal-tabs {
+  display: flex;
+  gap: 6px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.modal-tab {
+  background: transparent;
+  border: none;
+  padding: 7px 18px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.modal-tab.active {
+  background: #fff;
+  color: #1b5e20;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+.modal-tab:hover:not(.active) { color: #1e293b; }
+
+/* ─── Bulk Info Banner ───────────────────────────────────────────── */
+.bulk-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 0.88rem;
+  color: #166534;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.bulk-info-banner code {
+  background: #dcfce7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+/* ─── Drop Zone ──────────────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+  margin-bottom: 20px;
+}
+.drop-zone:hover, .drop-zone-over {
+  border-color: #1b5e20;
+  background: #f0fdf4;
+}
+.drop-text {
+  text-align: center;
+  font-size: 0.95rem;
+  color: #475569;
+  margin: 0;
+  line-height: 1.6;
+}
+.drop-text span { font-size: 0.82rem; color: #94a3b8; }
+
+/* ─── Bulk Preview Table ─────────────────────────────────────────── */
+.bulk-preview { margin-top: 4px; }
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.preview-count { font-size: 0.88rem; font-weight: 700; color: #1b5e20; }
+.btn-clear-csv {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-clear-csv:hover { background: #fecaca; }
+.preview-table-wrap {
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+.preview-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.preview-table th {
+  background: #1b5e20;
+  color: #fff;
+  padding: 9px 11px;
+  text-align: left;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+}
+.preview-table td { padding: 8px 11px; border-bottom: 1px solid #f1f5f9; color: #374151; }
+.preview-table tbody tr:nth-child(even) { background: #f8fafc; }
+
+/* ─── Bulk Result ────────────────────────────────────────────────── */
+.bulk-result {
+  margin-top: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  animation: fadeSlideIn 0.3s ease;
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.success-row { background: #f0fdf4; color: #166534; }
+.warn-row { background: #fffbeb; color: #92400e; border-top: 1px solid #e2e8f0; }
+.result-row strong { font-size: 1.1rem; }
+
+/* ─── Bulk confirm button variant ───────────────────────────────── */
+.btn-bulk {
+  background: linear-gradient(135deg, #1b5e20 0%, #166534 100%) !important;
+  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
+}
+.btn-bulk:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

@@ -3,7 +3,6 @@ import Sidebar from '@/components/layout/Sidebar.vue';
 import Header from '@/components/layout/Header.vue';
 import CompanyCard from '../components/CompanyCard.vue';
 import BtnBack from '@/layouts/btnBackLayout.vue';
-import HeaderLayout from '@/layouts/headerViewsLayout.vue';
 
 const companies = [
   {
@@ -44,19 +43,16 @@ const filters = [
 </script>
 
 <template>
-  <div class="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
+  <div class="repfora-dashboard">
     <Sidebar />
 
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <Header />
+    <div class="main-wrapper">
+      <Header title="Directorio de Empresas" />
 
-      <main class="flex-1 overflow-y-auto p-12 lg:p-16">
-        <div class="max-w-7xl mx-auto space-y-8">
+      <main class="content">
+        <div class="w-full space-y-4">
           <!-- 1. Botón volver -->
           <BtnBack route="/dashboard" />
-
-          <!-- 2. Título de sección con separador verde -->
-          <HeaderLayout title="Directorio de Empresas" />
 
           <!-- 3. Barra superior: botón Crear + filtro/buscador -->
           <div class="row items-center justify-between flex gap-6">

@@ -1,17 +1,6 @@
 <script setup>
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { 
-  LayoutDashboard, 
-  BarChart2,
-  FileText, 
-  AlertTriangle,
-  Settings, 
-  LogOut,
-  ShieldCheck,
-  GraduationCap,
-  Building2
-} from 'lucide-vue-next';
 import { useAuthStore } from '../../core/store/auth.store';
 
 const authStore = useAuthStore();
@@ -24,28 +13,26 @@ const menuItems = computed(() => {
 
   if (role === 'ADMIN') {
     return [
-      { name: 'USUARIOS', icon: ShieldCheck, path: '/usuarios' },
-      { name: 'EMPRESAS', icon: Building2, path: '/gestion-empresas' },
-      { name: 'CONFIG', icon: Settings, path: '/configuracion' },
+      { name: 'Gestión de Usuarios', icon: 'group', path: '/usuarios' },
+      { name: 'Gestión de Empresas', icon: 'domain', path: '/gestion-empresas' },
+      { name: 'Gestión de Fichas', icon: 'folder_open', path: '/fichas' },
     ];
   }
 
   if (role === 'INSTRUCTOR') {
     return [
-      { name: 'DASHBOARD', icon: LayoutDashboard, path: '/instructor-dashboard' },
-      { name: 'SEGUIMIENTO', icon: BarChart2, path: '/seguimiento' },
-      { name: 'BITÁCORAS', icon: FileText, path: '/bitacoras' },
-      { name: 'NOVEDADES', icon: AlertTriangle, path: '/novedades' },
-      { name: 'CERTIFICACIÓN', icon: FileText, path: '/certificacion' },
-      { name: 'AJUSTES', icon: Settings, path: '/configuracion' },
+      { name: 'Dashboard', icon: 'dashboard', path: '/instructor-dashboard' },
+      { name: 'Seguimientos', icon: 'assessment', path: '/seguimiento' },
+      { name: 'Bitácoras', icon: 'description', path: '/bitacoras' },
+      { name: 'Certificación', icon: 'workspace_premium', path: '/certificacion' },
     ];
   }
 
   return [
-    { name: 'MI ETAPA', icon: GraduationCap, path: '/mi-ep' },
-    { name: 'REGISTRO', icon: FileText, path: '/registro-ep' },
-    { name: 'CERTIFICACIÓN', icon: ShieldCheck, path: '/certificacion' },
-    { name: 'SEGUIMIENTO', icon: BarChart2, path: '/seguimiento' }
+    { name: 'Mi Etapa Productiva', icon: 'grid_view', path: '/mi-ep' },
+    { name: 'Formalizar EP', icon: 'app_registration', path: '/registro-ep' },
+    { name: 'Seguimientos Técnicos', icon: 'assessment', path: '/seguimiento-ep' },
+    { name: 'Certificación Final', icon: 'workspace_premium', path: '/certificacion' }
   ];
 });
 
@@ -57,169 +44,36 @@ const handleLogout = () => {
 
 <template>
   <aside class="sidebar">
-    <!-- Logo Section - ULTRA COMPACT -->
     <div class="sidebar-header">
-      <div class="logo-box">
-        <div class="logo-icon">
-          <span class="logo-r">R</span>
-        </div>
-        <div class="logo-text-group">
-          <h1 class="logo-main">REPFORA E.P.</h1>
-          <p class="logo-sub">Portal</p>
-        </div>
+      <div class="logo-icon"><span class="material-symbols-outlined">school</span></div>
+      <div class="logo-text">
+        <span class="title">Administración Académica</span>
+        <span class="subtitle">DIVISIÓN REGIONAL</span>
       </div>
     </div>
-
-    <!-- Navigation - ULTRA DENSE -->
+    
     <nav class="sidebar-nav">
       <router-link 
         v-for="item in menuItems" 
-        :key="item.name"
-        :to="item.path"
-        v-slot="{ isActive }"
-        class="nav-link"
+        :key="item.name" 
+        :to="item.path" 
+        custom 
+        v-slot="{ navigate, isActive }"
       >
-        <div :class="['nav-item', { 'active': isActive }]">
-          <component :is="item.icon" class="nav-icon" :size="14" stroke-width="2.5" />
-          <span class="nav-text">{{ item.name }}</span>
-        </div>
+        <button @click="navigate" :class="['nav-item', { active: isActive }]">
+          <span class="material-symbols-outlined">{{ item.icon }}</span> {{ item.name }}
+        </button>
       </router-link>
     </nav>
 
-    <!-- Logout - ULTRA DENSE -->
     <div class="sidebar-footer">
-      <button @click="handleLogout" class="btn-logout">
-        <LogOut class="nav-icon" :size="14" stroke-width="2.5" />
-        <span class="nav-text">CERRAR SESIÓN</span>
+      <button @click="handleLogout" class="nav-item logout-btn">
+        <span class="material-symbols-outlined">logout</span> Cerrar Sesión
       </button>
     </div>
   </aside>
 </template>
 
 <style scoped>
-.sidebar {
-  width: 170px; /* Ultra small width */
-  background-color: #ffffff;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid #f1f1f1;
-  flex-shrink: 0;
-  font-family: 'Inter', sans-serif;
-}
-
-.sidebar-header {
-  padding: 1.25rem 1rem;
-}
-
-.logo-box {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.logo-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-  background-color: var(--color_card);
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logo-r {
-  color: #ffffff;
-  font-weight: 900;
-  font-size: 0.875rem;
-}
-
-.logo-text-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.logo-main {
-  font-size: 0.875rem;
-  font-weight: 900;
-  color: #1a1a1a;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.logo-sub {
-  font-size: 0.5rem;
-  font-weight: 800;
-  color: #AAAAAA;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 0.125rem;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 0 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.nav-link {
-  text-decoration: none;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  color: #888888;
-}
-
-.nav-item:hover {
-  background-color: #f8fafc;
-  color: #1a1a1a;
-}
-
-.nav-item.active {
-  background-color: var(--color_button);
-  color: #ffffff;
-}
-
-.nav-icon {
-  flex-shrink: 0;
-}
-
-.nav-text {
-  font-size: 0.55rem; /* Ultra small text */
-  font-weight: 800;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
-}
-
-.sidebar-footer {
-  padding: 0.75rem 0.5rem;
-  border-top: 1px solid #f1f1f1;
-}
-
-.btn-logout {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  border: none;
-  background: transparent;
-  color: #888888;
-  cursor: pointer;
-}
-
-.btn-logout:hover {
-  background-color: #FFF5F5;
-  color: #C62828;
-}
+/* Los estilos del sidebar se han movido globalmente a style.css */
 </style>

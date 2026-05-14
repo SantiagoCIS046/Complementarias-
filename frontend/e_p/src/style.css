@@ -374,13 +374,19 @@ body,
 .logo-icon {
   width: 40px;
   height: 40px;
-  background: #1A4D2E;
+  background: #FFFFFF; /* Cambiado a blanco para que el logo resalte */
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #FFF;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.sena-logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .logo-text .title {

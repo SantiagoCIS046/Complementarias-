@@ -45,7 +45,9 @@ const handleLogout = () => {
 <template>
   <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="logo-icon"><span class="material-symbols-outlined">school</span></div>
+      <div class="logo-icon">
+        <img src="/logoSena.png" alt="SENA Logo" class="sena-logo-img">
+      </div>
       <div class="logo-text">
         <span class="title">Administración Académica</span>
         <span class="subtitle">DIVISIÓN REGIONAL</span>

@@ -19,6 +19,8 @@ const getAll = async (filtros = {}) => {
       { name:  { $regex: filtros.busqueda, $options: 'i' } },
       { email: { $regex: filtros.busqueda, $options: 'i' } },
       { documento: { $regex: filtros.busqueda, $options: 'i' } },
+      { telefono: { $regex: filtros.busqueda, $options: 'i' } },
+      { areaConocimiento: { $regex: filtros.busqueda, $options: 'i' } },
     ];
   }
 

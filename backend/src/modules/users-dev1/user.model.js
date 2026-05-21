@@ -50,6 +50,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    areaConocimiento: {
+      type: String,
+      trim: true,
+    },
     fechaFinLectiva: {
       type: Date,
       default: null, // Fecha fin etapa lectiva (para elegibilidad EP)
@@ -66,7 +70,7 @@ const userSchema = new mongoose.Schema(
     // --- Seguridad y Bloqueos (DEV 1) ---
     status: {
       type: String,
-      enum: ['ACTIVO', 'INACTIVO', 'ELEGIBLE', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO', 'EN CURSO', 'FINALIZADA', 'RENOVACION'],
+      enum: ['ACTIVO', 'INACTIVO', 'ELEGIBLE', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO', 'EN CURSO', 'FINALIZADA', 'RENOVACION', 'TERMINADO_CONTRATO'],
       default: 'ACTIVO',
     },
     loginAttempts: {

@@ -129,11 +129,20 @@
                   <button class="filter-btn" :class="{active: currentFilter === 'INSTRUCTOR'}" @click="setFilter('INSTRUCTOR')">Instructores</button>
                   <button class="filter-btn" :class="{active: currentFilter === 'ADMIN'}" @click="setFilter('ADMIN')">Admin</button>
                 </div>
-                <div class="search-box table-search">
-                  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <input type="text" v-model="searchQuery" @input="debouncedSearch" placeholder="Buscar por cédula, nombre o email..." />
+                <div class="search-and-filters" style="display: flex; gap: 12px; align-items: center;">
+                  <select v-if="currentFilter === 'INSTRUCTOR'" v-model="filterStatus" @change="debouncedSearch" class="select-premium" style="height: 38px; min-width: 180px; padding: 0 35px 0 12px; font-size: 14px; border-radius: 6px; cursor: pointer;">
+                    <option value="">Todos los Estados</option>
+                    <option value="ACTIVO">Activo</option>
+                    <option value="INACTIVO">Inactivo</option>
+                    <option value="TERMINADO_CONTRATO">Terminado Contrato</option>
+                  </select>
+                  
+                  <div class="search-box table-search" style="margin: 0; min-width: 320px; flex-grow: 1;">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" v-model="searchQuery" @input="debouncedSearch" :placeholder="currentFilter === 'INSTRUCTOR' ? 'Buscar instructor por cédula, nombre, área o celular...' : 'Buscar usuario por cédula, nombre o correo...'" style="width: 100%;" />
+                  </div>
                 </div>
               </div>
 
@@ -244,6 +253,16 @@
           </div>
           <div class="field-row">
             <div class="field-sm">
+              <label>Teléfono / Celular</label>
+              <input v-model="editModal.data.telefono" />
+            </div>
+            <div v-if="editModal.data.role === 'INSTRUCTOR'" class="field-sm">
+              <label>Área Conocimiento</label>
+              <input v-model="editModal.data.areaConocimiento" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-sm">
               <label>Rol</label>
               <select v-model="editModal.data.role">
                 <option value="ADMIN">Admin</option>
@@ -255,20 +274,48 @@
             <div class="field-sm">
               <label>Estado</label>
               <select v-model="editModal.data.status">
+                <!-- Estados generales y para Instructores/Administradores/Empresas -->
                 <option value="ACTIVO">Activo</option>
                 <option value="INACTIVO">Inactivo</option>
-                <option value="EN CURSO">En Curso (Aprendiz)</option>
-                <option value="FINALIZADA">Finalizada (Aprendiz)</option>
-                <option value="RENOVACION">Renovación (Instructor)</option>
+                
+                <!-- Estados exclusivos para Aprendices -->
+                <option v-if="editModal.data.role === 'APRENDIZ'" value="EN CURSO">En Curso</option>
+                <option v-if="editModal.data.role === 'APRENDIZ'" value="FINALIZADA">Finalizada</option>
+                
+                <!-- Estados exclusivos para Instructores -->
+                <option v-if="editModal.data.role === 'INSTRUCTOR'" value="TERMINADO_CONTRATO">Terminado Contrato</option>
               </select>
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn-cancel" @click="editModal.show = false">Cancelar</button>
-          <button class="btn btn-primary" @click="saveEdit" :disabled="editModal.saving">
+          <button class="btn btn-primary" @click="handleSaveClick" :disabled="editModal.saving">
             {{ editModal.saving ? 'Guardando...' : 'Guardar Cambios' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ MODAL: Confirmar Cambio Estado Instructor ═══════ -->
+    <div class="modal-overlay" v-if="confirmEditStatusModal.show" @click.self="confirmEditStatusModal.show = false" style="z-index: 10000;">
+      <div class="modal-card modal-sm">
+        <div class="modal-head">
+          <h2>Confirmar Cambio de Estado</h2>
+          <button class="modal-close" @click="confirmEditStatusModal.show = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="toggle-confirm-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.1);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:32px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <p class="delete-warning" style="text-align:center;margin-top:12px">
+            Estás a punto de cambiar el estado del instructor a <strong>{{ editModal.data.status }}</strong>.<br><br>
+            ¿Estás seguro de que deseas aplicar este cambio?
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="confirmEditStatusModal.show = false">Cancelar</button>
+          <button class="btn btn-primary" @click="confirmAndSaveEdit">Confirmar</button>
         </div>
       </div>
     </div>
@@ -434,6 +481,12 @@
                 <input type="email" v-model="newUserForm.email" placeholder="ejemplo@soy.sena.edu.co" class="input-premium" />
               </div>
             </div>
+            <div class="form-grid-2" style="margin-top: 16px;">
+              <div class="field-group">
+                <label class="label-premium">Teléfono / Celular</label>
+                <input type="text" v-model="newUserForm.telefono" placeholder="Número de contacto" class="input-premium" />
+              </div>
+            </div>
           </div>
 
           <div class="form-section-premium mt-6">
@@ -474,6 +527,21 @@
                   <p>Carga de evidencias</p>
                 </div>
               </label>
+            </div>
+          </div>
+
+          <div class="form-section-premium mt-6" v-if="newUserForm.role === 'INSTRUCTOR'">
+            <h3 class="section-title">
+              <span class="section-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              </span>
+              Bloque 4: Información de Instructor
+            </h3>
+            <div class="form-grid-2">
+              <div class="field-group">
+                <label class="label-premium">Área de Conocimiento</label>
+                <input type="text" v-model="newUserForm.areaConocimiento" placeholder="Ej: ADSO, Sistemas" class="input-premium" />
+              </div>
             </div>
           </div>
 
@@ -578,6 +646,7 @@ const users = ref([]);
 const isLoading = ref(false);
 const currentFilter = ref('TODOS');
 const searchQuery = ref('');
+const filterStatus = ref('');
 const pagination = ref({ total: 0, page: 1, limit: 10, totalPages: 0 });
 const stats = ref({ instructors: 0, aprendices: 0 });
 
@@ -589,9 +658,11 @@ const newUserForm = ref({
   documento: '',
   name: '',
   email: '',
+  telefono: '',
   role: 'APRENDIZ',
   ficha: '',
-  programa: ''
+  programa: '',
+  areaConocimiento: ''
 });
 
 const openAddUserModal = () => {
@@ -646,7 +717,7 @@ const handleAddUser = async () => {
       
       // 3. Cerrar modal y limpiar formulario
       showAddUserModal.value = false;
-      newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ' };
+      newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', telefono: '', role: 'APRENDIZ', ficha: '', programa: '', areaConocimiento: '' };
 
       // 4. Mostrar alerta de éxito
       alertBox.value = { 
@@ -690,12 +761,13 @@ const getStatusClass = (status, role) => {
   const s = status ? status.toUpperCase() : 'ACTIVO';
   if (['ACTIVO', 'EN CURSO'].includes(s)) return 'activo';
   if (['INACTIVO', 'FINALIZADA'].includes(s)) return 'inactivo';
-  if (['RENOVACION', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO'].includes(s)) return 'contract_ended';
+  if (['TERMINADO_CONTRATO', 'RENOVACION', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO'].includes(s)) return 'contract_ended';
   return 'activo';
 };
 
 const formatStatus = (status, role) => {
   const s = status ? status.toUpperCase() : 'ACTIVO';
+  if (s === 'TERMINADO_CONTRATO') return 'Terminado Contrato';
   if (['RENOVACION', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO'].includes(s)) return 'Renovación';
   if (s === 'ACTIVO' && role === 'APRENDIZ') return 'En Curso';
   if (s === 'EN CURSO') return 'En Curso';
@@ -770,6 +842,9 @@ const fetchUsers = async () => {
     };
     if (currentFilter.value !== 'TODOS') params.role = currentFilter.value;
     if (searchQuery.value.trim()) params.search = searchQuery.value.trim();
+    if (currentFilter.value === 'INSTRUCTOR' && filterStatus.value) {
+      params.status = filterStatus.value;
+    }
 
     const res = await usersService.getAll(params);
     users.value = res.data.users;
@@ -889,12 +964,34 @@ const executeToggle = async () => {
   }
 };
 
+const confirmEditStatusModal = ref({ show: false });
+
+const handleSaveClick = () => {
+  const originalUser = users.value.find(u => u._id === editModal.value.data._id);
+  if (
+    editModal.value.data.role === 'INSTRUCTOR' && 
+    originalUser && 
+    originalUser.status !== editModal.value.data.status
+  ) {
+    confirmEditStatusModal.value.show = true;
+  } else {
+    saveEdit();
+  }
+};
+
+const confirmAndSaveEdit = () => {
+  confirmEditStatusModal.value.show = false;
+  saveEdit();
+};
+
 const saveEdit = async () => {
   editModal.value.saving = true;
   try {
     await usersService.update(editModal.value.data._id, {
       name: editModal.value.data.name,
       email: editModal.value.data.email,
+      telefono: editModal.value.data.telefono,
+      areaConocimiento: editModal.value.data.areaConocimiento,
       documento: editModal.value.data.documento,
       role: editModal.value.data.role,
       status: editModal.value.data.status,

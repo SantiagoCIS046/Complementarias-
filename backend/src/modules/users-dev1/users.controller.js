@@ -13,11 +13,11 @@ const getAll = async (req, res) => {
   try {
     const filtros = {
       role: req.query.role,
-      busqueda: req.query.busqueda,
+      busqueda: req.query.search || req.query.busqueda,
       status: req.query.status,
       programa: req.query.programa,
     };
-    
+
     const data = await service.getAll(filtros);
     res.json({
       success: true,

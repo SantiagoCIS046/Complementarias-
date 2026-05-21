@@ -124,14 +124,14 @@ const handleLogout = () => {
   router.push('/login');
 };
 
-<<<<<<< HEAD
 const handleChangePassword = () => {
   showProfileMenu.value = false;
   showInfo(
     'Módulo en Desarrollo',
     'La funcionalidad para cambiar la contraseña se encuentra actualmente en desarrollo y estará disponible en una futura actualización.'
   );
-=======
+};
+
 const handleViewProfile = () => {
   quickEditData.value = {
     name: currentUser.value.name,
@@ -152,7 +152,6 @@ const handleSaveQuickEdit = async () => {
     console.error('Error al actualizar perfil rápido:', err);
     alert('Error al actualizar el perfil.');
   }
->>>>>>> ffe923c (feat: implementar apartado de perfil, edicion rapida y correcciones en rutas de usuarios)
 };
 </script>
 

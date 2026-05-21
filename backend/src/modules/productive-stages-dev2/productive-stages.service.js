@@ -155,6 +155,7 @@ const getAll = async (filtros = {}) => {
       populate: { path: 'instructorAsignado', select: 'name' }
     })
     .populate('companyId', 'razonSocial nit')
+    .populate('seguimientos')
     .sort({ createdAt: -1 });
 
   // Inyectar resumen de cronograma (ritmo/estado) para cada EP
@@ -174,7 +175,8 @@ const getById = async (id) => {
   const stage = await ProductiveStage.findById(id)
     .populate('apprenticeId', 'name email role')
     .populate('companyId', 'razonSocial nit jefeInmediato')
-    .populate('historialEstados.realizadoPor', 'name email');
+    .populate('historialEstados.realizadoPor', 'name email')
+    .populate('seguimientos');
 
   if (!stage) {
     throw new Error('Etapa Productiva no encontrada.');

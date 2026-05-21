@@ -151,14 +151,15 @@ body,
   bottom: 125%;
   left: 50%;
   transform: translateX(-50%);
-  background-color: white;
+  background-color: var(--bg-elevated);
   border: 1px solid var(--color_box);
   padding: 10px;
   border-radius: 4px;
   width: max-content;
   max-width: 250px;
   z-index: 10;
-  box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
 }
 
 .tooltip:hover .content-tooltip {

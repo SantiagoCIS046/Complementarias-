@@ -117,8 +117,17 @@ const productiveStageSchema = new mongoose.Schema(
   {
     timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
   }
 );
+
+// Virtual para los seguimientos de esta EP
+productiveStageSchema.virtual('seguimientos', {
+  ref: 'Tracking',
+  localField: '_id',
+  foreignField: 'stageId'
+});
 
 // Índice compuesto para evitar que un aprendiz tenga múltiples EPs activas
 productiveStageSchema.index(

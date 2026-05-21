@@ -3,10 +3,13 @@ import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from './core/store/ui.store'
 import { useAuthStore } from './core/store/auth.store'
+import { useThemeStore } from './core/store/theme.store'
+import GlobalAlertDialog from './components/ui/GlobalAlertDialog.vue'
 
-const uiStore   = useUiStore()
-const authStore = useAuthStore()
-const router    = useRouter()
+const uiStore    = useUiStore()
+const authStore  = useAuthStore()
+const themeStore = useThemeStore()
+const router     = useRouter()
 
 // ── Vigilante de sesión ──────────────────────────────────────────────────────
 // Comprueba cada 5 minutos si la sesión expiró (24 h de inactividad).
@@ -22,6 +25,7 @@ function checkSessionExpiry() {
 }
 
 onMounted(() => {
+  themeStore.initTheme()
   sessionWatcher = setInterval(checkSessionExpiry, SESSION_CHECK_INTERVAL)
 })
 
@@ -42,6 +46,9 @@ onUnmounted(() => {
   </Transition>
 
   <router-view />
+
+  <!-- 🚨 Modal de Alertas y Confirmaciones Globales Custom -->
+  <GlobalAlertDialog />
 </template>
 
 <style>

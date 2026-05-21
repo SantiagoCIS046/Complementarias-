@@ -44,9 +44,7 @@ const routes = [
   },
   {
     path: '/usuarios',
-    name: 'UserManagement',
-    component: () => import('../../modules/admin-auth-dev1/views/DashboardAdmin.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN'] },
+    redirect: '/dashboard',
   },
   {
     path: '/reset-password',

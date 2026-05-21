@@ -13,7 +13,7 @@ const menuItems = computed(() => {
 
   if (role === 'ADMIN') {
     return [
-      { name: 'Gestión de Usuarios', icon: 'group', path: '/usuarios' },
+      { name: 'Gestión de Usuarios', icon: 'group', path: '/dashboard' },
       { name: 'Gestión de Empresas', icon: 'domain', path: '/gestion-empresas' },
       { name: 'Gestión de Fichas', icon: 'folder_open', path: '/fichas' },
     ];

@@ -100,7 +100,8 @@
                     <td>
                       <div class="action-btns">
                         <button class="act-btn view" title="Ver Detalles" @click="openDetails(c)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                        <button class="act-btn edit" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                        <button class="act-btn edit" title="Editar" @click="openEditModal(c)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                        <button class="act-btn delete" title="Eliminar" @click="handleDeleteCompany(c)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
                       </div>
                     </td>
                   </tr>
@@ -203,10 +204,10 @@
           <div class="modal-card modal-full">
             <div class="modal-head head-premium">
               <div class="head-info">
-                <h2>Registrar Nueva Empresa</h2>
-                <p class="u-email">Vinculación institucional al Centro Agroturístico.</p>
+                <h2>{{ isEditing ? 'Editar Empresa' : 'Registrar Nueva Empresa' }}</h2>
+                <p class="u-email">{{ isEditing ? 'Modifica los datos de la empresa seleccionada.' : 'Vinculación institucional al Centro Agroturístico.' }}</p>
               </div>
-              <div class="modal-tabs">
+              <div class="modal-tabs" v-if="!isEditing">
                 <button class="modal-tab" :class="{active: registroTab === 'manual'}" @click="registroTab = 'manual'">
                   <span class="material-symbols-outlined" style="font-size: 1.1rem;">edit</span> Registro Manual
                 </button>
@@ -221,66 +222,69 @@
 
               <!-- ===== TAB: CARGA RÁPIDA (SGVA) ===== -->
               <div v-if="registroTab === 'bulk'">
-                <div class="bulk-info-banner">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  <span>Cargue el archivo <strong>.csv</strong> exportado desde el <strong>SGVA</strong>. Columnas esperadas: <code>nit, razon_social, sector_economico, direccion, municipio, telefono, correo, jefe_nombre, jefe_cargo, jefe_telefono, jefe_correo</code></span>
+                <!-- Descarga de Plantilla Excel -->
+                <div class="excel-download-card">
+                  <div class="download-info">
+                    <span class="material-symbols-outlined download-icon">download_for_offline</span>
+                    <div class="download-text">
+                      <h4>Formato Oficial de Registro</h4>
+                      <p>Descargue la plantilla macro formato_registro_empresas_REPFORAEP (.xlsm) para el registro masivo.</p>
+                    </div>
+                  </div>
+                  <button class="btn-download-template" @click="handleDownloadTemplate" :disabled="isDownloadingTemplate">
+                    <span v-if="!isDownloadingTemplate">Descargar Formato</span>
+                    <div v-else class="spin-mini"></div>
+                  </button>
                 </div>
 
-                <!-- Zona drag & drop -->
+                <!-- Zona drag & drop para Excel -->
                 <div
                   class="drop-zone"
-                  :class="{ 'drop-zone-over': isDragOver }"
+                  :class="{ 'drop-zone-over': isDragOver, 'has-file': xlsxFile }"
                   @dragover.prevent="isDragOver = true"
                   @dragleave="isDragOver = false"
                   @drop.prevent="handleFileDrop"
-                  @click="$refs.csvFileInput.click()"
+                  @click="$refs.xlsxFileInput.click()"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;color:#1b5e20;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  <p class="drop-text">Arrastra tu archivo CSV aquí<br><span>o haz clic para seleccionar</span></p>
-                  <input ref="csvFileInput" type="file" accept=".csv,.txt" style="display:none" @change="handleFileSelect" />
+                  <svg v-if="!xlsxFile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;color:#1b5e20;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span v-else class="material-symbols-outlined file-selected-icon">task</span>
+                  <p class="drop-text" v-if="!xlsxFile">Arrastra tu archivo Excel aquí (.xlsm, .xlsx)<br><span>o haz clic para seleccionar</span></p>
+                  <p class="drop-text" v-else>Archivo listo para importar:<br><strong class="file-name-highlight">{{ xlsxFile.name }}</strong></p>
+                  <input ref="xlsxFileInput" type="file" accept=".xlsm,.xlsx,.xls" style="display:none" @change="handleFileSelect" />
                 </div>
 
-                <!-- Vista previa de datos -->
-                <div v-if="csvPreview.length > 0" class="bulk-preview">
-                  <div class="preview-header">
-                    <span class="preview-count">📋 {{ csvPreview.length }} empresa(s) detectadas en el archivo</span>
-                    <button class="btn-clear-csv" @click="clearCsv">✕ Limpiar</button>
-                  </div>
-                  <div class="preview-table-wrap">
-                    <table class="preview-table">
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>NIT</th>
-                          <th>Razón Social</th>
-                          <th>Sector</th>
-                          <th>Municipio</th>
-                          <th>Estado</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="(row, i) in csvPreview" :key="i">
-                          <td>{{ i + 1 }}</td>
-                          <td>{{ row.nit }}</td>
-                          <td>{{ row.razon_social }}</td>
-                          <td>{{ row.sector_economico || '---' }}</td>
-                          <td>{{ row.municipio || '---' }}</td>
-                          <td><span class="status-pill activo">HABILITADA</span></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <!-- Resultado de la importación -->
+                <!-- Resultado de la importación y Reporte de Errores por Pestaña -->
                 <div v-if="bulkResult" class="bulk-result">
                   <div class="result-row success-row">
                     <span>✅ Empresas registradas exitosamente:</span>
                     <strong>{{ bulkResult.creadas }}</strong>
                   </div>
                   <div class="result-row warn-row" v-if="bulkResult.omitidas > 0">
-                    <span>⚠️ Omitidas (ya existían o error):</span>
+                    <span>⚠️ Omitidas o con errores:</span>
                     <strong>{{ bulkResult.omitidas }}</strong>
+                  </div>
+
+                  <!-- Detalle de Omitidas -->
+                  <div class="bulk-errors-detail" v-if="bulkResult.detalle_omitidas && bulkResult.detalle_omitidas.length > 0">
+                    <h5 class="errors-detail-title">Detalle de registros no cargados:</h5>
+                    <div class="preview-table-wrap">
+                      <table class="preview-table">
+                        <thead>
+                          <tr>
+                            <th>Pestaña</th>
+                            <th>NIT</th>
+                            <th>Motivo</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(err, i) in bulkResult.detalle_omitidas" :key="i">
+                            <td style="font-weight: 700; color: #1e293b;">{{ err.fila }}</td>
+                            <td><code>{{ err.nit }}</code></td>
+                            <td><span class="reason-pill">{{ err.motivo }}</span></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -289,7 +293,10 @@
               <div v-else>
               <!-- Bloque 1: Información Legal -->
               <div class="form-section-premium">
-                <h3 class="section-title">🏢 Bloque 1: Información Legal (Obligatorio)</h3>
+                <h3 class="section-title">
+                  <span class="material-symbols-outlined" style="font-size: 1.25rem;">domain</span>
+                  Bloque 1: Información Legal (Obligatorio)
+                </h3>
                 <div class="form-grid-3">
                   <div class="field-group">
                     <label class="label-premium">NIT</label>
@@ -315,7 +322,10 @@
 
               <!-- Bloque 2: Ubicación y Contacto -->
               <div class="form-section-premium mt-6">
-                <h3 class="section-title">📍 Bloque 2: Ubicación y Contacto Corporativo</h3>
+                <h3 class="section-title">
+                  <span class="material-symbols-outlined" style="font-size: 1.25rem;">location_on</span>
+                  Bloque 2: Ubicación y Contacto Corporativo
+                </h3>
                 <div class="form-grid-2">
                   <div class="field-group">
                     <label class="label-premium">Dirección Principal</label>
@@ -344,7 +354,10 @@
 
               <!-- Bloque 3: Jefe Inmediato -->
               <div class="form-section-premium mt-6">
-                <h3 class="section-title">👤 Bloque 3: Datos del Jefe Inmediato (Supervisor)</h3>
+                <h3 class="section-title">
+                  <span class="material-symbols-outlined" style="font-size: 1.25rem;">person</span>
+                  Bloque 3: Datos del Jefe Inmediato (Supervisor)
+                </h3>
                 <div class="form-grid-2">
                   <div class="field-group">
                     <label class="label-premium">Nombre Completo</label>
@@ -367,7 +380,10 @@
 
               <!-- Bloque 4: Documentación y Estado -->
               <div class="form-section-premium mt-6">
-                <h3 class="section-title">📎 Bloque 4: Documentación y Estado (Admin)</h3>
+                <h3 class="section-title">
+                  <span class="material-symbols-outlined" style="font-size: 1.25rem;">attachment</span>
+                  Bloque 4: Documentación y Estado (Admin)
+                </h3>
                 <div class="form-grid-2">
                   <div class="field-group">
                     <label class="label-premium">URL del RUT (Google Drive)</label>
@@ -393,14 +409,14 @@
             </div>
 
             <div class="modal-footer footer-premium">
-              <button class="btn-cancel-premium" @click="showAddModal = false">Descartar</button>
-              <button v-if="registroTab === 'bulk'" class="btn-confirm-premium btn-bulk" @click="handleBulkImport" :disabled="isSubmitting || csvPreview.length === 0">
-                <span v-if="!isSubmitting" style="display: flex; align-items: center; gap: 6px; justify-content: center;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">upload</span> Importar {{ csvPreview.length }} Empresa(s)</span>
+              <button class="btn-cancel-premium" @click="showAddModal = false">{{ isEditing ? 'Cancelar' : 'Descartar' }}</button>
+              <button v-if="registroTab === 'bulk'" class="btn-confirm-premium btn-bulk" @click="handleBulkImport" :disabled="isSubmitting || !xlsxFile">
+                <span v-if="!isSubmitting" style="display: flex; align-items: center; gap: 6px; justify-content: center;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">upload</span> Procesar Carga Masiva</span>
                 <div v-else class="spin-mini"></div>
               </button>
-              <!-- Botón para Registro Manual -->
+              <!-- Botón para Registro Manual / Edición -->
               <button v-else class="btn-confirm-premium" @click="handleAddCompany" :disabled="isSubmitting">
-                <span v-if="!isSubmitting">Finalizar Registro</span>
+                <span v-if="!isSubmitting">{{ isEditing ? 'Guardar Cambios' : 'Finalizar Registro' }}</span>
                 <div v-else class="spin-mini"></div>
               </button>
             </div>
@@ -420,9 +436,11 @@ import { companiesService } from '../services/companies.service';
 import Sidebar from '../../../components/layout/Sidebar.vue';
 import Header from '../../../components/layout/Header.vue';
 import SkeletonLoader from '../../../components/ui/SkeletonLoader.vue';
+import { useAlert } from '../../../core/composables/useAlert';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const { showSuccess, showError, showWarning, showConfirm } = useAlert();
 
 // Reactive State
 const companies = ref([]);
@@ -472,12 +490,16 @@ const showDetailModal = ref(false);
 const showAddModal = ref(false);
 const isSubmitting = ref(false);
 const selectedCompany = ref(null);
+const isEditing = ref(false);
+const editingCompanyId = ref(null);
 
 // Tab del modal de registro
 const registroTab = ref('manual');
 
 // Bulk upload state
 const csvPreview = ref([]);
+const xlsxFile = ref(null);
+const isDownloadingTemplate = ref(false);
 const isDragOver = ref(false);
 const bulkResult = ref(null);
 
@@ -505,6 +527,8 @@ const openDetails = (company) => {
 };
 
 const openAddModal = () => {
+  isEditing.value = false;
+  editingCompanyId.value = null;
   nuevaEmpresa.value = {
     nit: '', razon_social: '', sector_economico: '', direccion: '', municipio: 'San Gil',
     telefono: '', correo_corporativo: '', jefe_nombre: '', jefe_cargo: '', jefe_telefono: '',
@@ -516,6 +540,47 @@ const openAddModal = () => {
   showAddModal.value = true;
 };
 
+const openEditModal = (company) => {
+  isEditing.value = true;
+  editingCompanyId.value = company._id;
+  nuevaEmpresa.value = {
+    nit:                 company.nit || '',
+    razon_social:        company.razon_social || '',
+    sector_economico:    company.sector_economico || '',
+    direccion:           company.direccion || '',
+    municipio:           company.municipio || 'San Gil',
+    telefono:            company.datos_contacto?.telefono || '',
+    correo_corporativo:  company.datos_contacto?.correo_corporativo || '',
+    jefe_nombre:         company.jefe_inmediato?.nombre_completo || '',
+    jefe_cargo:          company.jefe_inmediato?.cargo || '',
+    jefe_telefono:       company.jefe_inmediato?.telefono || '',
+    jefe_correo:         company.jefe_inmediato?.correo || '',
+    rut_url:             company.documentacion?.rut_url || '',
+    camara_comercio_url: company.documentacion?.camara_comercio_url || '',
+    estado:              company.estado || 'EN_REVISION'
+  };
+  registroTab.value = 'manual';
+  showAddModal.value = true;
+};
+
+const handleDeleteCompany = (company) => {
+  showConfirm(
+    '¿Eliminar Empresa?',
+    `¿Estás seguro de que deseas eliminar permanentemente esta empresa? Esta acción no se puede deshacer.`,
+    async () => {
+      await companiesService.delete(company._id);
+      loadCompanies();
+      showSuccess('¡Eliminado!', 'La empresa ha sido eliminada correctamente del sistema.');
+    },
+    {
+      isDanger: true,
+      okText: 'Eliminar',
+      cancelText: 'Cancelar',
+      companyName: company.razon_social
+    }
+  );
+};
+
 const validateNit = (val) => {
   // Solo permite números y un guion
   nuevaEmpresa.value.nit = val.replace(/[^0-9-]/g, '');
@@ -523,7 +588,7 @@ const validateNit = (val) => {
 
 const handleAddCompany = async () => {
   if (!nuevaEmpresa.value.nit || !nuevaEmpresa.value.razon_social) {
-    alert('NIT y Razón Social son obligatorios');
+    showWarning('Campos Obligatorios', 'El NIT y la Razón Social son obligatorios para poder guardar la empresa.');
     return;
   }
 
@@ -553,13 +618,18 @@ const handleAddCompany = async () => {
       estado: nuevaEmpresa.value.estado
     };
 
-    await companiesService.create(payload);
+    if (isEditing.value) {
+      await companiesService.update(editingCompanyId.value, payload);
+      showSuccess('¡Actualizado!', 'La empresa ha sido actualizada correctamente en el sistema.');
+    } else {
+      await companiesService.create(payload);
+      showSuccess('¡Registrado!', 'La empresa ha sido registrada correctamente en el sistema.');
+    }
     showAddModal.value = false;
     loadCompanies();
-    alert('Empresa registrada correctamente');
   } catch (err) {
     console.error('Error:', err);
-    alert('Error al registrar la empresa: ' + (err.response?.data?.message || err.message));
+    showError('Error', 'Ocurrió un error al procesar la solicitud: ' + (err.response?.data?.message || err.message));
   } finally {
     isSubmitting.value = false;
   }
@@ -568,90 +638,57 @@ const handleAddCompany = async () => {
 const setFilter = (f) => currentFilter.value = f;
 const handleLogout = () => { authStore.logout(); router.push('/login'); };
 
-// ── CSV / Bulk helpers ─────────────────────────────────────────────────
-const parseCsv = (text) => {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
-
-  // Detectar si la primera fila es cabecera (contiene letras)
-  const firstLine = lines[0].toLowerCase();
-  const hasHeader = firstLine.includes('nit') || firstLine.includes('razon') || firstLine.includes('empresa');
-  const dataLines = hasHeader ? lines.slice(1) : lines;
-
-  return dataLines
-    .filter(l => l.trim() !== '')
-    .map(line => {
-      // Soporte para ; o ,
-      const sep = line.includes(';') ? ';' : ',';
-      const cols = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
-      return {
-        nit:              cols[0] || '',
-        razon_social:     cols[1] || '',
-        sector_economico: cols[2] || '',
-        direccion:        cols[3] || '',
-        municipio:        cols[4] || 'San Gil',
-        datos_contacto: {
-          telefono:          cols[5] || '',
-          correo_corporativo: cols[6] || ''
-        },
-        jefe_inmediato: {
-          nombre_completo: cols[7] || '',
-          cargo:           cols[8] || '',
-          telefono:        cols[9] || '',
-          correo:          cols[10] || ''
-        },
-        estado: 'HABILITADA'
-      };
-    })
-    .filter(row => row.nit && row.razon_social);
-};
-
-const loadCsvText = (text) => {
-  const parsed = parseCsv(text);
-  if (parsed.length === 0) {
-    alert('No se encontraron filas válidas en el archivo. Verifique el formato.');
-    return;
+// ── Excel / Bulk helpers ─────────────────────────────────────────────────
+const handleDownloadTemplate = async () => {
+  isDownloadingTemplate.value = true;
+  try {
+    const response = await companiesService.downloadTemplate();
+    const blob = new Blob([response.data], { type: 'application/vnd.ms-excel.sheet.macroEnabled.12' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = 'formato_registro_empresas_REPFORAEP.xlsm';
+    link.click();
+    window.URL.revokeObjectURL(link.href);
+    showSuccess('Descarga Exitosa', 'El formato oficial formato_registro_empresas_REPFORAEP.xlsm se ha descargado correctamente.');
+  } catch (err) {
+    console.error('Error al descargar plantilla:', err);
+    showError('Error', 'No se pudo descargar la plantilla Excel: ' + (err.response?.data?.message || err.message));
+  } finally {
+    isDownloadingTemplate.value = false;
   }
-  csvPreview.value = parsed;
-  bulkResult.value = null;
 };
 
 const handleFileSelect = (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => loadCsvText(ev.target.result);
-  reader.readAsText(file, 'utf-8');
+  xlsxFile.value = file;
+  bulkResult.value = null;
 };
 
 const handleFileDrop = (e) => {
   isDragOver.value = false;
   const file = e.dataTransfer.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => loadCsvText(ev.target.result);
-  reader.readAsText(file, 'utf-8');
-};
-
-const clearCsv = () => {
-  csvPreview.value = [];
+  xlsxFile.value = file;
   bulkResult.value = null;
 };
 
 const handleBulkImport = async () => {
-  if (csvPreview.value.length === 0) return;
+  if (!xlsxFile.value) return;
   isSubmitting.value = true;
   try {
-    const response = await companiesService.bulkCreate(csvPreview.value);
+    const response = await companiesService.uploadXlsx(xlsxFile.value);
     bulkResult.value = {
       creadas: response.data.creadas,
-      omitidas: response.data.omitidas
+      omitidas: response.data.omitidas,
+      detalle_omitidas: response.data.detalle_omitidas || []
     };
-    csvPreview.value = [];
+    xlsxFile.value = null;
     loadCompanies();
+    showSuccess('¡Carga Exitosa!', `Se han registrado exitosamente ${response.data.creadas} empresas desde el archivo Excel.`);
   } catch (err) {
-    console.error('Error en importación masiva:', err);
-    alert('Error al importar: ' + (err.response?.data?.message || err.message));
+    console.error('Error en importación masiva Excel:', err);
+    showError('Error de Importación', 'Ocurrió un error al procesar el archivo Excel: ' + (err.response?.data?.message || err.message));
   } finally {
     isSubmitting.value = false;
   }
@@ -671,17 +708,17 @@ const adminInitials = computed(() => {
 .page-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 20px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 32px; }
 .page-title { font-size: 1.35rem; font-weight: 800; margin: 0; }
-.page-description { font-size: 0.88rem; color: #64748b; }
+.page-description { font-size: 0.88rem; color: var(--text-secondary); }
 
 .header-left-group { display: flex; align-items: center; gap: 32px; flex: 1; }
 .header-info { min-width: 200px; }
 .stats-row { display: flex; gap: 20px; }
-.stat-box { background: #fff; padding: 10px 14px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 4px solid; min-width: 140px; flex-shrink: 0; }
+.stat-box { background: var(--bg-primary); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border-primary); border-left: 4px solid; min-width: 140px; flex-shrink: 0; }
 .border-green { border-left-color: #1b5e20; }
 .border-pink { border-left-color: #db2777; }
-.border-dark { border-left-color: #1e293b; }
-.stat-box p { font-size: 0.72rem; font-weight: 800; color: #64748b; margin-bottom: 4px; }
-.stat-box h2 { font-size: 1.6rem; margin: 0 0 2px 0; font-weight: 800; }
+.border-dark { border-left-color: var(--text-primary); }
+.stat-box p { font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 4px; }
+.stat-box h2 { font-size: 1.6rem; margin: 0 0 2px 0; font-weight: 800; color: var(--text-primary); }
 .stat-box small { font-size: 0.72rem; color: #22c55e; font-weight: 600; }
 
 .header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
@@ -690,36 +727,36 @@ const adminInitials = computed(() => {
   font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center;
 }
 .btn-export-outline {
-  background: #fff; color: #1e293b; border: 1px solid #e2e8f0; padding: 9px 16px; border-radius: 8px;
+  background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 9px 16px; border-radius: 8px;
   font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center;
 }
 
 /* Table Section */
-.main-table-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0; }
-.table-header { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+.main-table-card { background: var(--bg-primary); border: 1px solid var(--border-primary); border-radius: 12px; padding: 0; }
+.table-header { padding: 12px 16px; border-bottom: 1px solid var(--border-primary); display: flex; justify-content: space-between; align-items: center; }
 .table-search { width: 40%; position: relative; }
-.search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 12px; color: #94a3b8; }
+.search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 12px; color: var(--text-muted); }
 .table-search input {
-  width: 100%; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px 5px 28px; font-size: 0.75rem; outline: none;
+  width: 100%; background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 6px; padding: 5px 10px 5px 28px; font-size: 0.75rem; outline: none; color: var(--text-primary);
 }
 .filter-tabs { display: flex; gap: 8px; }
-.filter-btn { background: transparent; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.83rem; font-weight: 600; color: #64748b; cursor: pointer; }
-.filter-btn.active { background: #f0fdf4; color: #1b5e20; }
+.filter-btn { background: transparent; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.83rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+.filter-btn.active { background: var(--bg-active); color: #1b5e20; }
 
 .user-table { width: 100%; border-collapse: collapse; }
 .user-table th { background: #1b5e20; text-align: left; padding: 13px 16px; font-size: 0.82rem; color: white; text-transform: uppercase; font-weight: 700; }
-.user-table td { padding: 13px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
-.user-table tbody tr:nth-child(even) { background: #f8fafc; }
+.user-table td { padding: 13px 16px; border-bottom: 1px solid var(--border-primary); font-size: 0.85rem; color: var(--text-primary); }
+.user-table tbody tr:nth-child(even) { background: var(--bg-secondary); }
 
 .user-cell { display: flex; align-items: center; gap: 12px; }
 .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.82rem; }
 .bg-green { background: #1b5e20; }
 .u-name { font-weight: 700; margin: 0; font-size: 0.88rem; }
-.u-email { font-size: 0.8rem; color: #94a3b8; margin: 0; }
+.u-email { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
 
 .supervisor-info { display: flex; flex-direction: column; gap: 2px; }
-.s-name { font-weight: 600; font-size: 0.88rem; margin: 0; color: #1e293b; }
-.s-role { font-size: 0.76rem; color: #94a3b8; margin: 0; text-transform: uppercase; }
+.s-name { font-weight: 600; font-size: 0.88rem; margin: 0; color: var(--text-primary); }
+.s-role { font-size: 0.76rem; color: var(--text-muted); margin: 0; text-transform: uppercase; }
 
 .status-pill { padding: 5px 13px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
 .status-pill.activo { background: #1b5e20; color: white; }
@@ -727,13 +764,44 @@ const adminInitials = computed(() => {
 .status-pill.inactivo { background: #c10015; color: white; }
 
 .action-btns { display: flex; gap: 6px; }
-.act-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; }
-.act-btn svg { width: 14px; height: 14px; }
+.act-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+.act-btn svg { width: 16px; height: 16px; transition: transform 0.2s ease; }
+.act-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+}
+.act-btn.view:hover {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.act-btn.edit:hover {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.act-btn.delete:hover {
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
 
-.empty-state { text-align: center; padding: 24px !important; color: #94a3b8; font-weight: 500; font-style: italic; }
+.empty-state { text-align: center; padding: 24px !important; color: var(--text-muted); font-weight: 500; font-style: italic; }
 
-.table-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; gap: 16px; color: #94a3b8; }
-.spin-ring-lg { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #1b5e20; border-radius: 50%; animation: spin 0.8s linear infinite; }
+.table-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; gap: 16px; color: var(--text-muted); }
+.spin-ring-lg { width: 32px; height: 32px; border: 3px solid var(--border-primary); border-top-color: #1b5e20; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
@@ -743,7 +811,7 @@ const adminInitials = computed(() => {
 .modal-tabs {
   display: flex;
   gap: 6px;
-  background: #f1f5f9;
+  background: var(--bg-secondary);
   border-radius: 10px;
   padding: 4px;
   flex-shrink: 0;
@@ -755,7 +823,7 @@ const adminInitials = computed(() => {
   border-radius: 8px;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -764,37 +832,38 @@ const adminInitials = computed(() => {
   gap: 6px;
 }
 .modal-tab.active {
-  background: #fff;
+  background: var(--bg-primary);
   color: #1b5e20;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  box-shadow: var(--shadow-sm);
 }
-.modal-tab:hover:not(.active) { color: #1e293b; }
+.modal-tab:hover:not(.active) { color: var(--text-primary); }
 
 /* ─── Bulk Info Banner ───────────────────────────────────────────── */
 .bulk-info-banner {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--bg-active);
+  border: 1px solid var(--border-primary);
   border-radius: 10px;
   padding: 14px 18px;
   font-size: 0.88rem;
-  color: #166534;
+  color: var(--text-primary);
   line-height: 1.6;
   margin-bottom: 20px;
 }
 .bulk-info-banner code {
-  background: #dcfce7;
+  background: var(--bg-secondary);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.8rem;
   font-family: monospace;
+  color: var(--text-primary);
 }
 
 /* ─── Drop Zone ──────────────────────────────────────────────────── */
 .drop-zone {
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed var(--border-primary);
   border-radius: 14px;
   padding: 40px 24px;
   display: flex;
@@ -804,21 +873,21 @@ const adminInitials = computed(() => {
   gap: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   margin-bottom: 20px;
 }
 .drop-zone:hover, .drop-zone-over {
   border-color: #1b5e20;
-  background: #f0fdf4;
+  background: var(--bg-active);
 }
 .drop-text {
   text-align: center;
   font-size: 0.95rem;
-  color: #475569;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.6;
 }
-.drop-text span { font-size: 0.82rem; color: #94a3b8; }
+.drop-text span { font-size: 0.82rem; color: var(--text-muted); }
 
 /* ─── Bulk Preview Table ─────────────────────────────────────────── */
 .bulk-preview { margin-top: 4px; }
@@ -845,7 +914,7 @@ const adminInitials = computed(() => {
   max-height: 220px;
   overflow-y: auto;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-primary);
 }
 .preview-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
 .preview-table th {
@@ -857,15 +926,15 @@ const adminInitials = computed(() => {
   position: sticky;
   top: 0;
 }
-.preview-table td { padding: 8px 11px; border-bottom: 1px solid #f1f5f9; color: #374151; }
-.preview-table tbody tr:nth-child(even) { background: #f8fafc; }
+.preview-table td { padding: 8px 11px; border-bottom: 1px solid var(--border-secondary); color: var(--text-primary); }
+.preview-table tbody tr:nth-child(even) { background: var(--bg-secondary); }
 
 /* ─── Bulk Result ────────────────────────────────────────────────── */
 .bulk-result {
   margin-top: 20px;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-primary);
   animation: fadeSlideIn 0.3s ease;
 }
 @keyframes fadeSlideIn {
@@ -880,8 +949,8 @@ const adminInitials = computed(() => {
   font-size: 0.92rem;
   font-weight: 600;
 }
-.success-row { background: #f0fdf4; color: #166534; }
-.warn-row { background: #fffbeb; color: #92400e; border-top: 1px solid #e2e8f0; }
+.success-row { background: var(--bg-active); color: var(--text-primary); }
+.warn-row { background: var(--bg-secondary); color: var(--text-secondary); border-top: 1px solid var(--border-primary); }
 .result-row strong { font-size: 1.1rem; }
 
 /* ─── Bulk confirm button variant ───────────────────────────────── */
@@ -890,4 +959,99 @@ const adminInitials = computed(() => {
   box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
 }
 .btn-bulk:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Excel Template Download Card ───────────────────────────────── */
+.excel-download-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--bg-active);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+.download-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.download-icon {
+  font-size: 2.2rem;
+  color: var(--text-primary);
+}
+.download-text h4 {
+  margin: 0 0 2px 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.download-text p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.btn-download-template {
+  background: #1b5e20;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-download-template:hover {
+  background: #14532d;
+  transform: translateY(-1px);
+}
+.btn-download-template:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── File State in Drop Zone ────────────────────────────────────── */
+.drop-zone.has-file {
+  border-color: #22c55e;
+  background: var(--bg-active);
+}
+.file-selected-icon {
+  font-size: 3rem;
+  color: #166534;
+}
+.file-name-highlight {
+  font-size: 1rem;
+  color: var(--text-primary);
+  display: inline-block;
+  margin-top: 4px;
+}
+
+/* ─── Carga Masiva Detalle de Errores por Pestaña ───────────────── */
+.bulk-errors-detail {
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+}
+.errors-detail-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 0 0 12px 0;
+}
+.reason-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
 </style>

@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '../../core/store/auth.store';
 import { useNotificationsStore } from '../../core/store/notifications.store';
 import { useRouter } from 'vue-router';
+import { useAlert } from '../../core/composables/useAlert';
+import { useThemeStore } from '../../core/store/theme.store';
 import SkeletonLoader from '../ui/SkeletonLoader.vue';
 
 const props = defineProps({
@@ -14,7 +16,9 @@ const props = defineProps({
 
 const authStore = useAuthStore();
 const notifStore = useNotificationsStore();
+const themeStore = useThemeStore();
 const router = useRouter();
+const { showInfo } = useAlert();
 
 const currentUser = computed(() => authStore.user || { name: 'Usuario SENA', email: 'usuario@sena.edu.co' });
 const userRole = computed(() => authStore.user?.role || 'Visitante');
@@ -114,7 +118,10 @@ const handleLogout = () => {
 
 const handleChangePassword = () => {
   showProfileMenu.value = false;
-  alert('Funcionalidad de cambiar contraseña en desarrollo...');
+  showInfo(
+    'Módulo en Desarrollo',
+    'La funcionalidad para cambiar la contraseña se encuentra actualmente en desarrollo y estará disponible en una futura actualización.'
+  );
 };
 </script>
 
@@ -230,6 +237,21 @@ const handleChangePassword = () => {
               <span class="material-symbols-outlined">key</span>
               <span>Cambiar Clave</span>
             </button>
+            
+            <div class="dropdown-divider"></div>
+            
+            <div class="dropdown-item theme-toggle-item" @click.stop="themeStore.toggleTheme">
+              <span class="material-symbols-outlined theme-icon" :class="{ 'rotate-animation': themeStore.isDark }">
+                {{ themeStore.isDark ? 'light_mode' : 'dark_mode' }}
+              </span>
+              <span>Modo Oscuro</span>
+              <div class="theme-switch-wrapper" :class="{ 'active': themeStore.isDark }">
+                <span class="theme-switch-thumb" :class="{ 'active': themeStore.isDark }"></span>
+              </div>
+            </div>
+            
+            <div class="dropdown-divider"></div>
+            
             <button class="dropdown-item logout" @click="handleLogout">
               <span class="material-symbols-outlined">logout</span>
               <span>Cerrar Sesión</span>
@@ -258,16 +280,16 @@ const handleChangePassword = () => {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  color: #94A3B8;
+  color: var(--text-muted);
 }
 
 .notification-bell:hover {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .notification-bell.has-unread {
-  color: #1b5e20;
+  color: var(--color_button);
 }
 
 .notification-bell.has-unread .material-symbols-outlined {
@@ -319,9 +341,10 @@ const handleChangePassword = () => {
   right: -60px;
   width: 380px;
   max-height: 480px;
-  background: white;
+  background: var(--bg-elevated);
   border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-primary);
   overflow: hidden;
   z-index: 200;
 }
@@ -331,20 +354,20 @@ const handleChangePassword = () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .notif-header h3 {
   font-size: 0.95rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .mark-all-btn {
   background: none;
   border: none;
-  color: #1b5e20;
+  color: var(--color_button);
   font-size: 0.7rem;
   font-weight: 700;
   cursor: pointer;
@@ -354,7 +377,7 @@ const handleChangePassword = () => {
 }
 
 .mark-all-btn:hover {
-  background: #f0fdf4;
+  background: var(--bg-hover);
 }
 
 /* Lista de notificaciones */
@@ -367,22 +390,23 @@ const handleChangePassword = () => {
   display: flex;
   gap: 12px;
   padding: 14px 20px;
-  border-bottom: 1px solid #f8fafc;
+  border-bottom: 1px solid var(--border-secondary);
   transition: all 0.2s ease;
   align-items: flex-start;
+  background: transparent;
 }
 
 .notif-item:hover {
-  background: #fafbfc;
+  background: var(--bg-hover);
 }
 
 .notif-item.unread {
-  background: #f0fdf4;
-  border-left: 3px solid #1b5e20;
+  background: var(--bg-active);
+  border-left: 3px solid var(--color_button);
 }
 
 .notif-item.unread:hover {
-  background: #e8f7e1;
+  background: var(--bg-hover);
 }
 
 .notif-item.resolved {
@@ -394,14 +418,15 @@ const handleChangePassword = () => {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #f1f5f9;
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .notif-item.unread .notif-icon-col {
-  background: #dcfce7;
+  background: var(--bg-active);
+  border: 1px solid var(--border-primary);
 }
 
 .notif-type-icon {
@@ -416,7 +441,7 @@ const handleChangePassword = () => {
 
 .notif-msg {
   font-size: 0.8rem;
-  color: #334155;
+  color: var(--text-secondary);
   margin: 0 0 4px;
   line-height: 1.4;
   word-break: break-word;
@@ -424,12 +449,12 @@ const handleChangePassword = () => {
 
 .notif-item.unread .notif-msg {
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .notif-time {
   font-size: 0.65rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
@@ -525,10 +550,10 @@ const handleChangePassword = () => {
   top: calc(100% + 8px);
   right: 0;
   width: 220px;
-  background: white;
+  background: var(--bg-elevated);
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  border: 1px solid #f1f5f9;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-primary);
   padding: 0.5rem;
   z-index: 100;
 }
@@ -540,26 +565,26 @@ const handleChangePassword = () => {
 .dropdown-user-name {
   font-size: 0.8rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .dropdown-user-email {
   font-size: 0.65rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   margin: 2px 0 0;
 }
 
 .dropdown-user-role {
   font-size: 0.6rem;
-  color: #1b5e20;
+  color: var(--color_button);
   margin: 4px 0 0;
   font-weight: 800;
 }
 
 .dropdown-divider {
   height: 1px;
-  background-color: #f1f5f9;
+  background-color: var(--border-primary);
   margin: 0.5rem 0;
 }
 
@@ -571,7 +596,7 @@ const handleChangePassword = () => {
   padding: 0.625rem 1rem;
   border: none;
   background: transparent;
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 8px;
@@ -584,8 +609,68 @@ const handleChangePassword = () => {
 }
 
 .dropdown-item:hover {
-  background-color: #f8fafc;
-  color: #2e7d32;
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* iOS Toggle switch styling inside dropdown */
+.theme-toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+
+.theme-toggle-item span:nth-child(2) {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.theme-icon {
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s;
+}
+
+.theme-icon.rotate-animation {
+  transform: rotate(360deg);
+  color: #eab308 !important;
+}
+
+.theme-toggle-item:hover .theme-icon {
+  transform: rotate(180deg);
+}
+
+.theme-toggle-item:hover .theme-icon.rotate-animation {
+  transform: rotate(540deg);
+}
+
+.theme-switch-wrapper {
+  width: 34px;
+  height: 18px;
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  position: relative;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.theme-switch-wrapper.active {
+  background-color: var(--color_button);
+}
+
+.theme-switch-thumb {
+  width: 14px;
+  height: 14px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.theme-switch-thumb.active {
+  transform: translateX(16px);
 }
 
 .dropdown-item.logout {
@@ -593,7 +678,7 @@ const handleChangePassword = () => {
 }
 
 .dropdown-item.logout:hover {
-  background-color: #fef2f2;
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 /* ── Header Responsive ── */

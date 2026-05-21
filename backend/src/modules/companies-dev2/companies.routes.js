@@ -4,12 +4,50 @@
 // =============================================
 
 const express    = require('express');
+const multer     = require('multer');
 const router     = express.Router();
 const { verifyToken } = require('../../core/middlewares/auth.middleware');
 const { checkRole }   = require('../../core/middlewares/roles.middleware');
 const controller      = require('./companies.controller');
 
-// POST /api/companies/bulk - Importar empresas desde archivo plano SGVA (solo ADMIN)
+// Multer: memoria (sin disco), máximo 5 MB, solo xlsx/xls/xlsm/csv
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel',                                           // .xls
+      'application/vnd.ms-excel.sheet.macroEnabled.12',                     // .xlsm
+      'text/csv',
+      'text/plain'
+    ];
+    if (allowed.includes(file.mimetype) || file.originalname.match(/\.(xlsx|xls|xlsm|csv)$/i)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos .xlsx, .xls, .xlsm o .csv'));
+    }
+  }
+});
+
+// GET /api/companies/template - Descarga la plantilla Excel (solo ADMIN)
+router.get(
+  '/template',
+  verifyToken,
+  checkRole(['ADMIN']),
+  controller.downloadTemplate
+);
+
+// POST /api/companies/upload-xlsx - Sube y procesa un archivo Excel (solo ADMIN)
+router.post(
+  '/upload-xlsx',
+  verifyToken,
+  checkRole(['ADMIN']),
+  upload.single('file'),
+  controller.uploadXlsx
+);
+
+// POST /api/companies/bulk - Importar empresas desde JSON array SGVA (solo ADMIN)
 router.post(
   '/bulk',
   verifyToken,
@@ -47,6 +85,14 @@ router.put(
   verifyToken,
   checkRole(['ADMIN']),
   controller.actualizar
+);
+
+// DELETE /api/companies/:id - Eliminar empresa (solo ADMIN)
+router.delete(
+  '/:id',
+  verifyToken,
+  checkRole(['ADMIN']),
+  controller.eliminar
 );
 
 module.exports = router;

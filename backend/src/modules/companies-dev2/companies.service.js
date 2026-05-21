@@ -104,10 +104,19 @@ const actualizar = async (id, data) => {
   return empresa;
 };
 
+const eliminar = async (id) => {
+  const empresa = await Company.findByIdAndDelete(id);
+  if (!empresa) {
+    throw new Error('Empresa no encontrada.');
+  }
+  return empresa;
+};
+
 module.exports = {
   crear,
   bulkCrear,
   getAll,
   getById,
   actualizar,
+  eliminar,
 };

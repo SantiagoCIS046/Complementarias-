@@ -3,6 +3,9 @@ import { ref, computed } from 'vue'
 import BtnBack from '@/layouts/btnBackLayout.vue'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
+import { useAlert } from '@/core/composables/useAlert'
+
+const { showSuccess } = useAlert()
 
 // --- Estado de los Documentos ---
 const documentos = ref([
@@ -59,7 +62,7 @@ const deleteFile = (id) => {
 }
 
 const solicitarRevision = () => {
-  alert("Solicitud enviada al coordinador.")
+  showSuccess('Solicitud Enviada', 'La solicitud ha sido enviada al coordinador correctamente.')
 }
 
 // --- Propiedades Computadas ---

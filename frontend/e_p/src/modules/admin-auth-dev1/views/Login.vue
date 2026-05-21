@@ -9,7 +9,7 @@
         <img src="/logoSena.png" alt="SENA" class="brand-logo" />
         <div>
           <h2 class="brand-name">RepFora</h2>
-          <p class="brand-tagline">VANGUARDIA ACADÉMICA</p>
+          <p class="brand-tagline">ETAPAS PRODUCTIVAS</p>
         </div>
       </div>
 

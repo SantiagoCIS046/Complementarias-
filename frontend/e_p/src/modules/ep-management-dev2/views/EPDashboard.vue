@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { epService } from '../services/ep.service'
 import Sidebar from '../../../components/layout/Sidebar.vue'
@@ -14,6 +14,34 @@ const currentUser = computed(() => authStore.user || { name: 'Usuario', role: 'I
 const stage = ref(null)
 const loading = ref(true)
 const error = ref(null)
+
+// Animated progress bar
+const animatedProgress = ref(0)
+const animatedPercentage = ref(0)
+
+function animateProgress(targetPct) {
+  animatedProgress.value = 0
+  animatedPercentage.value = 0
+  if (targetPct <= 0) return
+  // Small delay so the DOM renders the 0-width bar first
+  setTimeout(() => {
+    animatedProgress.value = targetPct
+    // Animate the counter number
+    const duration = 1200
+    const steps = 60
+    const increment = targetPct / steps
+    let current = 0
+    const interval = setInterval(() => {
+      current += increment
+      if (current >= targetPct) {
+        animatedPercentage.value = targetPct
+        clearInterval(interval)
+      } else {
+        animatedPercentage.value = Math.round(current)
+      }
+    }, duration / steps)
+  }, 80)
+}
 
 const aprendiz = computed(() => {
   if (!stage.value) return { nombre: '---', estadoActual: '---', horasCompletadas: 0, horasTotales: 864, progresoPorcentaje: 0, razonSocial: '---', nit: '---', jefe: '---', telefono: '---' }
@@ -121,6 +149,8 @@ const puedeEnviarRevision = computed(() => stage.value?.estado === 'REGISTRO')
 
 async function load() {
   loading.value = true; error.value = null
+  animatedProgress.value = 0
+  animatedPercentage.value = 0
   try {
     const res = await epService.getAll()
     const stages = res.data?.data || []
@@ -130,7 +160,11 @@ async function load() {
       bitacoras.value = bRes.data?.data || []
     }
   } catch (e) { error.value = 'No se pudo cargar la información.' }
-  finally { loading.value = false }
+  finally {
+    loading.value = false
+    await nextTick()
+    animateProgress(aprendiz.value.progresoPorcentaje)
+  }
 }
 
 async function enviarRevision() {
@@ -176,76 +210,87 @@ onMounted(load)
       </Header>
 
       <main class="content">
-        <!-- SECCIÓN INFO + PROGRESO -->
+        <!-- SECCIÓN INFO + PROGRESO INTEGRADO -->
         <div class="info-grid">
           <div class="company-card">
-            <div class="card-header">
-              <div class="header-text">
-                <span class="label">INFORMACIÓN DE LA EMPRESA</span>
-                <span class="desc">Detalles del convenio de etapa productiva</span>
+            <div class="company-card-body">
+              <div class="card-header">
+                <div class="header-text">
+                  <span class="label">INFORMACIÓN DE LA EMPRESA</span>
+                  <span class="desc">Detalles del convenio de etapa productiva</span>
+                </div>
+                <span v-if="!loading" class="status-badge">ESTADO: {{ aprendiz.estadoActual }}</span>
+                <div v-else class="skel-badge"></div>
               </div>
-              <span v-if="!loading" class="status-badge">ESTADO: {{ aprendiz.estadoActual }}</span>
-              <div v-else class="skel-badge"></div>
+              
+              <div class="company-details" v-if="!loading">
+                <div class="detail-item">
+                  <div class="icon"><span class="material-symbols-outlined">corporate_fare</span></div>
+                  <div class="txt">
+                    <span class="key">EMPRESA</span>
+                    <span class="val">{{ aprendiz.razonSocial }}</span>
+                  </div>
+                </div>
+                <div class="detail-item">
+                  <div class="icon"><span class="material-symbols-outlined">fingerprint</span></div>
+                  <div class="txt">
+                    <span class="key">NIT</span>
+                    <span class="val">{{ aprendiz.nit }}</span>
+                  </div>
+                </div>
+                <div class="detail-item">
+                  <div class="icon"><span class="material-symbols-outlined">contact_page</span></div>
+                  <div class="txt">
+                    <span class="key">JEFE INMEDIATO</span>
+                    <span class="val">{{ aprendiz.jefe }}</span>
+                  </div>
+                </div>
+                <div class="detail-item">
+                  <div class="icon"><span class="material-symbols-outlined">call</span></div>
+                  <div class="txt">
+                    <span class="key">TELÉFONO</span>
+                    <span class="val">{{ aprendiz.telefono }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="company-details" v-else>
+                <div class="detail-item" v-for="i in 4" :key="i">
+                  <div class="icon skel-anim" style="width: 36px; height: 36px; border-radius: 10px;"></div>
+                  <div class="txt" style="width: 100%;">
+                    <div class="skel-line" style="width: 40%; height: 8px; margin-bottom: 4px;"></div>
+                    <div class="skel-line" style="width: 80%; height: 12px;"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <div class="company-details" v-if="!loading">
-              <div class="detail-item">
-                <div class="icon"><span class="material-symbols-outlined">corporate_fare</span></div>
-                <div class="txt">
-                  <span class="key">EMPRESA</span>
-                  <span class="val">{{ aprendiz.razonSocial }}</span>
-                </div>
-              </div>
-              <div class="detail-item">
-                <div class="icon"><span class="material-symbols-outlined">fingerprint</span></div>
-                <div class="txt">
-                  <span class="key">NIT</span>
-                  <span class="val">{{ aprendiz.nit }}</span>
-                </div>
-              </div>
-              <div class="detail-item">
-                <div class="icon"><span class="material-symbols-outlined">contact_page</span></div>
-                <div class="txt">
-                  <span class="key">JEFE INMEDIATO</span>
-                  <span class="val">{{ aprendiz.jefe }}</span>
-                </div>
-              </div>
-              <div class="detail-item">
-                <div class="icon"><span class="material-symbols-outlined">call</span></div>
-                <div class="txt">
-                  <span class="key">TELÉFONO</span>
-                  <span class="val">{{ aprendiz.telefono }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="company-details" v-else>
-              <div class="detail-item" v-for="i in 4" :key="i">
-                <div class="icon skel-anim" style="width: 36px; height: 36px; border-radius: 10px;"></div>
-                <div class="txt" style="width: 100%;">
-                  <div class="skel-line" style="width: 40%; height: 8px; margin-bottom: 4px;"></div>
-                  <div class="skel-line" style="width: 80%; height: 12px;"></div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div class="progress-card">
-            <span class="label">PROGRESO DE ETAPA</span>
-            <template v-if="!loading">
-              <h1 class="percent">{{ aprendiz.progresoPorcentaje }}%</h1>
-              <p class="stats">Has completado {{ aprendiz.horasCompletadas }} de {{ aprendiz.horasTotales }} horas totales requeridas.</p>
-              <div class="progress-bar-container">
-                <div class="progress-bar" :style="{ width: aprendiz.progresoPorcentaje + '%' }"></div>
-              </div>
-            </template>
-            <template v-else>
-              <div class="skel-line" style="width: 40%; height: 48px; margin: 8px 0; background: rgba(255,255,255,0.2);"></div>
-              <div class="skel-line" style="width: 90%; height: 12px; background: rgba(255,255,255,0.1); margin-bottom: 4px;"></div>
-              <div class="skel-line" style="width: 60%; height: 12px; background: rgba(255,255,255,0.1);"></div>
-              <div class="progress-bar-container">
-                <div class="progress-bar" style="width: 0%"></div>
-              </div>
-            </template>
+            <!-- FOOTER DE PROGRESO INTEGRADO -->
+            <div class="company-footer">
+              <template v-if="!loading">
+                <div class="footer-progress-header">
+                  <div class="progress-info">
+                    <span class="label">PROGRESO DE ETAPA</span>
+                    <p class="stats">Has completado <b>{{ aprendiz.horasCompletadas }}</b> de {{ aprendiz.horasTotales }} horas totales.</p>
+                  </div>
+                  <div class="progress-percentage">{{ animatedPercentage }}%</div>
+                </div>
+                <div class="progress-bar-container-mini">
+                  <div class="progress-bar-mini" :style="{ width: animatedProgress + '%' }"></div>
+                </div>
+              </template>
+              <template v-else>
+                <div class="footer-progress-header">
+                  <div class="progress-info">
+                    <div class="skel-line" style="width: 100px; height: 10px; margin-bottom: 6px;"></div>
+                    <div class="skel-line" style="width: 180px; height: 12px;"></div>
+                  </div>
+                  <div class="skel-line" style="width: 40px; height: 24px; border-radius: 8px;"></div>
+                </div>
+                <div class="progress-bar-container-mini">
+                  <div class="progress-bar-mini" style="width: 0%"></div>
+                </div>
+              </template>
+            </div>
           </div>
         </div>
 
@@ -608,27 +653,60 @@ onMounted(load)
 /* --- Content --- */
 .content { padding: 24px; max-width: 1400px; width: 100%; box-sizing: border-box; }
 
-.info-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 24px; }
+.info-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 24px; }
 
-.company-card { background: #FFF; border-radius: 20px; padding: 24px; border: 1px solid #F1F5F9; }
+.company-card { background: #FFF; border-radius: 20px; border: 1px solid #F1F5F9; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+.company-card-body { padding: 24px; }
 .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
 .header-text .label { display: block; font-size: 11px; font-weight: 900; color: #94A3B8; letter-spacing: 1px; }
 .header-text .desc { font-size: 11px; color: #94A3B8; }
 .status-badge { background: #FFF1F2; color: #E11D48; padding: 6px 12px; border-radius: 8px; font-size: 9px; font-weight: 900; }
 
-.company-details { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.detail-item { display: flex; align-items: center; gap: 12px; background: #F8FAFC; padding: 12px; border-radius: 12px; border: 1px solid #F1F5F9; }
+.company-details { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.detail-item { display: flex; align-items: center; gap: 12px; background: #F8FAFC; padding: 12px; border-radius: 12px; border: 1px solid #F1F5F9; transition: all 0.3s; }
+.detail-item:hover { background: #FFF; border-color: var(--color_button); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 .detail-item .icon { width: 36px; height: 36px; background: #FFF; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--color_button); box-shadow: 0 2px 8px rgba(0,0,0,0.02); flex-shrink: 0; }
 .detail-item .key { display: block; font-size: 9px; font-weight: 900; color: #94A3B8; margin-bottom: 2px; }
 .detail-item .val { font-size: 13px; font-weight: 700; color: #1E293B; }
 
-.progress-card { background: #1A4D2E; border-radius: 20px; padding: 24px; color: #FFF; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
-.progress-card::after { content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 50%; blur: 40px; }
-.progress-card .label { font-size: 10px; font-weight: 900; color: rgba(255,255,255,0.6); letter-spacing: 2px; }
-.progress-card .percent { font-size: 48px; font-weight: 900; margin: 8px 0; line-height: 1; letter-spacing: -1px; }
-.progress-card .stats { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.6; }
-.progress-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 20px; overflow: hidden; }
-.progress-bar { height: 100%; background: #FFF; border-radius: 10px; transition: width 1s; }
+.company-footer { background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%); padding: 16px 24px; border-top: 1px solid #F1F5F9; }
+.footer-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.footer-progress-header .label { font-size: 10px; font-weight: 900; color: #64748B; letter-spacing: 1px; }
+.footer-progress-header .stats { font-size: 11px; color: #94A3B8; margin: 4px 0 0; }
+.footer-progress-header .stats b { color: #1A4D2E; }
+.progress-percentage { font-size: 20px; font-weight: 900; color: #1A4D2E; letter-spacing: -0.5px; }
+.progress-bar-container-mini {
+  width: 100%;
+  height: 14px;
+  background: #E2E8F0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+}
+.progress-bar-mini {
+  height: 100%;
+  background: linear-gradient(90deg, #1A4D2E 0%, #2d7a4a 50%, #1A4D2E 100%);
+  background-size: 200% 100%;
+  border-radius: 20px;
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: progress-shimmer 2.5s linear infinite;
+  box-shadow: 0 2px 8px rgba(26, 77, 46, 0.35);
+  position: relative;
+}
+.progress-bar-mini::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  right: 6px;
+  height: 4px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 10px;
+}
+@keyframes progress-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
 /* --- Table --- */
 .table-container { background: #FFF; border-radius: 20px; border: 1px solid #F1F5F9; overflow: hidden; }
@@ -691,8 +769,8 @@ onMounted(load)
   .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .bitacora-table { min-width: 600px; }
   
-  .progress-card .percent { font-size: 36px; }
-  .progress-card .stats { font-size: 11px; }
+  .footer-progress-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .progress-percentage { font-size: 18px; align-self: flex-end; margin-top: -24px; }
   
   .reminder-banner { flex-direction: column; text-align: center; gap: 16px; padding: 24px 16px; }
   .reminder-content { flex-direction: column; gap: 12px; }

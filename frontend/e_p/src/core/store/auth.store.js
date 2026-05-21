@@ -17,7 +17,7 @@ export const useAuthStore = defineStore('auth', () => {
   // ── Getters ────────────────────────────────────────
   const isLoggedIn = computed(() => !!token.value)
   const userRole   = computed(() => user.value?.role || null)
-  const userName   = computed(() => user.value?.nombre || '')
+  const userName   = computed(() => user.value?.name || '')
 
   // ── Actions ────────────────────────────────────────
 
@@ -57,6 +57,15 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Actualiza los datos del usuario en el estado y localStorage.
+   * @param {object} userData 
+   */
+  function updateUser(userData) {
+    user.value = { ...user.value, ...userData }
+    localStorage.setItem('repfora_user', JSON.stringify(user.value))
+  }
+
+  /**
    * Limpia la sesión del usuario por completo.
    */
   function logout() {
@@ -69,6 +78,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     user, token, isLoggedIn, userRole, userName,
-    login, logout, refreshActivity, isSessionExpired,
+    login, logout, refreshActivity, isSessionExpired, updateUser,
   }
 })

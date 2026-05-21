@@ -55,6 +55,11 @@ const routes = [
     path: '/mi-ep',
     name: 'mi-ep',
     component: () => import('@/modules/ep-management-dev2/views/EPDashboard.vue')
+  },
+  {
+    path: '/perfil',
+    name: 'perfil',
+    component: () => import('@/modules/admin-auth-dev1/views/ProfileView.vue')
   }
 ]
 

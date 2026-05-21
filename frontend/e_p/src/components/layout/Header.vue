@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import { useAlert } from '../../core/composables/useAlert';
 import { useThemeStore } from '../../core/store/theme.store';
 import SkeletonLoader from '../ui/SkeletonLoader.vue';
+import { usersService } from '../../modules/admin-auth-dev1/services/users.service';
 
 const props = defineProps({
   title: {
@@ -25,6 +26,13 @@ const userRole = computed(() => authStore.user?.role || 'Visitante');
 
 const showProfileMenu = ref(false);
 const showNotifDropdown = ref(false);
+const showQuickEdit = ref(false);
+
+const quickEditData = ref({
+  name: '',
+  email: '',
+  telefono: ''
+});
 
 const avatarUrl = computed(() => {
   const name = encodeURIComponent(currentUser.value.name);
@@ -116,12 +124,35 @@ const handleLogout = () => {
   router.push('/login');
 };
 
+<<<<<<< HEAD
 const handleChangePassword = () => {
   showProfileMenu.value = false;
   showInfo(
     'Módulo en Desarrollo',
     'La funcionalidad para cambiar la contraseña se encuentra actualmente en desarrollo y estará disponible en una futura actualización.'
   );
+=======
+const handleViewProfile = () => {
+  quickEditData.value = {
+    name: currentUser.value.name,
+    email: currentUser.value.email,
+    telefono: currentUser.value.telefono || ''
+  };
+  showQuickEdit.value = !showQuickEdit.value;
+};
+
+const handleSaveQuickEdit = async () => {
+  try {
+    const response = await usersService.update(currentUser.value._id, quickEditData.value);
+    if (response.data.success) {
+      authStore.updateUser(response.data.data);
+      showQuickEdit.value = false;
+    }
+  } catch (err) {
+    console.error('Error al actualizar perfil rápido:', err);
+    alert('Error al actualizar el perfil.');
+  }
+>>>>>>> ffe923c (feat: implementar apartado de perfil, edicion rapida y correcciones en rutas de usuarios)
 };
 </script>
 
@@ -223,39 +254,74 @@ const handleChangePassword = () => {
         <!-- Dropdown de Perfil -->
         <Transition name="dropdown">
           <div v-if="showProfileMenu" class="profile-dropdown" @click.stop>
-            <div class="dropdown-header">
-              <p class="dropdown-user-name">{{ currentUser.name }}</p>
-              <p class="dropdown-user-email">{{ currentUser.email || 'usuario@sena.edu.co' }}</p>
-              <p class="dropdown-user-role">{{ userRole }}</p>
-            </div>
-            <div class="dropdown-divider"></div>
-            <button class="dropdown-item">
-              <span class="material-symbols-outlined">person</span>
-              <span>Ver Perfil</span>
-            </button>
-            <button v-if="userRole === 'ADMIN'" class="dropdown-item" @click="handleChangePassword">
-              <span class="material-symbols-outlined">key</span>
-              <span>Cambiar Clave</span>
-            </button>
-            
-            <div class="dropdown-divider"></div>
-            
-            <div class="dropdown-item theme-toggle-item" @click.stop="themeStore.toggleTheme">
-              <span class="material-symbols-outlined theme-icon" :class="{ 'rotate-animation': themeStore.isDark }">
-                {{ themeStore.isDark ? 'light_mode' : 'dark_mode' }}
-              </span>
-              <span>Modo Oscuro</span>
-              <div class="theme-switch-wrapper" :class="{ 'active': themeStore.isDark }">
-                <span class="theme-switch-thumb" :class="{ 'active': themeStore.isDark }"></span>
+            <div v-if="!showQuickEdit">
+              <div class="dropdown-header">
+                <p class="dropdown-user-name">{{ currentUser.name }}</p>
+                <p class="dropdown-user-email">{{ currentUser.email || 'usuario@sena.edu.co' }}</p>
+                <p class="dropdown-user-role">{{ userRole }}</p>
+              </div>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item" @click="handleViewProfile">
+                <span class="material-symbols-outlined">person</span>
+                <span>Ver Perfil</span>
+              </button>
+              <button v-if="userRole === 'ADMIN'" class="dropdown-item" @click="handleChangePassword">
+                <span class="material-symbols-outlined">key</span>
+                <span>Cambiar Clave</span>
+              </button>
+              
+              <div class="dropdown-divider"></div>
+              
+              <div class="dropdown-item theme-toggle-item" @click.stop="themeStore.toggleTheme">
+                <span class="material-symbols-outlined theme-icon" :class="{ 'rotate-animation': themeStore.isDark }">
+                  {{ themeStore.isDark ? 'light_mode' : 'dark_mode' }}
+                </span>
+                <span>Modo Oscuro</span>
+                <div class="theme-switch-wrapper" :class="{ 'active': themeStore.isDark }">
+                  <span class="theme-switch-thumb" :class="{ 'active': themeStore.isDark }"></span>
+                </div>
+              </div>
+              
+              <div class="dropdown-divider"></div>
+              
+              <div class="dropdown-footer">
+                <button class="dropdown-item logout-btn" @click="handleLogout">
+                  <span class="material-symbols-outlined">logout</span>
+                  <span>Cerrar Sesión</span>
+                </button>
               </div>
             </div>
             
-            <div class="dropdown-divider"></div>
-            
-            <button class="dropdown-item logout" @click="handleLogout">
-              <span class="material-symbols-outlined">logout</span>
-              <span>Cerrar Sesión</span>
-            </button>
+            <!-- Formulario de Edición Rápida -->
+            <div v-else class="quick-edit-container">
+              <div class="edit-header">
+                <button class="back-btn" @click="showQuickEdit = false">
+                  <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h3>Editar Perfil</h3>
+              </div>
+              
+              <div class="quick-edit-body">
+                <div class="quick-field">
+                  <label>Nombre</label>
+                  <input v-model="quickEditData.name" type="text" placeholder="Tu nombre" />
+                </div>
+                <div class="quick-field">
+                  <label>Correo</label>
+                  <input v-model="quickEditData.email" type="email" placeholder="tu@correo.com" />
+                </div>
+                <div class="quick-field">
+                  <label>Teléfono</label>
+                  <input v-model="quickEditData.telefono" type="text" placeholder="Tu teléfono" />
+                </div>
+              </div>
+              
+              <div class="quick-edit-footer">
+                <button class="save-btn" @click="handleSaveQuickEdit">
+                  Guardar Cambios
+                </button>
+              </div>
+            </div>
           </div>
         </Transition>
       </div>
@@ -547,14 +613,14 @@ const handleChangePassword = () => {
 
 .profile-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 12px);
   right: 0;
-  width: 220px;
+  width: 260px;
   background: var(--bg-elevated);
-  border-radius: 12px;
+  border-radius: 20px;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-primary);
-  padding: 0.5rem;
+  padding: 0.75rem;
   z-index: 100;
 }
 
@@ -563,23 +629,24 @@ const handleChangePassword = () => {
 }
 
 .dropdown-user-name {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--text-primary);
   margin: 0;
 }
 
 .dropdown-user-email {
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   margin: 2px 0 0;
 }
 
 .dropdown-user-role {
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   color: var(--color_button);
-  margin: 4px 0 0;
+  margin: 8px 0 0;
   font-weight: 800;
+  text-transform: uppercase;
 }
 
 .dropdown-divider {
@@ -673,12 +740,122 @@ const handleChangePassword = () => {
   transform: translateX(16px);
 }
 
-.dropdown-item.logout {
-  color: #ef4444;
+.dropdown-item:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
+<<<<<<< HEAD
 .dropdown-item.logout:hover {
   background-color: rgba(239, 68, 68, 0.1);
+=======
+.dropdown-footer {
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.logout-btn {
+  background-color: #fff1f0 !important;
+  color: #ff4d4f !important;
+  border-radius: 12px !important;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.logout-btn:hover {
+  background-color: #fff2f0 !important;
+  filter: brightness(0.95);
+}
+
+.logout-btn .material-symbols-outlined {
+  font-size: 1.3rem;
+}
+
+/* ── Quick Edit Styles ── */
+.quick-edit-container {
+  padding: 0.5rem;
+}
+
+.edit-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.edit-header h3 {
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin: 0;
+  color: #0f172a;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  color: #64748b;
+}
+
+.back-btn:hover {
+  background: #f1f5f9;
+}
+
+.quick-edit-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.quick-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.quick-field label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.quick-field input {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.quick-field input:focus {
+  outline: none;
+  border-color: #2e7d32;
+}
+
+.quick-edit-footer {
+  margin-top: 1.25rem;
+}
+
+.save-btn {
+  width: 100%;
+  padding: 10px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-btn:hover {
+  background: #1b5e20;
+>>>>>>> ffe923c (feat: implementar apartado de perfil, edicion rapida y correcciones en rutas de usuarios)
 }
 
 /* ── Header Responsive ── */

@@ -1,10 +1,14 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
+import HeaderLayout from '@/layouts/headerViewsLayout.vue'
+import { trackingService } from '../services/tracking.service'
 
 const searchCert = ref('')
 const currentFilter = ref('Todos')
+const certifications = ref([])
+const isLoading = ref(true)
 
 const setFilter = (filter) => {
   if (!document.startViewTransition) {
@@ -16,24 +20,43 @@ const setFilter = (filter) => {
   })
 }
 
-const certifications = ref([
-  { id: 1, name: 'Antonio Mancilla', doc: '1002345678', ficha: '2670687', status: 'POR REVISAR', date: '---' },
-  { id: 2, name: 'Daniela Palacio', doc: '1005678123', ficha: '2450012', status: 'CERTIFICADO', date: '15/04/2026' }
-])
+const fetchCerts = async () => {
+  isLoading.value = true
+  try {
+    const res = await trackingService.getMyApprentices()
+    const allStages = res.data.data || []
+    
+    certifications.value = allStages.map(s => ({
+      id: s._id,
+      name: s.apprenticeId?.name || 'Desconocido',
+      doc: s.apprenticeId?.documento || 'S/D',
+      ficha: s.radicado || s.ficha || 'S/N',
+      status: s.estado,
+      date: s.estado === 'CERTIFICADO' ? new Date(s.updatedAt).toLocaleDateString() : '---'
+    }))
+  } catch (error) {
+    console.error('Error fetching certs:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const filteredCerts = computed(() => {
   return certifications.value.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(searchCert.value.toLowerCase()) || 
-                          c.doc.includes(searchCert.value) || 
-                          c.ficha.includes(searchCert.value)
+    const q = searchCert.value.toLowerCase()
+    const matchesSearch = c.name.toLowerCase().includes(q) || 
+                          c.doc.includes(q) || 
+                          c.ficha.toLowerCase().includes(q)
     
     if (currentFilter.value === 'Todos') return matchesSearch
-    if (currentFilter.value === 'Por Revisar') return matchesSearch && c.status === 'POR REVISAR'
+    if (currentFilter.value === 'Por Revisar') return matchesSearch && (c.status === 'POR REVISAR' || c.status === 'PENDIENTE')
     if (currentFilter.value === 'Certificados') return matchesSearch && c.status === 'CERTIFICADO'
     
     return matchesSearch
   })
 })
+
+onMounted(fetchCerts)
 </script>
 
 <template>
@@ -72,7 +95,11 @@ const filteredCerts = computed(() => {
                 </div>
 
                 <div class="table-responsive">
-                  <table class="user-table">
+                  <div v-if="isLoading" class="p-12 text-center text-gray-500">
+                    <div class="spin-ring-lg mx-auto mb-4"></div>
+                    Cargando aprendices...
+                  </div>
+                  <table v-else class="user-table">
                     <thead>
                       <tr>
                         <th>APRENDIZ</th>
@@ -109,6 +136,9 @@ const filteredCerts = computed(() => {
                             Gestionar
                           </button>
                         </td>
+                      </tr>
+                      <tr v-if="filteredCerts.length === 0">
+                        <td colspan="5" class="text-center py-12 text-gray-400 italic">No se encontraron resultados</td>
                       </tr>
                     </tbody>
                   </table>
@@ -173,6 +203,9 @@ const filteredCerts = computed(() => {
 
 .btn-primary-sena { background: var(--color_button); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2); white-space: nowrap; }
 .btn-primary-sena:hover { background: #1b5e20; transform: translateY(-1px); }
+
+.spin-ring-lg { width: 40px; height: 40px; border: 3px solid #f1f5f9; border-top-color: var(--color_header); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* --- Responsive fixes --- */
 @media (max-width: 768px) {

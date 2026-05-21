@@ -9,14 +9,19 @@ const controller = require('./users.controller');
 const { verifyToken } = require('../../core/middlewares/auth.middleware');
 const { checkRole }   = require('../../core/middlewares/roles.middleware');
 
-// Todas las rutas de usuarios requieren autenticación y rol ADMIN
+// Todas las rutas requieren token válido
 router.use(verifyToken);
-router.use(checkRole(['ADMIN', 'INSTRUCTOR']));
 
-router.get('/fichas/stats', controller.getFichasSummary);
-router.get('/',    controller.getAll);
-router.get('/:id', controller.getById);
-router.put('/:id', controller.actualizar);
-router.patch('/:id/toggle-status', controller.toggleStatus);
+// ⚠️ IMPORTANTE: rutas específicas deben ir ANTES de /:id
+// para que Express no capture "fichas" como parámetro :id
+
+// Rutas restringidas a ADMIN e INSTRUCTOR
+router.get('/fichas/stats', checkRole(['ADMIN', 'INSTRUCTOR']), controller.getFichasSummary);
+router.get('/',             checkRole(['ADMIN', 'INSTRUCTOR']), controller.getAll);
+router.patch('/:id/toggle-status', checkRole(['ADMIN']),        controller.toggleStatus);
+
+// Rutas accesibles por cualquier usuario autenticado (ver/editar su propio perfil)
+router.get('/:id',  controller.getById);
+router.put('/:id',  controller.actualizar);
 
 module.exports = router;

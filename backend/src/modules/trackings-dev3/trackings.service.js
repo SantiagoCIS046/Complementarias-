@@ -1,4 +1,4 @@
-﻿// trackings.service.js   ?? DEV 3 | Visitas de seguimiento
+// trackings.service.js   ?? DEV 3 | Visitas de seguimiento
 // =============================================
 // Logica de negocio para gestion de visitas de
 // seguimiento del instructor al aprendiz.
@@ -10,7 +10,7 @@ const ProductiveStage = require('../productive-stages-dev2/productive-stage.mode
 /**
  * Crear una nueva visita de seguimiento.
  */
-const crear = async ({ stageId, instructorId, apprenticeId, numeroVisita, fechaVisita, lugarVisita, observaciones, compromisos, calificacion }) => {
+const crear = async ({ stageId, instructorId, apprenticeId, numeroVisita, fechaVisita, lugarVisita, observaciones, compromisos, calificacion, evidenciaUrl }) => {
   // Verificar que la EP existe
   const stage = await ProductiveStage.findById(stageId);
   if (!stage) {
@@ -27,6 +27,7 @@ const crear = async ({ stageId, instructorId, apprenticeId, numeroVisita, fechaV
     observaciones,
     compromisos: compromisos || '',
     calificacion: calificacion || null,
+    evidenciaUrl: evidenciaUrl || '',
   });
 
   return tracking;

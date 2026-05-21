@@ -22,11 +22,11 @@ async function runSeed() {
     await mongoose.connect(MONGO_URI);
     
     // Limpieza
-    await User.deleteMany({});
-    await Company.deleteMany({});
-    await ProductiveStage.deleteMany({});
-    await Batch.deleteMany({});
-    console.log('🗑️  Colecciones limpiadas.');
+    await User.collection.drop().catch(e => console.log('Colección users ya limpia o inexistente'));
+    await Company.collection.drop().catch(e => console.log('Colección companies ya limpia o inexistente'));
+    await ProductiveStage.collection.drop().catch(e => console.log('Colección productivestages ya limpia o inexistente'));
+    await Batch.collection.drop().catch(e => console.log('Colección batches ya limpia o inexistente'));
+    console.log('🗑️  Colecciones e índices viejos limpiados.');
 
     // CONTRASEÑA EN TEXTO PLANO - el modelo real la hashea automáticamente
     const PASSWORD = 'sena2024';

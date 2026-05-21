@@ -617,7 +617,7 @@ const handleSaveQuickEdit = async () => {
   right: 0;
   width: 260px;
   background: var(--bg-elevated);
-  border-radius: 20px;
+  border-radius: 16px;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-primary);
   padding: 0.75rem;
@@ -636,15 +636,15 @@ const handleSaveQuickEdit = async () => {
 }
 
 .dropdown-user-email {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   margin: 2px 0 0;
 }
 
 .dropdown-user-role {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--color_button);
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -741,30 +741,26 @@ const handleSaveQuickEdit = async () => {
 }
 
 .dropdown-item:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
 }
 
-<<<<<<< HEAD
-.dropdown-item.logout:hover {
-  background-color: rgba(239, 68, 68, 0.1);
-=======
 .dropdown-footer {
   padding: 0.5rem;
   margin-top: 0.5rem;
 }
 
 .logout-btn {
-  background-color: #fff1f0 !important;
-  color: #ff4d4f !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
   border-radius: 12px !important;
   justify-content: center;
   font-weight: 700;
 }
 
 .logout-btn:hover {
-  background-color: #fff2f0 !important;
-  filter: brightness(0.95);
+  background-color: rgba(239, 68, 68, 0.2) !important;
+  filter: brightness(1.05);
 }
 
 .logout-btn .material-symbols-outlined {
@@ -787,7 +783,7 @@ const handleSaveQuickEdit = async () => {
   font-size: 0.9rem;
   font-weight: 800;
   margin: 0;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .back-btn {
@@ -797,11 +793,11 @@ const handleSaveQuickEdit = async () => {
   padding: 4px;
   border-radius: 50%;
   display: flex;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .back-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-hover);
 }
 
 .quick-edit-body {
@@ -819,21 +815,23 @@ const handleSaveQuickEdit = async () => {
 .quick-field label {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .quick-field input {
   padding: 8px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 
 .quick-field input:focus {
   outline: none;
-  border-color: #2e7d32;
+  border-color: var(--color_button);
+  background: var(--bg-elevated);
 }
 
 .quick-edit-footer {
@@ -843,7 +841,7 @@ const handleSaveQuickEdit = async () => {
 .save-btn {
   width: 100%;
   padding: 10px;
-  background: #2e7d32;
+  background: var(--color_button);
   color: white;
   border: none;
   border-radius: 10px;
@@ -855,7 +853,6 @@ const handleSaveQuickEdit = async () => {
 
 .save-btn:hover {
   background: #1b5e20;
->>>>>>> ffe923c (feat: implementar apartado de perfil, edicion rapida y correcciones en rutas de usuarios)
 }
 
 /* ── Header Responsive ── */

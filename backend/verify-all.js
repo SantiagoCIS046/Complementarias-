@@ -34,28 +34,24 @@ const checkSyntax = () => {
     'src/core/config/env.js',
     'src/core/middlewares/auth.middleware.js',
     'src/core/middlewares/roles.middleware.js',
-    'src/core/utils/logger.js',
-    'src/core/utils/configHelper.js',
-    'src/core/utils/jwt.js',
-    'src/core/jobs/alert.job.js',
     // DEV 3 - Bitacoras
     'src/modules/bitacoras-dev3/bitacoras.routes.js',
     'src/modules/bitacoras-dev3/bitacoras.controller.js',
     'src/modules/bitacoras-dev3/bitacoras.service.js',
-    'src/modules/bitacoras-dev3/models/bitacora.model.js',
-    'src/modules/bitacoras-dev3/models/audit-log.model.js',
+    'src/modules/bitacoras-dev3/bitacora.model.js',
+    'src/modules/system-config-dev1/AuditLog.model.js',
     // DEV 3 - Trackings
     'src/modules/trackings-dev3/trackings.routes.js',
     'src/modules/trackings-dev3/trackings.controller.js',
     'src/modules/trackings-dev3/trackings.service.js',
-    'src/modules/trackings-dev3/models/tracking.model.js',
+    'src/modules/trackings-dev3/tracking.model.js',
     // DEV 3 - Hours & Novelties
     'src/modules/hours-dev3/hours.routes.js',
     'src/modules/novelties-dev3/novelties.routes.js',
     // DEV 1 (referencia)
     'src/modules/auth-dev1/auth.routes.js',
     'src/modules/users-dev1/users.routes.js',
-    'src/modules/notifications-service/notifications.routes.js',
+    'src/modules/notifications/notifications.routes.js',
   ];
 
   let syntaxErrors = 0;

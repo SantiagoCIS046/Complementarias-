@@ -8,7 +8,7 @@ const app = express();
 
 // --- Middlewares globales ---
 const allowedOrigins = [
-  'https://complementarias-siete.vercel.app', // Frontend en producción (Vercel)
+  'https://complementarias-seven.vercel.app', // Frontend en producción (Vercel)
   process.env.FRONTEND_URL,                   // Variable de entorno (opcional)
   'http://localhost:5173',
   'http://localhost:5174',

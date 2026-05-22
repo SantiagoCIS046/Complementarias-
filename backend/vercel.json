@@ -8,6 +8,18 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "methods": ["OPTIONS"],
+      "headers": {
+        "Access-Control-Allow-Origin": "https://complementarias-seven.vercel.app",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type,Authorization",
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Max-Age": "86400"
+      },
+      "dest": "src/app.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "src/app.js"
     }

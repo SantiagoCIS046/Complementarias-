@@ -3,6 +3,7 @@
 // =============================================
 const express = require('express');
 const cors = require('cors');
+const connectDB = require('./core/config/db');
 const app = express();
 
 // --- Middlewares globales ---
@@ -29,6 +30,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
+
+// --- Conectar a MongoDB antes de procesar peticiones ---
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('❌ Error conectando a DB:', error.message);
+    res.status(503).json({ error: 'Database connection failed' });
+  }
+});
 
 // --- Rutas de módulos ---
 app.use('/api/auth', require('./modules/auth-dev1/auth.routes'));

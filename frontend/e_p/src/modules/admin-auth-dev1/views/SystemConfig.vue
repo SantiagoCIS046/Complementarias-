@@ -149,6 +149,63 @@
                 </button>
               </div>
             </div>
+
+            <!-- Bloque 3: Parámetros Académicos, Alertas y Nube -->
+            <div class="card config-card-premium">
+              <div class="card-header-premium">
+                <span class="material-symbols-outlined header-icon">cloud_sync</span>
+                <div>
+                  <h3>Parámetros de Proceso y Nube</h3>
+                  <p>Establezca límites, seguimientos mínimos obligatorios y el proveedor de la nube.</p>
+                </div>
+              </div>
+
+              <div class="card-body-premium">
+                <div class="form-group-premium mb-4">
+                  <label class="label-premium">Proveedor de Almacenamiento Activo</label>
+                  <select v-model="formAlertas.cloudStorageProvider" class="input-premium select-premium">
+                    <option value="GOOGLE_DRIVE">Google Drive</option>
+                    <option value="ONEDRIVE">Microsoft OneDrive</option>
+                  </select>
+                  <small class="help-text">Define dónde se creará automáticamente la estructura de carpetas de los aprendices.</small>
+                </div>
+
+                <div class="form-group-premium mb-4">
+                  <label class="label-premium">Número máximo de Bitácoras</label>
+                  <div class="input-with-suffix">
+                    <input type="number" min="1" v-model="formAlertas.maxBitacoras" class="input-premium" />
+                    <span class="suffix-text">Bitácoras</span>
+                  </div>
+                  <small class="help-text">Cantidad máxima de reportes semanales permitidos por aprendiz (defecto 13).</small>
+                </div>
+
+                <div class="form-group-premium mb-4">
+                  <label class="label-premium">Visitas de Seguimiento Obligatorias</label>
+                  <div class="input-with-suffix">
+                    <input type="number" min="1" v-model="formAlertas.seguimientosObligatorios" class="input-premium" />
+                    <span class="suffix-text">Visitas</span>
+                  </div>
+                  <small class="help-text">Cantidad de visitas requeridas realizadas con éxito para certificar (defecto 3).</small>
+                </div>
+
+                <div class="form-group-premium mb-4">
+                  <label class="label-premium">Días de anticipación para Alertas de Visita</label>
+                  <div class="input-with-suffix">
+                    <input type="number" min="1" v-model="formAlertas.diasAnticipacion" class="input-premium" />
+                    <span class="suffix-text">Días</span>
+                  </div>
+                  <small class="help-text">Días previos para notificar al instructor sobre seguimientos programados (defecto 5).</small>
+                </div>
+              </div>
+
+              <div class="card-footer-premium text-right">
+                <button class="btn btn-primary-sena" @click="saveAlertasConfig" :disabled="isSavingAlertas">
+                  <span v-if="!isSavingAlertas">Guardar Parámetros Académicos</span>
+                  <div v-else class="spin-mini"></div>
+                </button>
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -201,6 +258,15 @@ const formActividades = ref({
   VINCULACION_LABORAL: 880
 });
 
+// Formulario de parámetros académicos, alertas y almacenamiento (RF-ADM-10 y RF-ADM-11)
+const isSavingAlertas = ref(false);
+const formAlertas = ref({
+  cloudStorageProvider: 'GOOGLE_DRIVE',
+  maxBitacoras: 13,
+  seguimientosObligatorios: 3,
+  diasAnticipacion: 5
+});
+
 const loadConfiguraciones = async () => {
   try {
     isLoading.value = true;
@@ -228,6 +294,20 @@ const loadConfiguraciones = async () => {
         ...horasActividad.valor
       };
     }
+
+    // Mapear parámetros académicos, alertas y almacenamiento
+    const cloudProvider = configs.find(c => c.clave === 'CLOUD_STORAGE_PROVIDER');
+    if (cloudProvider) formAlertas.value.cloudStorageProvider = cloudProvider.valor;
+
+    const maxB = configs.find(c => c.clave === 'MAX_BITACORAS');
+    if (maxB) formAlertas.value.maxBitacoras = Number(maxB.valor);
+
+    const segO = configs.find(c => c.clave === 'SEGUIMIENTOS_OBLIGATORIOS');
+    if (segO) formAlertas.value.seguimientosObligatorios = Number(segO.valor);
+
+    const diasA = configs.find(c => c.clave === 'DIAS_ANTICIPACION_ALERTA_SEGUIMIENTO');
+    if (diasA) formAlertas.value.diasAnticipacion = Number(diasA.valor);
+
   } catch (err) {
     console.error('Error al cargar configuraciones:', err);
     showAlert('Error al cargar las configuraciones del sistema.', 'danger');
@@ -296,6 +376,43 @@ const saveHorasActividad = async () => {
     showAlert('No se pudieron guardar las horas requeridas por actividad.', 'danger');
   } finally {
     isSavingActividades.value = false;
+  }
+};
+
+const saveAlertasConfig = async () => {
+  try {
+    isSavingAlertas.value = true;
+    
+    await http.post('/system-config', {
+      clave: 'CLOUD_STORAGE_PROVIDER',
+      valor: formAlertas.value.cloudStorageProvider,
+      descripcion: 'Proveedor de almacenamiento en la nube activo (GOOGLE_DRIVE o ONEDRIVE).'
+    });
+
+    await http.post('/system-config', {
+      clave: 'MAX_BITACORAS',
+      valor: Number(formAlertas.value.maxBitacoras),
+      descripcion: 'Número máximo de bitácoras permitidas por Etapa Productiva.'
+    });
+
+    await http.post('/system-config', {
+      clave: 'SEGUIMIENTOS_OBLIGATORIOS',
+      valor: Number(formAlertas.value.seguimientosObligatorios),
+      descripcion: 'Cantidad de visitas de seguimiento obligatorias para finalización.'
+    });
+
+    await http.post('/system-config', {
+      clave: 'DIAS_ANTICIPACION_ALERTA_SEGUIMIENTO',
+      valor: Number(formAlertas.value.diasAnticipacion),
+      descripcion: 'Días de anticipación para notificar seguimientos programados.'
+    });
+
+    showAlert('Parámetros académicos, de alertas y almacenamiento actualizados correctamente.');
+  } catch (err) {
+    console.error('Error al guardar configuración de alertas/almacenamiento:', err);
+    showAlert('No se pudieron actualizar los parámetros académicos y de almacenamiento.', 'danger');
+  } finally {
+    isSavingAlertas.value = false;
   }
 };
 
@@ -462,6 +579,15 @@ onMounted(() => {
   font-size: 1.25rem;
   color: currentColor;
   cursor: pointer;
+}
+
+.select-premium {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 24px;
+  padding-right: 48px;
 }
 
 @keyframes slideIn {

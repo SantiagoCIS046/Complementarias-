@@ -241,6 +241,26 @@ async function runSeed() {
           VINCULACION_LABORAL: 880
         },
         descripcion: 'Horas de etapa productiva requeridas por modalidad de actividad.'
+      },
+      {
+        clave: 'CLOUD_STORAGE_PROVIDER',
+        valor: 'GOOGLE_DRIVE',
+        descripcion: 'Proveedor de almacenamiento en la nube activo (GOOGLE_DRIVE o ONEDRIVE).'
+      },
+      {
+        clave: 'MAX_BITACORAS',
+        valor: 13,
+        descripcion: 'Número máximo de bitácoras semanales permitidas por Etapa Productiva.'
+      },
+      {
+        clave: 'SEGUIMIENTOS_OBLIGATORIOS',
+        valor: 3,
+        descripcion: 'Cantidad mínima de visitas de seguimiento realizadas obligatorias para finalizar.'
+      },
+      {
+        clave: 'DIAS_ANTICIPACION_ALERTA_SEGUIMIENTO',
+        valor: 5,
+        descripcion: 'Días de anticipación para notificar al instructor sobre seguimientos programados.'
       }
     ]);
     console.log('✅ Configuraciones del sistema creadas.');

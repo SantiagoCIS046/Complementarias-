@@ -8,6 +8,7 @@ const cron = require('node-cron');
 const Tracking = require('../../modules/trackings-dev3/tracking.model');
 const Notification = require('../../modules/system-config-dev1/Notification.model');
 const User = require('../../modules/users-dev1/user.model');
+const SystemConfig = require('../../modules/system-config-dev1/system-config.model');
 const { sendEmail } = require('./mailer');
 
 /**
@@ -18,23 +19,33 @@ const ejecutarEscaneoAlertas = async () => {
   console.log('🔔 [CRON] Ejecutando escaneo de alertas de seguimiento...');
 
   try {
-    // Calcular el rango de "exactamente 5 días en el futuro"
+    let diasAnticipacion = 5;
+    try {
+      const config = await SystemConfig.findOne({ clave: 'DIAS_ANTICIPACION_ALERTA_SEGUIMIENTO' });
+      if (config && typeof config.valor === 'number') {
+        diasAnticipacion = config.valor;
+      }
+    } catch (err) {
+      console.error('Error fetching DIAS_ANTICIPACION_ALERTA_SEGUIMIENTO config:', err);
+    }
+
+    // Calcular el rango de días en el futuro
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    const dentroDe5Dias = new Date(hoy);
-    dentroDe5Dias.setDate(dentroDe5Dias.getDate() + 5);
+    const dentroDeNDias = new Date(hoy);
+    dentroDeNDias.setDate(dentroDeNDias.getDate() + diasAnticipacion);
 
-    const finDel5toDia = new Date(dentroDe5Dias);
-    finDel5toDia.setHours(23, 59, 59, 999);
+    const finDelNDia = new Date(dentroDeNDias);
+    finDelNDia.setHours(23, 59, 59, 999);
 
-    // Buscar trackings programados para dentro de 5 días que NO hayan sido alertados
+    // Buscar trackings programados para ese día que NO hayan sido alertados
     const trackingsPendientes = await Tracking.find({
       estadoVisita: 'PROGRAMADO',
       alertaEnviada: false,
       fechaVisita: {
-        $gte: dentroDe5Dias,
-        $lte: finDel5toDia,
+        $gte: dentroDeNDias,
+        $lte: finDelNDia,
       },
     })
       .populate('instructorId', 'name email')
@@ -83,7 +94,7 @@ const ejecutarEscaneoAlertas = async () => {
               Estimado(a) <strong>${instructor.name}</strong>,
             </p>
             <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-              Le recordamos que tiene un <strong>seguimiento programado</strong> en los próximos 5 días:
+              Le recordamos que tiene un <strong>seguimiento programado</strong> en los próximos ${diasAnticipacion} días:
             </p>
             <div style="background: #f0fdf4; border-left: 4px solid #1b5e20; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
               <table style="width: 100%; font-size: 0.9rem; color: #334155;">

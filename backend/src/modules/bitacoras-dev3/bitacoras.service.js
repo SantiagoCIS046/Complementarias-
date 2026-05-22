@@ -20,6 +20,22 @@ const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportad
     throw new Error('Solo se pueden registrar bitacoras cuando la EP esta EN_CURSO. Estado actual: ' + stage.estado);
   }
 
+  const SystemConfig = require('../system-config-dev1/system-config.model');
+  let maxBitacoras = 13;
+  try {
+    const config = await SystemConfig.findOne({ clave: 'MAX_BITACORAS' });
+    if (config && typeof config.valor === 'number') {
+      maxBitacoras = config.valor;
+    }
+  } catch (err) {
+    console.error('Error fetching MAX_BITACORAS config:', err);
+  }
+
+  const count = await Bitacora.countDocuments({ stageId });
+  if (count >= maxBitacoras) {
+    throw new Error(`Se ha alcanzado el número máximo permitido de bitácoras (${maxBitacoras}).`);
+  }
+
   const bitacora = await Bitacora.create({
     stageId,
     apprenticeId,

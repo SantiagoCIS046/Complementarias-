@@ -65,17 +65,44 @@ const ejecutarTransicion = async (stage, nuevoEstado, userId, motivo = '') => {
     realizadoPor:   userId,
   });
 
+  // Si pasa a FINALIZADO, registrar fecha de fin
+  if (nuevoEstado === 'FINALIZADO') {
+    const Tracking = require('../trackings-dev3/tracking.model');
+    const SystemConfig = require('../system-config-dev1/system-config.model');
+    
+    let seguimientosObligatorios = 3;
+    try {
+      const config = await SystemConfig.findOne({ clave: 'SEGUIMIENTOS_OBLIGATORIOS' });
+      if (config && typeof config.valor === 'number') {
+        seguimientosObligatorios = config.valor;
+      }
+    } catch (err) {
+      console.error('Error fetching SEGUIMIENTOS_OBLIGATORIOS:', err);
+    }
+    
+    // Contar visitas realizadas
+    const completedTrackings = await Tracking.countDocuments({
+      stageId: stage._id,
+      estadoVisita: 'REALIZADO'
+    });
+    
+    if (completedTrackings < seguimientosObligatorios) {
+      throw new Error(
+        `No se puede finalizar la Etapa Productiva. Se requieren al menos ${seguimientosObligatorios} visitas de seguimiento con estado REALIZADO (actualmente: ${completedTrackings}).`
+      );
+    }
+
+    if (!stage.fechaFin) {
+      stage.fechaFin = new Date();
+    }
+  }
+
   // Actualizar el estado
   stage.estado = nuevoEstado;
 
   // Si pasa a EN_CURSO, registrar fecha de inicio
   if (nuevoEstado === 'EN_CURSO' && !stage.fechaInicio) {
     stage.fechaInicio = new Date();
-  }
-
-  // Si pasa a FINALIZADO, registrar fecha de fin
-  if (nuevoEstado === 'FINALIZADO' && !stage.fechaFin) {
-    stage.fechaFin = new Date();
   }
 
   await stage.save();

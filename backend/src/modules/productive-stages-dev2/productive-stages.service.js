@@ -16,7 +16,7 @@ const {
   generarResumenCronograma,
 } = require('./scheduleCalculator');
 const { DOCUMENTOS_REGISTRO_OBLIGATORIOS, DOCUMENTOS_CERTIFICACION_OBLIGATORIOS, ESTADO_EP, JORNADA } = require('../../core/utils/enums');
-const driveService = require('../documents-dev2/drive.service');
+const driveService = require('../documents-dev2/storage.service');
 
 /**
  * Registrar una nueva Etapa Productiva.

@@ -104,10 +104,52 @@ const getFichasSummary = async () => {
   return results;
 };
 
+/**
+ * Reasignar aprendices de un instructor saliente a uno nuevo.
+ * También actualiza las fichas (Batches) y los trackings programados/pendientes.
+ */
+const reassignApprentices = async (outgoingId, newInstructorId) => {
+  // 1. Validar nuevo instructor
+  const newInstructor = await User.findById(newInstructorId);
+  if (!newInstructor || newInstructor.role !== 'INSTRUCTOR') {
+    throw new Error('El instructor de destino seleccionado no es válido.');
+  }
+
+  // 2. Reasignar en modelo User (Aprendices)
+  const apprenticesResult = await User.updateMany(
+    { instructorAsignado: outgoingId, role: 'APRENDIZ' },
+    { instructorAsignado: newInstructorId }
+  );
+
+  // 3. Reasignar en modelo Batch (Fichas)
+  const Batch = require('../batches-dev1/batch.model');
+  const batchesResult = await Batch.updateMany(
+    { 'instructor_asignado.instructor_id': outgoingId },
+    { 
+      'instructor_asignado.instructor_id': newInstructorId,
+      'instructor_asignado.nombre': newInstructor.name
+    }
+  );
+
+  // 4. Reasignar en modelo Tracking (Seguimientos programados o pendientes)
+  const Tracking = require('../trackings-dev3/tracking.model');
+  const trackingsResult = await Tracking.updateMany(
+    { instructorId: outgoingId, estadoVisita: { $in: ['PROGRAMADO', 'PENDIENTE'] } },
+    { instructorId: newInstructorId }
+  );
+
+  return {
+    apprenticesReassigned: apprenticesResult.modifiedCount || apprenticesResult.nModified || 0,
+    batchesReassigned: batchesResult.modifiedCount || batchesResult.nModified || 0,
+    trackingsReassigned: trackingsResult.modifiedCount || trackingsResult.nModified || 0,
+  };
+};
+
 module.exports = {
   getAll,
   getById,
   actualizar,
   toggleStatus,
   getFichasSummary,
+  reassignApprentices,
 };

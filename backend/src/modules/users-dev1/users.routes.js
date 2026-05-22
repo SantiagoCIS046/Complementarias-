@@ -19,6 +19,7 @@ router.use(verifyToken);
 router.get('/fichas/stats', checkRole(['ADMIN', 'INSTRUCTOR']), controller.getFichasSummary);
 router.get('/',             checkRole(['ADMIN', 'INSTRUCTOR']), controller.getAll);
 router.patch('/:id/toggle-status', checkRole(['ADMIN']),        controller.toggleStatus);
+router.post('/:id/reassign',       checkRole(['ADMIN']),        controller.reassignApprentices);
 
 // Rutas accesibles por cualquier usuario autenticado (ver/editar su propio perfil)
 router.get('/:id',  controller.getById);

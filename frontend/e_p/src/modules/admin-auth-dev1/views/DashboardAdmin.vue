@@ -414,9 +414,13 @@
             <label class="field-label">Nuevo Instructor Responsable</label>
             <select v-model="newInstructorId" class="select-premium">
               <option value="">Seleccione un instructor...</option>
-              <option value="1">Ana García (Sistemas)</option>
-              <option value="2">Carlos Rodríguez (ADSO)</option>
-              <option value="3">Elena Martínez (Multimedia)</option>
+              <option 
+                v-for="inst in activeInstructors.filter(i => i._id !== selectedInstructor?._id)" 
+                :key="inst._id" 
+                :value="inst._id"
+              >
+                {{ inst.name }} ({{ inst.areaConocimiento || 'General' }})
+              </option>
             </select>
           </div>
         </div>
@@ -781,18 +785,52 @@ const formatStatus = (status, role) => {
 const showReassignModal = ref(false);
 const selectedInstructor = ref(null);
 const newInstructorId = ref('');
+const activeInstructors = ref([]);
+
+const fetchActiveInstructors = async () => {
+  try {
+    const res = await usersService.getAll({ role: 'INSTRUCTOR', status: 'ACTIVO' });
+    activeInstructors.value = res.data.users || [];
+  } catch (err) {
+    console.error('Error fetching instructors:', err);
+  }
+};
 
 const openReassignModal = (user) => {
   selectedInstructor.value = user;
+  fetchActiveInstructors();
   showReassignModal.value = true;
 };
 
-const handleReassign = () => {
-  uiStore.startLoading(3000);
-  setTimeout(() => {
+const handleReassign = async () => {
+  if (!selectedInstructor.value || !newInstructorId.value) return;
+
+  uiStore.showLoader();
+  try {
+    const res = await usersService.reassign(selectedInstructor.value._id, newInstructorId.value);
     showReassignModal.value = false;
-    alertBox.value = { show: true, message: '¡Migración completada con éxito!', type: 'success' };
-  }, 3000);
+    alertBox.value = { 
+      show: true, 
+      message: `¡Migración completada con éxito! ${res.data.message}`, 
+      type: 'success' 
+    };
+    newInstructorId.value = '';
+    // Actualizar lista y estadísticas
+    fetchUsers();
+    fetchStats();
+  } catch (err) {
+    console.error('Error reassigning apprentices:', err);
+    alertBox.value = { 
+      show: true, 
+      message: 'Error al reasignar: ' + (err.response?.data?.message || err.message), 
+      type: 'danger' 
+    };
+  } finally {
+    uiStore.hideLoader();
+    setTimeout(() => {
+      if (alertBox.value) alertBox.value.show = false;
+    }, 6000);
+  }
 };
 
 // Alert state (Bootstrap style)
@@ -875,6 +913,7 @@ const fetchStats = async () => {
 onMounted(() => {
   fetchUsers();
   fetchStats();
+  fetchActiveInstructors();
 });
 
 // ── Filtros & Paginación ─────────────────────────────

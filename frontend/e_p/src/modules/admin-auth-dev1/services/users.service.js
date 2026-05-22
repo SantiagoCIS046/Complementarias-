@@ -35,5 +35,12 @@ export const usersService = {
         return http.post('/users/import', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         })
-    }
+    },
+
+    /**
+     * Reasignar aprendices de un instructor a otro
+     * @param {string} id - ID del instructor saliente
+     * @param {string} newInstructorId - ID del nuevo instructor
+     */
+    reassign: (id, newInstructorId) => http.post(`/users/${id}/reassign`, { newInstructorId })
 }

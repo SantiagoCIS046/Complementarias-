@@ -114,10 +114,48 @@ const getFichasSummary = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/users/:id/reassign
+ */
+const reassignApprentices = async (req, res) => {
+  try {
+    const outgoingId = req.params.id;
+    const { newInstructorId } = req.body;
+
+    if (!newInstructorId) {
+      return res.status(400).json({
+        success: false,
+        message: 'El nuevo instructor es requerido para la migración.'
+      });
+    }
+
+    const result = await service.reassignApprentices(outgoingId, newInstructorId);
+
+    // Registrar en auditoría
+    await registrarAuditoria({
+      action: 'REASSIGN_INSTRUCTOR',
+      userId: req.user._id,
+      details: `Reasignados aprendices y fichas del instructor ${outgoingId} al nuevo instructor ${newInstructorId}. Totales: Aprendices: ${result.apprenticesReassigned}, Fichas: ${result.batchesReassigned}, Trackings: ${result.trackingsReassigned}`
+    });
+
+    res.json({
+      success: true,
+      message: 'Migración y reasignación de instructor completada con éxito.',
+      data: result
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   getAll,
   getById,
   actualizar,
   toggleStatus,
   getFichasSummary,
+  reassignApprentices,
 };

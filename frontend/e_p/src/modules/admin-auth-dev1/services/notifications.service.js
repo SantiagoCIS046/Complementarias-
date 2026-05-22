@@ -1,7 +1,7 @@
 // notifications.service.js — Servicio de notificaciones para el frontend
 import axios from 'axios';
 
-const API = 'http://localhost:3000/api';
+const API = import.meta.env.VITE_API_URL;
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('repfora_token');

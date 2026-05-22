@@ -11,28 +11,11 @@ const ProductiveStage = require('../src/modules/productive-stages-dev2/productiv
 const Document        = require('../src/modules/documents-dev2/document.model');
 
 // Mockear los métodos de Mongoose
-vi.mock('../src/modules/users-dev1/user.model', () => ({
-  findById: vi.fn(),
-  findOne: vi.fn(),
-  create: vi.fn(),
-}));
-
-vi.mock('../src/modules/companies-dev2/company.model', () => ({
-  findById: vi.fn(),
-  findOne: vi.fn(),
-  create: vi.fn(),
-}));
-
-vi.mock('../src/modules/productive-stages-dev2/productive-stage.model', () => ({
-  create: vi.fn(),
-  findOne: vi.fn(),
-  findById: vi.fn(),
-}));
-
-vi.mock('../src/modules/documents-dev2/document.model', () => ({
-  create: vi.fn(),
-  findOne: vi.fn(),
-}));
+vi.spyOn(Company, 'findById');
+vi.spyOn(User, 'findById');
+vi.spyOn(ProductiveStage, 'findOne');
+vi.spyOn(ProductiveStage, 'create');
+vi.spyOn(Document, 'create');
 
 // Mock de Drive
 vi.mock('../src/modules/documents-dev2/drive.service', () => ({
@@ -73,17 +56,38 @@ describe('Integración DEV 1 (Usuarios) + DEV 2 (Etapas Productivas)', () => {
       activa: true,
     };
 
+    const makeChainableMock = (val) => {
+      const query = {
+        sort: vi.fn().mockImplementation(() => query),
+        select: vi.fn().mockImplementation(() => query),
+        populate: vi.fn().mockImplementation(() => query),
+        lean: vi.fn().mockImplementation(() => query),
+        then: (resolve) => resolve(val)
+      };
+      return query;
+    };
+
     // Configurar retornos
-    Company.findById.mockResolvedValue(mockCompany);
-    User.findById.mockResolvedValue(mockUser);
-    ProductiveStage.findOne.mockResolvedValue(null);
+    Company.findById.mockImplementation(() => makeChainableMock(mockCompany));
+    User.findById.mockImplementation(() => makeChainableMock(mockUser));
+    ProductiveStage.findOne.mockImplementation(() => makeChainableMock(null));
     
-    ProductiveStage.create.mockImplementation((data) => ({
-      ...data,
-      _id: new mongoose.Types.ObjectId(),
-      save: vi.fn().mockResolvedValue(this),
-      historialEstados: data.historialEstados || []
-    }));
+    ProductiveStage.create.mockImplementation(async (data) => {
+      const doc = {
+        ...data,
+        _id: new mongoose.Types.ObjectId(),
+        historialEstados: data.historialEstados || []
+      };
+      doc.save = vi.fn().mockResolvedValue(doc);
+      return doc;
+    });
+
+    Document.create.mockImplementation(async (data) => {
+      return {
+        ...data,
+        _id: new mongoose.Types.ObjectId()
+      };
+    });
 
     const epData = {
       aprendiz: mockUser,

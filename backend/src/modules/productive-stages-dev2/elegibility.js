@@ -57,19 +57,25 @@ const verificarElegibilidad = async (aprendiz) => {
       };
     }
 
-    if (diffDias > PLAZO_MAXIMO_DIAS) {
+    // Límite de transición normativa: 5 de Noviembre de 2024 (Acuerdo 009 de 2024)
+    const fechaLimiteNuevaNorma = new Date('2024-11-05T00:00:00');
+    const esPostNoviembre2024 = fechaFinLectiva >= fechaLimiteNuevaNorma;
+    const plazoMaximoDias = esPostNoviembre2024 ? 30 : 730; // 30 días para post-nov 2024, 2 años (730 días) para pre-nov 2024
+
+    if (diffDias > plazoMaximoDias) {
+      const normaLabel = esPostNoviembre2024 ? 'Nueva norma (Post Noviembre 2024: 30 días)' : 'Norma anterior (Pre Noviembre 2024: 2 años / 730 días)';
       return {
         elegible: false,
         mensaje: `Han pasado ${diffDias} días desde la finalización de tu etapa lectiva. ` +
-                 `El plazo máximo es de ${PLAZO_MAXIMO_DIAS} días. Contacta a coordinación.`,
-        diasExcedidos: diffDias - PLAZO_MAXIMO_DIAS,
+                 `Bajo la reglamentación aplicable (${normaLabel}), el plazo máximo es de ${esPostNoviembre2024 ? '30 días' : '2 años (730 días)'}. Contacta a coordinación.`,
+        diasExcedidos: diffDias - plazoMaximoDias,
       };
     }
 
     return {
       elegible: true,
-      mensaje: `Eres elegible para registrar tu EP. Te quedan ${PLAZO_MAXIMO_DIAS - diffDias} días.`,
-      diasRestantes: PLAZO_MAXIMO_DIAS - diffDias,
+      mensaje: `Eres elegible para registrar tu EP. Te quedan ${plazoMaximoDias - diffDias} días de plazo reglamentario.`,
+      diasRestantes: plazoMaximoDias - diffDias,
     };
   }
 
@@ -82,5 +88,4 @@ const verificarElegibilidad = async (aprendiz) => {
 
 module.exports = {
   verificarElegibilidad,
-  PLAZO_MAXIMO_DIAS,
 };

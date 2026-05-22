@@ -360,3 +360,50 @@ describe('Radicado - Formato esperado', () => {
     expect(regex.test('RAD-2026-001')).toBe(false);
   });
 });
+
+// --- 6. Elegibilidad Temporal - RF-ADM-08 ---
+const { verificarElegibilidad } = require('../src/modules/productive-stages-dev2/elegibility');
+const ProductiveStageModel = require('../src/modules/productive-stages-dev2/productive-stage.model');
+
+describe('Elegibilidad Temporal - RF-ADM-08', () => {
+  beforeEach(() => {
+    vi.spyOn(ProductiveStageModel, 'findOne').mockResolvedValue(null);
+  });
+
+  it('Pre-Noviembre 2024: Debe ser elegible si está dentro de los 2 años (730 días)', async () => {
+    const mockAprendiz = {
+      role: 'APRENDIZ',
+      fechaFinLectiva: new Date('2024-05-01') // Pre Nov 2024
+    };
+    const result = await verificarElegibilidad(mockAprendiz);
+    // Nota: Como hoy es 2026-05-22, pasaron 751 días desde 2024-05-01, superando los 730 días.
+    // Probemos con una fecha pre-noviembre 2024 que esté dentro de los 730 días respecto a hoy (2026-05-22),
+    // por ejemplo: 2024-10-01 (hace ~600 días).
+    const mockAprendizValido = {
+      role: 'APRENDIZ',
+      fechaFinLectiva: new Date('2024-10-01')
+    };
+    const resultValido = await verificarElegibilidad(mockAprendizValido);
+    expect(resultValido.elegible).toBe(true);
+    expect(resultValido.mensaje).toContain('plazo reglamentario');
+
+    // Y debe fallar si supera los 2 años
+    const mockAprendizInvalido = {
+      role: 'APRENDIZ',
+      fechaFinLectiva: new Date('2023-01-01')
+    };
+    const resultInvalido = await verificarElegibilidad(mockAprendizInvalido);
+    expect(resultInvalido.elegible).toBe(false);
+    expect(resultInvalido.mensaje).toContain('Norma anterior');
+  });
+
+  it('Post-Noviembre 2024: Debe fallar si supera los 30 días', async () => {
+    const mockAprendiz = {
+      role: 'APRENDIZ',
+      fechaFinLectiva: new Date('2024-11-10') // Post Nov 2024
+    };
+    const result = await verificarElegibilidad(mockAprendiz);
+    expect(result.elegible).toBe(false);
+    expect(result.mensaje).toContain('Nueva norma');
+  });
+});

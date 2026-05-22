@@ -13,7 +13,7 @@ module.exports = {
 
   // --- Autenticacion (DEV 1) ---
   JWT_SECRET:     process.env.JWT_SECRET,
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '8h',
+  JWT_EXPIRES_IN: (process.env.JWT_EXPIRES_IN || '8h').trim(),
 
   // --- Correo / SMTP (DEV 1 - Recuperacion de contrasena) ---
   SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',

@@ -151,6 +151,40 @@ const reassignApprentices = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/users/import
+ */
+const importExcel = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se subió ningún archivo Excel.'
+      });
+    }
+
+    const data = await service.importExcel(req.file.buffer);
+
+    // Registrar en auditoría
+    await registrarAuditoria({
+      action: 'IMPORT_USERS',
+      userId: req.user._id,
+      details: `Importados aprendices masivamente. Creados: ${data.creados}, Errores/Ignorados: ${data.errores.length}`
+    });
+
+    res.json({
+      success: true,
+      message: 'Proceso de importación masiva finalizado.',
+      data
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   getAll,
   getById,
@@ -158,4 +192,5 @@ module.exports = {
   toggleStatus,
   getFichasSummary,
   reassignApprentices,
+  importExcel,
 };

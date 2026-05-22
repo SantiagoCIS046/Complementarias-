@@ -9,6 +9,8 @@ const controller = require('./users.controller');
 const { verifyToken } = require('../../core/middlewares/auth.middleware');
 const { checkRole }   = require('../../core/middlewares/roles.middleware');
 
+const upload = multer({ storage: multer.memoryStorage() });
+
 // Todas las rutas requieren token válido
 router.use(verifyToken);
 
@@ -16,6 +18,7 @@ router.use(verifyToken);
 // para que Express no capture "fichas" como parámetro :id
 
 // Rutas restringidas a ADMIN e INSTRUCTOR
+router.post('/import',      checkRole(['ADMIN']), upload.single('file'), controller.importExcel);
 router.get('/fichas/stats', checkRole(['ADMIN', 'INSTRUCTOR']), controller.getFichasSummary);
 router.get('/',             checkRole(['ADMIN', 'INSTRUCTOR']), controller.getAll);
 router.patch('/:id/toggle-status', checkRole(['ADMIN']),        controller.toggleStatus);

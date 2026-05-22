@@ -145,6 +145,99 @@ const reassignApprentices = async (outgoingId, newInstructorId) => {
   };
 };
 
+/**
+ * Importar aprendices desde archivo de Excel (.xlsx, .xls)
+ * @param {Buffer} fileBuffer 
+ */
+const importExcel = async (fileBuffer) => {
+  const xlsx = require('xlsx');
+  const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const rows = xlsx.utils.sheet_to_json(sheet);
+
+  let creados = 0;
+  const errores = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    
+    // Mapear campos de forma flexible
+    const name = row['Nombre'] || row['Nombre Completo'] || row['Nombres'] || row['name'] || row['Name'];
+    const email = row['Email'] || row['Correo'] || row['Correo Electrónico'] || row['email'] || row['Email '];
+    let documento = row['Documento'] || row['Identificación'] || row['Identificacion'] || row['Cedula'] || row['Cédula'] || row['documento'];
+    const telefono = row['Teléfono'] || row['Telefono'] || row['Celular'] || row['telefono'] || row['tel'];
+    const ficha = row['Ficha'] || row['Código Ficha'] || row['Codigo Ficha'] || row['Ficha de Formación'] || row['ficha'];
+    const programa = row['Programa'] || row['Programa de Formación'] || row['programa'];
+
+    // Validaciones básicas de campos obligatorios
+    if (!name || !email || !documento) {
+      errores.push({
+        error: `Campos obligatorios faltantes (Nombre, Email o Documento)`,
+        fila: { name, email, documento }
+      });
+      continue;
+    }
+
+    // Convertir documento a string y limpiar espacios
+    documento = String(documento).trim();
+
+    // Validar formato de documento/longitud de contraseña
+    if (documento.length < 6) {
+      errores.push({
+        error: `El documento debe tener al menos 6 caracteres`,
+        fila: { name, email, documento }
+      });
+      continue;
+    }
+
+    try {
+      // Verificar si el email ya existe
+      const existeEmail = await User.findOne({ email: email.toLowerCase().trim() });
+      if (existeEmail) {
+        errores.push({
+          error: `El email ya está registrado`,
+          fila: { name, email, documento }
+        });
+        continue;
+      }
+
+      // Verificar si el documento ya existe
+      const existeDoc = await User.findOne({ documento });
+      if (existeDoc) {
+        errores.push({
+          error: `El documento ya está registrado`,
+          fila: { name, email, documento }
+        });
+        continue;
+      }
+
+      // Crear aprendiz
+      await User.create({
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password: documento, // Se hashea en el middleware pre-save
+        role: 'APRENDIZ',
+        documento,
+        telefono: telefono ? String(telefono).trim() : undefined,
+        ficha: ficha ? String(ficha).trim() : undefined,
+        programa: programa ? String(programa).trim() : undefined,
+        status: 'ACTIVO',
+        isFirstLogin: true
+      });
+
+      creados++;
+    } catch (err) {
+      errores.push({
+        error: err.message,
+        fila: { name, email, documento }
+      });
+    }
+  }
+
+  return { creados, errores };
+};
+
 module.exports = {
   getAll,
   getById,
@@ -152,4 +245,5 @@ module.exports = {
   toggleStatus,
   getFichasSummary,
   reassignApprentices,
+  importExcel,
 };

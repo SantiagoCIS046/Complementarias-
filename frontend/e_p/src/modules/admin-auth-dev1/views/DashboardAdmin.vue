@@ -1026,20 +1026,31 @@ const confirmAndSaveEdit = () => {
 const saveEdit = async () => {
   editModal.value.saving = true;
   try {
-    await usersService.update(editModal.value.data._id, {
+    const targetUserId = editModal.value.data._id;
+    const targetRole = editModal.value.data.role;
+    const targetStatus = editModal.value.data.status;
+    const isTerminatedStatus = ['TERMINADO_CONTRATO', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO'].includes(targetStatus?.toUpperCase());
+
+    await usersService.update(targetUserId, {
       name: editModal.value.data.name,
       email: editModal.value.data.email,
       telefono: editModal.value.data.telefono,
       areaConocimiento: editModal.value.data.areaConocimiento,
       documento: editModal.value.data.documento,
       role: editModal.value.data.role,
-      status: editModal.value.data.status,
+      status: targetStatus,
       ficha: editModal.value.data.ficha,
       programa: editModal.value.data.programa
     });
+    
+    const updatedUser = { ...editModal.value.data };
     editModal.value.show = false;
-    fetchUsers();
-    fetchStats();
+    await fetchUsers();
+    await fetchStats();
+
+    if (targetRole === 'INSTRUCTOR' && isTerminatedStatus) {
+      openReassignModal(updatedUser);
+    }
   } catch (err) {
     alert('Error al guardar: ' + (err.response?.data?.message || err.message));
   } finally {

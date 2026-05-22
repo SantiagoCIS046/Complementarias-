@@ -43,6 +43,8 @@ const isLoadingCompanies = ref(false)
 const searchCompany = ref('')
 const certData = ref(null)
 const isLoadingCert = ref(false)
+const eligibilityInfo = ref(null)
+const isCheckingEligibility = ref(false)
 
 // --- Notificaciones ---
 const notifications = ref([])
@@ -67,11 +69,20 @@ const loadData = async () => {
     isLoadingCert.value = true
     const resCert = await epService.getEstadoCertificacion('current')
     certData.value = resCert.data?.data || { estado: 'Pendiente', mensaje: 'Debes formalizar para continuar.', habilitado: false }
+
+    isCheckingEligibility.value = true
+    try {
+      const resEleg = await epService.checkElegibility()
+      eligibilityInfo.value = resEleg.data?.data || resEleg.data
+    } catch (err) {
+      eligibilityInfo.value = err.response?.data || { elegible: false, mensaje: 'Error al validar elegibilidad temporal.' }
+    }
   } catch (e) {
     console.error(e)
   } finally {
     isLoadingCompanies.value = false
     isLoadingCert.value = false
+    isCheckingEligibility.value = false
   }
 }
 
@@ -243,7 +254,38 @@ onMounted(loadData)
           <!-- SECCIÓN: REGISTRO (EP) -->
           <div v-if="activeTab === 'EP'" class="fade-in">
             <div class="page-header-text"><h1>Registro de Etapa Productiva</h1><p>Formaliza tu proceso institucional ante el SENA.</p></div>
-            <div class="stepper-box card">
+
+            <!-- Cargando elegibilidad -->
+            <div v-if="isCheckingEligibility" class="card mt-16" style="padding: 24px; text-align: center;">
+              <p style="font-weight: 600; color: #64748B; margin: 0;">Validando elegibilidad temporal en el sistema institucional...</p>
+            </div>
+
+            <!-- BANNER DE ELEGIBILIDAD (No Elegible) -->
+            <div v-else-if="eligibilityInfo && !eligibilityInfo.elegible" class="card eligibility-warning-card mt-16" style="border: 2px solid #EF4444; background: #FEF2F2; color: #991B1B; margin-bottom: 24px; border-radius: 16px; padding: 24px; display: flex; align-items: flex-start; gap: 16px;">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: #EF4444; margin-top: 2px;">gpp_maybe</span>
+              <div>
+                <h3 style="font-weight: 800; font-size: 16px; margin: 0 0 6px 0; color: #991B1B;">Registro Bloqueado por Elegibilidad Temporal</h3>
+                <p style="margin: 0; font-size: 14px; font-weight: 600; line-height: 1.5;">{{ eligibilityInfo.mensaje }}</p>
+                <div style="margin-top: 12px; font-size: 13px; font-weight: 500; color: #7F1D1D;">
+                  Comunícate con la coordinación académica o tu instructor asignado para evaluar tu situación.
+                </div>
+              </div>
+            </div>
+
+            <template v-else>
+              <!-- BANNER DE ADVERTENCIA (Elegible pero cerca del límite) -->
+              <div v-if="eligibilityInfo && eligibilityInfo.elegible && eligibilityInfo.diasRestantes !== undefined && eligibilityInfo.diasRestantes <= 10" class="card eligibility-warning-card mt-16" style="border: 2px solid #F59E0B; background: #FEF3C7; color: #92400E; margin-bottom: 24px; border-radius: 16px; padding: 24px; display: flex; align-items: flex-start; gap: 16px;">
+                <span class="material-symbols-outlined" style="font-size: 32px; color: #D97706; margin-top: 2px;">warning</span>
+                <div>
+                  <h3 style="font-weight: 800; font-size: 16px; margin: 0 0 6px 0; color: #92400E;">Plazo Próximo a Vencer</h3>
+                  <p style="margin: 0; font-size: 14px; font-weight: 600; line-height: 1.5;">{{ eligibilityInfo.mensaje }}</p>
+                  <div style="margin-top: 4px; font-size: 13px; font-weight: 500; color: #B45309;">
+                    Completa tu registro antes de que venza el plazo para evitar sanciones o deserción del programa.
+                  </div>
+                </div>
+              </div>
+
+              <div class="stepper-box card">
               <div class="stepper-line"><div class="stepper-progress" :style="{ width: ((currentStep - 1) / (totalSteps - 1)) * 100 + '%' }"></div></div>
               <div class="steps-container">
                 <div v-for="s in 3" :key="s" :class="['step-item', { active: currentStep === s, completed: currentStep > s }]">
@@ -343,7 +385,8 @@ onMounted(loadData)
                 </div>
               </div>
             </div>
-          </div>
+          </template>
+        </div>
 
           <!-- SECCIÓN: EMPRESAS -->
           <div v-if="activeTab === 'Empresas'" class="fade-in">

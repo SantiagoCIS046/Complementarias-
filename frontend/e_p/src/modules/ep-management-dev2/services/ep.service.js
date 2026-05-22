@@ -9,6 +9,7 @@ export const epService = {
   create:       (data)      => http.post('/productive-stages', data),
   update:       (id, data)  => http.put(`/productive-stages/${id}`, data),
   remove:       (id)        => http.delete(`/productive-stages/${id}`),
+  checkElegibility: ()      => http.get('/productive-stages/elegibility'),
 
   // ── Empresas ───────────────────────────────────────────────────
   getCompanies: ()          => http.get('/companies'),

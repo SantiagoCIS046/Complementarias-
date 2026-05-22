@@ -1,5 +1,5 @@
 // radicado.js 🟢 DEV 1 | Generador de Radicados Secuenciales
-const SystemConfig = require('../modules/system-config-dev1/SystemConfig.model');
+const SystemConfig = require('../../modules/system-config-dev1/system-config.model');
 
 /**
  * Genera el siguiente número de radicado consecutivo

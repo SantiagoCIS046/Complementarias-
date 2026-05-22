@@ -292,7 +292,7 @@ const configurarCronograma = async (stageId, { jornada, fechaInicio }) => {
   const fechaProyectadaFin = calcularFechaProyectadaFin(inicio, jornada);
 
   // Calcular horas requeridas
-  const horasRequeridas = calcularHorasRequeridas(jornada);
+  const horasRequeridas = await calcularHorasRequeridas(jornada, stage.modalidad);
 
   // Actualizar la EP
   stage.jornada = jornada;

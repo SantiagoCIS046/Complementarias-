@@ -28,6 +28,53 @@ const verificarElegibilidad = async (aprendiz) => {
     };
   }
 
+  // 1.5 Verificar estado de la matrícula (vigencia del aprendiz)
+  if (aprendiz.activo === false || (aprendiz.status !== undefined && aprendiz.status !== 'ACTIVO' && aprendiz.status !== 'ELEGIBLE')) {
+    return {
+      elegible: false,
+      mensaje: `Tu matrícula en el sistema no está vigente (Estado: ${aprendiz.status || 'INACTIVO'}). Para formalizar la EP, tu matrícula debe estar activa y vigente.`,
+    };
+  }
+
+  // 1.6 Verificar tiempos vigentes y estado de la ficha
+  if (aprendiz.ficha) {
+    const Batch = require('../batches-dev1/batch.model');
+    const fichaDoc = await Batch.findOne({ codigo_ficha: aprendiz.ficha });
+    if (!fichaDoc) {
+      return {
+        elegible: false,
+        mensaje: `No se encontró la Ficha de formación #${aprendiz.ficha} en el sistema.`,
+      };
+    }
+
+    if (fichaDoc.estado !== 'ACTIVA') {
+      return {
+        elegible: false,
+        mensaje: `La Ficha #${aprendiz.ficha} se encuentra en estado "${fichaDoc.estado}". Debe estar ACTIVA para registrar tu EP.`,
+      };
+    }
+
+    const hoy = new Date();
+    if (hoy < new Date(fichaDoc.fecha_inicio_ep)) {
+      return {
+        elegible: false,
+        mensaje: `La Etapa Productiva programada para la Ficha #${aprendiz.ficha} inicia el ${fichaDoc.fecha_inicio_ep.toISOString().split('T')[0]}. Aún no es válida para el registro.`,
+      };
+    }
+
+    if (hoy > new Date(fichaDoc.fecha_fin_ep)) {
+      return {
+        elegible: false,
+        mensaje: `El plazo de vigencia de la Ficha #${aprendiz.ficha} expiró el ${fichaDoc.fecha_fin_ep.toISOString().split('T')[0]}.`,
+      };
+    }
+  } else {
+    return {
+      elegible: false,
+      mensaje: 'El aprendiz no está asignado a ninguna Ficha en el sistema. Registro denegado.',
+    };
+  }
+
   // 2. Verificar que no tenga ya una EP activa
   const epActiva = await ProductiveStage.findOne({
     apprenticeId: aprendiz._id,

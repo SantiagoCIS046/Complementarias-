@@ -37,14 +37,27 @@ const calcularFechaProyectadaFin = (fechaInicio, jornada) => {
 };
 
 /**
- * Calcula las horas requeridas segun la jornada.
+ * Calcula las horas requeridas segun la jornada y la modalidad (actividad).
  * @param {string} jornada - TIEMPO_COMPLETO o MEDIO_TIEMPO
- * @returns {number} Total de horas requeridas
+ * @param {string} modalidad - Modalidad de la EP (actividad)
+ * @returns {Promise<number>} Total de horas requeridas
  */
-const calcularHorasRequeridas = (jornada) => {
-  // Ambas jornadas requieren el mismo total de horas (880h),
-  // solo cambia el tiempo para completarlas.
-  return CRONOGRAMA_CONFIG.HORAS_TOTALES_EP;
+const calcularHorasRequeridas = async (jornada, modalidad) => {
+  try {
+    const SystemConfig = require('../system-config-dev1/system-config.model');
+    const config = await SystemConfig.findOne({ clave: 'HORAS_POR_ACTIVIDAD' });
+    if (config && config.valor && config.valor[modalidad]) {
+      return Number(config.valor[modalidad]);
+    }
+  } catch (error) {
+    console.error('Error fetching HORAS_POR_ACTIVIDAD config:', error);
+  }
+
+  // Fallbacks predeterminados institucionales
+  if (modalidad === 'MONITORIA') {
+    return 440;
+  }
+  return CRONOGRAMA_CONFIG.HORAS_TOTALES_EP; // 880
 };
 
 /**

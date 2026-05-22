@@ -9,6 +9,7 @@ const User            = require('../src/modules/users-dev1/user.model');
 const Company         = require('../src/modules/companies-dev2/company.model');
 const ProductiveStage = require('../src/modules/productive-stages-dev2/productive-stage.model');
 const Document        = require('../src/modules/documents-dev2/document.model');
+const Batch           = require('../src/modules/batches-dev1/batch.model');
 
 // Mockear los métodos de Mongoose
 vi.spyOn(Company, 'findById');
@@ -16,6 +17,7 @@ vi.spyOn(User, 'findById');
 vi.spyOn(ProductiveStage, 'findOne');
 vi.spyOn(ProductiveStage, 'create');
 vi.spyOn(Document, 'create');
+vi.spyOn(Batch, 'findOne');
 
 // Mock de Drive
 vi.mock('../src/modules/documents-dev2/drive.service', () => ({
@@ -46,6 +48,9 @@ describe('Integración DEV 1 (Usuarios) + DEV 2 (Etapas Productivas)', () => {
       email: 'santiago@sena.edu.co',
       role: 'APRENDIZ',
       documento: '102030',
+      activo: true,
+      status: 'ACTIVO',
+      ficha: '2670687',
       fechaFinLectiva: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
     };
     
@@ -71,6 +76,14 @@ describe('Integración DEV 1 (Usuarios) + DEV 2 (Etapas Productivas)', () => {
     Company.findById.mockImplementation(() => makeChainableMock(mockCompany));
     User.findById.mockImplementation(() => makeChainableMock(mockUser));
     ProductiveStage.findOne.mockImplementation(() => makeChainableMock(null));
+    
+    const mockBatch = {
+      codigo_ficha: '2670687',
+      estado: 'ACTIVA',
+      fecha_inicio_ep: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      fecha_fin_ep: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000)
+    };
+    Batch.findOne.mockImplementation(() => makeChainableMock(mockBatch));
     
     ProductiveStage.create.mockImplementation(async (data) => {
       const doc = {

@@ -159,7 +159,13 @@ import {
   generarResumenCronograma,
 } from '../src/modules/productive-stages-dev2/scheduleCalculator.js';
 
+const SystemConfigModel = require('../src/modules/system-config-dev1/system-config.model.js');
+
 describe('Motor de Cronogramas - Calculadora', () => {
+  beforeEach(() => {
+    vi.spyOn(SystemConfigModel, 'findOne').mockResolvedValue(null);
+  });
+
   describe('calcularFechaProyectadaFin', () => {
     it('Tiempo Completo: debe ser 6 meses despues', () => {
       const inicio = new Date('2026-01-15T12:00:00Z');
@@ -187,9 +193,9 @@ describe('Motor de Cronogramas - Calculadora', () => {
   });
 
   describe('calcularHorasRequeridas', () => {
-    it('ambas jornadas requieren 880 horas', () => {
-      expect(calcularHorasRequeridas('TIEMPO_COMPLETO')).toBe(880);
-      expect(calcularHorasRequeridas('MEDIO_TIEMPO')).toBe(880);
+    it('ambas jornadas requieren 880 horas', async () => {
+      expect(await calcularHorasRequeridas('TIEMPO_COMPLETO')).toBe(880);
+      expect(await calcularHorasRequeridas('MEDIO_TIEMPO')).toBe(880);
     });
   });
 
@@ -364,15 +370,25 @@ describe('Radicado - Formato esperado', () => {
 // --- 6. Elegibilidad Temporal - RF-ADM-08 ---
 const { verificarElegibilidad } = require('../src/modules/productive-stages-dev2/elegibility');
 const ProductiveStageModel = require('../src/modules/productive-stages-dev2/productive-stage.model');
+const BatchModel = require('../src/modules/batches-dev1/batch.model');
 
 describe('Elegibilidad Temporal - RF-ADM-08', () => {
   beforeEach(() => {
     vi.spyOn(ProductiveStageModel, 'findOne').mockResolvedValue(null);
+    vi.spyOn(BatchModel, 'findOne').mockResolvedValue({
+      codigo_ficha: '2670687',
+      estado: 'ACTIVA',
+      fecha_inicio_ep: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      fecha_fin_ep: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000)
+    });
   });
 
   it('Pre-Noviembre 2024: Debe ser elegible si está dentro de los 2 años (730 días)', async () => {
     const mockAprendiz = {
       role: 'APRENDIZ',
+      activo: true,
+      status: 'ACTIVO',
+      ficha: '2670687',
       fechaFinLectiva: new Date('2024-05-01') // Pre Nov 2024
     };
     const result = await verificarElegibilidad(mockAprendiz);
@@ -381,6 +397,9 @@ describe('Elegibilidad Temporal - RF-ADM-08', () => {
     // por ejemplo: 2024-10-01 (hace ~600 días).
     const mockAprendizValido = {
       role: 'APRENDIZ',
+      activo: true,
+      status: 'ACTIVO',
+      ficha: '2670687',
       fechaFinLectiva: new Date('2024-10-01')
     };
     const resultValido = await verificarElegibilidad(mockAprendizValido);
@@ -390,6 +409,9 @@ describe('Elegibilidad Temporal - RF-ADM-08', () => {
     // Y debe fallar si supera los 2 años
     const mockAprendizInvalido = {
       role: 'APRENDIZ',
+      activo: true,
+      status: 'ACTIVO',
+      ficha: '2670687',
       fechaFinLectiva: new Date('2023-01-01')
     };
     const resultInvalido = await verificarElegibilidad(mockAprendizInvalido);
@@ -400,6 +422,9 @@ describe('Elegibilidad Temporal - RF-ADM-08', () => {
   it('Post-Noviembre 2024: Debe fallar si supera los 30 días', async () => {
     const mockAprendiz = {
       role: 'APRENDIZ',
+      activo: true,
+      status: 'ACTIVO',
+      ficha: '2670687',
       fechaFinLectiva: new Date('2024-11-10') // Post Nov 2024
     };
     const result = await verificarElegibilidad(mockAprendiz);

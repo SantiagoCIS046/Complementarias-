@@ -6,16 +6,27 @@ const cors = require('cors');
 const app = express();
 
 // --- Middlewares globales ---
-const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
+const allowedOrigins = [
+  'https://complementarias-seven.vercel.app', // Frontend en producción (Vercel)
+  process.env.FRONTEND_URL,                   // Variable de entorno (opcional)
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+].filter(Boolean); // Elimina valores undefined/null
+
 app.use(cors({
   origin: function (origin, callback) {
+    // Permitir peticiones sin origin (ej: Postman, apps móviles, same-origin)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`[CORS] Origen bloqueado: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 

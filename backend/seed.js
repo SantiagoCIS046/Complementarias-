@@ -11,6 +11,7 @@ const User = require('./src/modules/users-dev1/user.model');
 const Company = require('./src/modules/companies-dev2/company.model');
 const ProductiveStage = require('./src/modules/productive-stages-dev2/productive-stage.model');
 const Batch = require('./src/modules/batches-dev1/batch.model');
+const SystemConfig = require('./src/modules/system-config-dev1/system-config.model');
 
 // Usa la MISMA conexión que el backend (MongoDB Atlas)
 const MONGO_URI = process.env.MONGO_URI;
@@ -26,6 +27,7 @@ async function runSeed() {
     await Company.collection.drop().catch(e => console.log('Colección companies ya limpia o inexistente'));
     await ProductiveStage.collection.drop().catch(e => console.log('Colección productivestages ya limpia o inexistente'));
     await Batch.collection.drop().catch(e => console.log('Colección batches ya limpia o inexistente'));
+    await SystemConfig.collection.drop().catch(e => console.log('Colección systemconfigs ya limpia o inexistente'));
     console.log('🗑️  Colecciones e índices viejos limpiados.');
 
     // CONTRASEÑA EN TEXTO PLANO - el modelo real la hashea automáticamente
@@ -206,6 +208,42 @@ async function runSeed() {
     });
 
     console.log('✅ Fichas creadas y vinculadas.');
+
+    // 7. CONFIGURACIÓN DEL SISTEMA
+    await SystemConfig.create([
+      {
+        clave: 'HORAS_REVISION_BITACORAS',
+        valor: 1,
+        descripcion: 'Horas asignadas por revisión de cada bitácora.'
+      },
+      {
+        clave: 'HORAS_SEGUIMIENTO',
+        valor: 2,
+        descripcion: 'Horas asignadas por visita/seguimiento programado (defecto 2h).'
+      },
+      {
+        clave: 'HORAS_EXTRAORDINARIOS',
+        valor: 2,
+        descripcion: 'Horas asignadas por seguimientos extraordinarios o comités.'
+      },
+      {
+        clave: 'HORAS_CERTIFICACION',
+        valor: 2,
+        descripcion: 'Horas asignadas por el proceso de certificación (2h).'
+      },
+      {
+        clave: 'HORAS_POR_ACTIVIDAD',
+        valor: {
+          CONTRATO_APRENDIZAJE: 880,
+          PASANTIA: 880,
+          PROYECTO_PRODUCTIVO: 880,
+          MONITORIA: 440,
+          VINCULACION_LABORAL: 880
+        },
+        descripcion: 'Horas de etapa productiva requeridas por modalidad de actividad.'
+      }
+    ]);
+    console.log('✅ Configuraciones del sistema creadas.');
 
     console.log('\n--- ✅ SINCRONIZACIÓN EXITOSA ---');
     console.log('🔑 ADMIN:      santiagocisneros046@gmail.com / sena2024');

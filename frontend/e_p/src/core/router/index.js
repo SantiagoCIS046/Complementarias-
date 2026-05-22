@@ -64,6 +64,12 @@ const routes = [
     component: () => import('../../modules/admin-auth-dev1/views/BatchManagement.vue'),
     meta: { requiresAuth: true, roles: ['ADMIN'] },
   },
+  {
+    path: '/configuraciones',
+    name: 'SystemConfig',
+    component: () => import('../../modules/admin-auth-dev1/views/SystemConfig.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+  },
 
   // ── 🔵 DEV 2: EP Management ─────────────────────────
   {

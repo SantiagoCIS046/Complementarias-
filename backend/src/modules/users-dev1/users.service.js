@@ -5,6 +5,39 @@
 
 const User = require('./user.model');
 
+const parseExcelDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'number') {
+    return new Date((value - 25569) * 86400 * 1000);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const dmyRegex = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/;
+    const match = trimmed.match(dmyRegex);
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const year = parseInt(match[3], 10);
+      return new Date(year, month, day);
+    }
+    const ymdRegex = /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/;
+    const matchYmd = trimmed.match(ymdRegex);
+    if (matchYmd) {
+      const year = parseInt(matchYmd[1], 10);
+      const month = parseInt(matchYmd[2], 10) - 1;
+      const day = parseInt(matchYmd[3], 10);
+      return new Date(year, month, day);
+    }
+    const parsed = Date.parse(trimmed);
+    if (!isNaN(parsed)) {
+      return new Date(parsed);
+    }
+  }
+  return null;
+};
+
 /**
  * Listar todos los usuarios (con filtros opcionales).
  */
@@ -182,6 +215,8 @@ const importExcel = async (fileBuffer) => {
     const telefono = row['Teléfono'] || row['Telefono'] || row['Celular'] || row['telefono'] || row['tel'] || row['CELULAR'] || row['Contacto'];
     const ficha = row['Ficha'] || row['Código Ficha'] || row['Codigo Ficha'] || row['Ficha de Formación'] || row['ficha'] || row['Ficha de Caracterización'] || row['FICHA'] || row['Ficha Formacion'];
     const programa = row['Programa'] || row['Programa de Formación'] || row['programa'] || row['PROGRAMA'] || row['Programa Formacion'];
+    const fechaFinLectivaRaw = row['Fecha Fin Lectiva'] || row['Fecha Fin Etapa Lectiva'] || row['Fecha Vencimiento'] || row['Fecha de Vencimiento'] || row['Vencimiento'] || row['vencimiento'] || row['FECHA_FIN_LECTIVA'] || row['Fin Lectiva'];
+    const fechaFinLectiva = parseExcelDate(fechaFinLectivaRaw);
 
     // Validaciones básicas de campos obligatorios
     if (!name || !email || !documento) {
@@ -235,6 +270,7 @@ const importExcel = async (fileBuffer) => {
         telefono: telefono ? String(telefono).trim() : undefined,
         ficha: ficha ? String(ficha).trim() : undefined,
         programa: programa ? String(programa).trim() : undefined,
+        fechaFinLectiva: fechaFinLectiva || null,
         status: 'ACTIVO',
         isFirstLogin: true
       });

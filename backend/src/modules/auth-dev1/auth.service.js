@@ -13,7 +13,7 @@ const { sendEmail } = require('../../core/utils/mailer');
 /**
  * Registrar un nuevo usuario.
  */
-const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa }) => {
+const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa, fechaFinLectiva }) => {
   // Verificar que no exista el email
   const existe = await User.findOne({ email });
   if (existe) {
@@ -29,6 +29,7 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
     telefono,
     ficha,
     programa,
+    fechaFinLectiva: fechaFinLectiva || null,
   });
 
   // Generar token

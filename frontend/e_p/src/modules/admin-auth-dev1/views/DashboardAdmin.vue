@@ -255,6 +255,10 @@
             <label>Programa</label>
             <input v-model="editModal.data.programa" />
           </div>
+          <div v-if="editModal.data.role === 'APRENDIZ'" class="field-sm">
+            <label>Fin Etapa Lectiva / Vencimiento</label>
+            <input type="date" v-model="editModal.data.fechaFinLectiva" />
+          </div>
           <div class="field-sm">
             <label>Documento</label>
             <input v-model="editModal.data.documento" />
@@ -574,6 +578,12 @@
                 <input type="text" v-model="newUserForm.programa" placeholder="Ej: ADSO" class="input-premium" />
               </div>
             </div>
+            <div class="form-grid-2" style="margin-top: 16px;">
+              <div class="field-group">
+                <label class="label-premium">Fin Etapa Lectiva / Vencimiento</label>
+                <input type="date" v-model="newUserForm.fechaFinLectiva" class="input-premium" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -674,11 +684,12 @@ const newUserForm = ref({
   role: 'APRENDIZ',
   ficha: '',
   programa: '',
-  areaConocimiento: ''
+  areaConocimiento: '',
+  fechaFinLectiva: ''
 });
 
 const openAddUserModal = () => {
-  newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ', ficha: '', programa: '' };
+  newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ', ficha: '', programa: '', areaConocimiento: '', fechaFinLectiva: '' };
   showAddUserModal.value = true;
 };
 
@@ -978,6 +989,11 @@ const editModal = ref({ show: false, data: {}, saving: false });
 
 const openEditModal = (user) => {
   editModal.value.data = { ...user };
+  if (user.fechaFinLectiva) {
+    editModal.value.data.fechaFinLectiva = new Date(user.fechaFinLectiva).toISOString().split('T')[0];
+  } else {
+    editModal.value.data.fechaFinLectiva = '';
+  }
   editModal.value.show = true;
 };
 
@@ -1048,7 +1064,8 @@ const saveEdit = async () => {
       role: editModal.value.data.role,
       status: targetStatus,
       ficha: editModal.value.data.ficha,
-      programa: editModal.value.data.programa
+      programa: editModal.value.data.programa,
+      fechaFinLectiva: editModal.value.data.fechaFinLectiva || null
     });
     
     const updatedUser = { ...editModal.value.data };

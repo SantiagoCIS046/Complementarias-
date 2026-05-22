@@ -74,7 +74,7 @@
               </svg>
               Nuevo Usuario
             </button>
-            <input type="file" ref="fileInput" accept=".xlsx,.csv" style="display:none" @change="handleFileUpload" />
+            <input type="file" ref="fileInput" accept=".xlsx,.xls,.csv,.txt" style="display:none" @change="handleFileUpload" />
           </div>
         </header>
 

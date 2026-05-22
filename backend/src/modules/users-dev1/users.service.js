@@ -162,18 +162,31 @@ const importExcel = async (fileBuffer) => {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     
-    // Mapear campos de forma flexible
-    const name = row['Nombre'] || row['Nombre Completo'] || row['Nombres'] || row['name'] || row['Name'];
-    const email = row['Email'] || row['Correo'] || row['Correo Electrónico'] || row['email'] || row['Email '];
-    let documento = row['Documento'] || row['Identificación'] || row['Identificacion'] || row['Cedula'] || row['Cédula'] || row['documento'];
-    const telefono = row['Teléfono'] || row['Telefono'] || row['Celular'] || row['telefono'] || row['tel'];
-    const ficha = row['Ficha'] || row['Código Ficha'] || row['Codigo Ficha'] || row['Ficha de Formación'] || row['ficha'];
-    const programa = row['Programa'] || row['Programa de Formación'] || row['programa'];
+    // Mapear campos de forma flexible (incluyendo columnas típicas de SOFÍA Plus y formatos planos)
+    let name = row['Nombre'] || row['Nombre Completo'] || row['Nombres'] || row['name'] || row['Name'] || row['NOMBRES'] || row['Nombre Aprendiz'] || row['Nombre(s)'];
+    
+    // Si viene separado en Nombre y Apellidos (común en SOFÍA Plus)
+    if (!name) {
+      const primerNombre = row['Primer Nombre'] || row['Nombre 1'] || row['Nombres'] || '';
+      const segundoNombre = row['Segundo Nombre'] || row['Nombre 2'] || '';
+      const primerApellido = row['Primer Apellido'] || row['Apellido 1'] || row['Apellidos'] || '';
+      const segundoApellido = row['Segundo Apellido'] || row['Apellido 2'] || '';
+      const nombreCompleto = `${primerNombre} ${segundoNombre} ${primerApellido} ${segundoApellido}`.replace(/\s+/g, ' ').trim();
+      if (nombreCompleto) {
+        name = nombreCompleto;
+      }
+    }
+
+    const email = row['Email'] || row['Correo'] || row['Correo Electrónico'] || row['email'] || row['Email '] || row['CORREO'] || row['Correo Electronico'];
+    let documento = row['Documento'] || row['Identificación'] || row['Identificacion'] || row['Cedula'] || row['Cédula'] || row['documento'] || row['Número de Documento'] || row['Numero de Documento'] || row['NUMERO_DOCUMENTO'] || row['Número Documento'] || row['No. Documento'] || row['Documento Identidad'];
+    const telefono = row['Teléfono'] || row['Telefono'] || row['Celular'] || row['telefono'] || row['tel'] || row['CELULAR'] || row['Contacto'];
+    const ficha = row['Ficha'] || row['Código Ficha'] || row['Codigo Ficha'] || row['Ficha de Formación'] || row['ficha'] || row['Ficha de Caracterización'] || row['FICHA'] || row['Ficha Formacion'];
+    const programa = row['Programa'] || row['Programa de Formación'] || row['programa'] || row['PROGRAMA'] || row['Programa Formacion'];
 
     // Validaciones básicas de campos obligatorios
     if (!name || !email || !documento) {
       errores.push({
-        error: `Campos obligatorios faltantes (Nombre, Email o Documento)`,
+        error: `Campos obligatorios faltantes (Nombre: ${name ? 'Sí' : 'No'}, Email: ${email ? 'Sí' : 'No'}, Documento: ${documento ? 'Sí' : 'No'})`,
         fila: { name, email, documento }
       });
       continue;

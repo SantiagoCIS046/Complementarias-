@@ -50,13 +50,13 @@ const filters = [
       <Header title="Directorio de Empresas" />
 
       <main class="content">
-        <div class="w-full space-y-4">
+        <div class="w-full space-y-6">
           <!-- 1. Botón volver -->
           <BtnBack route="/dashboard" />
 
           <!-- 3. Barra superior: botón Crear + filtro/buscador -->
-          <div class="row items-center justify-between flex gap-6">
-            <button class="bg-green-9 text-white px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-green-10 transition-all shadow-md">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <button class="btn-create-company">
               <span class="material-symbols-outlined" style="font-size: 20px">add_circle</span>
               Crear Nueva Empresa
             </button>
@@ -70,16 +70,11 @@ const filters = [
           </div>
 
           <!-- Filters -->
-          <div class="flex items-center gap-3 q-mt-md">
+          <div class="flex flex-wrap items-center gap-3">
             <button 
               v-for="filter in filters" 
               :key="filter.label"
-              :class="[
-                'px-6 py-2 rounded-full text-xs font-bold transition-all border',
-                filter.active 
-                  ? 'bg-green-10 text-white border-green-10 shadow-sm' 
-                  : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-              ]"
+              :class="['filter-btn', { active: filter.active }]"
             >
               {{ filter.label }}
             </button>
@@ -101,21 +96,75 @@ const filters = [
 </template>
 
 <style scoped>
-/* Estilos adicionales para compatibilidad con la guía */
-.bg-green-9 { background-color: var(--color_button); }
-.bg-green-10 { background-color: #1b5e20; }
-.text-white { color: white; }
+.btn-create-company {
+  background-color: var(--color_button);
+  color: var(--color_text_button);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-create-company:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--bg-active);
+}
 
 .input-box-repfora {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 12px;
-  background: white;
-  border: 1px solid #d1d5db;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
   transition: all 0.2s;
 }
-.icon-prepend { color: var(--color_input); font-size: 20px; }
-.field-input-native { flex: 1; border: none; background: transparent; padding: 10px 0; outline: none; font-size: 0.9rem; }
+
+.icon-prepend { 
+  color: var(--color_button); 
+  font-size: 20px; 
+}
+
+.field-input-native { 
+  flex: 1; 
+  border: none; 
+  background: transparent; 
+  padding: 10px 0; 
+  outline: none; 
+  font-size: 0.9rem; 
+  color: var(--text-primary); 
+}
+
+.filter-btn {
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.filter-btn.active {
+  background-color: var(--color_button);
+  color: var(--color_text_button);
+  border-color: var(--color_button);
+  box-shadow: var(--shadow-sm);
+}
 </style>

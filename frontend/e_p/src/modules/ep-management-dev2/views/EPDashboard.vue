@@ -61,6 +61,20 @@ const aprendiz = computed(() => {
 
 const bitacoras = ref([])
 
+const checklist = computed(() => {
+  const list = []
+  for (let i = 1; i <= 12; i++) {
+    const found = bitacoras.value.find(b => b.semana === i)
+    list.push({
+      semana: i,
+      cargado: !!found,
+      bitacora: found || null,
+      estado: found ? found.estado : 'NO_CARGADO'
+    })
+  }
+  return list
+})
+
 // Funcionalidad extra: Búsqueda, Paginación, Modales
 const searchQuery = ref('')
 const currentPage = ref(1)
@@ -98,20 +112,6 @@ const editForm = ref({ id: '', semana: '', descripcion: '', horasReportadas: '' 
 
 const showCalendarModal = ref(false)
 
-// Tabs del Dashboard: 'bitacoras' | 'historial'
-const dashboardTab = ref('bitacoras')
-const logs = ref([])
-const loadingLogs = ref(false)
-
-// Modal Registro Completo
-const showFullDetailsModal = ref(false)
-const fullDetails = ref(null)
-const loadingFullDetails = ref(false)
-
-// Archivos de bitácora
-const bitacoraFile = ref(null)
-const editBitacoraFile = ref(null)
-
 // Toast
 const toastMsg = ref(null)
 const showToast = (msg, type = 'ok') => {
@@ -131,71 +131,18 @@ function openEdit(bitacora) {
     descripcion: bitacora.descripcion, 
     horasReportadas: bitacora.horasReportadas 
   }
-  editBitacoraFile.value = null
   showEditModal.value = true
-}
-
-function handleBitacoraFileChange(e) {
-  const file = e.target.files[0]
-  if (file && file.size > 5 * 1024 * 1024) {
-    showToast('El archivo es demasiado grande (máximo 5MB).', 'err')
-    e.target.value = ''
-    bitacoraFile.value = null
-    return
-  }
-  bitacoraFile.value = file
-}
-
-function handleEditBitacoraFileChange(e) {
-  const file = e.target.files[0]
-  if (file && file.size > 5 * 1024 * 1024) {
-    showToast('El archivo es demasiado grande (máximo 5MB).', 'err')
-    e.target.value = ''
-    editBitacoraFile.value = null
-    return
-  }
-  editBitacoraFile.value = file
-}
-
-async function openFullDetails() {
-  if (!stage.value) return
-  showFullDetailsModal.value = true
-  loadingFullDetails.value = true
-  try {
-    const res = await epService.getById(stage.value._id)
-    fullDetails.value = res.data?.data || res.data
-  } catch (err) {
-    showToast('Error al cargar detalles completos.', 'err')
-  } finally {
-    loadingFullDetails.value = false
-  }
-}
-
-async function loadLogs() {
-  loadingLogs.value = true
-  try {
-    const res = await epService.getMyLogs()
-    logs.value = res.data?.data || res.data || []
-  } catch (err) {
-    showToast('Error al cargar el historial.', 'err')
-  } finally {
-    loadingLogs.value = false
-  }
 }
 
 async function saveEdit() {
   try {
-    const fData = new FormData()
-    fData.append('semana', Number(editForm.value.semana))
-    fData.append('descripcion', editForm.value.descripcion)
-    fData.append('horasReportadas', Number(editForm.value.horasReportadas))
-    if (editBitacoraFile.value) {
-      fData.append('archivo', editBitacoraFile.value)
+    const data = {
+      semana: Number(editForm.value.semana),
+      descripcion: editForm.value.descripcion,
+      horasReportadas: Number(editForm.value.horasReportadas)
     }
-
-    await epService.actualizarBitacora(editForm.value.id, fData)
+    await epService.actualizarBitacora(editForm.value.id, data)
     showEditModal.value = false
-    editBitacoraFile.value = null
     showToast('Bitácora actualizada exitosamente.')
     await load()
   } catch (err) {
@@ -248,19 +195,9 @@ async function enviarRevision() {
 async function crearBitacora() {
   saving.value = true; submitError.value = null
   try {
-    const fData = new FormData()
-    fData.append('stageId', stage.value._id)
-    fData.append('semana', Number(form.value.semana))
-    fData.append('descripcion', form.value.descripcion)
-    fData.append('horasReportadas', Number(form.value.horasReportadas))
-    if (bitacoraFile.value) {
-      fData.append('archivo', bitacoraFile.value)
-    }
-
-    await epService.crearBitacora(fData)
+    await epService.crearBitacora({ stageId: stage.value._id, semana: Number(form.value.semana), descripcion: form.value.descripcion, horasReportadas: Number(form.value.horasReportadas) })
     showModal.value = false
     form.value = { semana: '', descripcion: '', horasReportadas: '' }
-    bitacoraFile.value = null
     await load()
     showToast('Bitácora registrada correctamente.')
   } catch (e) { submitError.value = e.response?.data?.message || 'Error al guardar.' }
@@ -280,28 +217,15 @@ onMounted(load)
     <div class="main-wrapper">
       <Header title="Seguimiento de Aprendiz">
         <template #actions>
-          <a href="https://sena.edu.co/es-co/Formacion/Paginas/etapa-productiva.aspx" target="_blank" class="btn-new" style="background:#10B981; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-            <span class="material-symbols-outlined">download</span> Formatos Bitácora
-          </a>
           <button v-if="puedeEnviarRevision" @click="enviarRevision" :disabled="enviando" class="btn-new" style="background:#3B82F6">{{ enviando ? 'Enviando...' : 'Enviar a Revisión' }}</button>
           <button @click="showModal = true" class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
-          <div v-if="msgRevision" :style="{ fontSize:'11px', fontWeight:'700', padding:'6px 12px', borderRadius:'8px', background: msgRevision.type==='ok'?'#F0FDF4':'#FFF1F2', color: msgRevision.type==='ok'?'#16A34A':'#E11D48' }">{{ msgRevision.text }}</div>
+          <div v-if="msgRevision" class="revision-msg-banner" :class="msgRevision.type">{{ msgRevision.text }}</div>
         </template>
       </Header>
 
       <main class="content">
-        <!-- OBSERVACIONES DEL ADMINISTRADOR (RF-APR-05) -->
-        <div v-if="stage && stage.observaciones" style="margin-bottom: 24px; padding: 20px; background: #FEF3C7; border-left: 5px solid #D97706; border-radius: 16px; font-size: 13px; color: #92400E; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-          <span class="material-symbols-outlined" style="color:#D97706; font-size: 24px;">info</span>
-          <div>
-            <h4 style="margin:0 0 4px 0; font-weight:800; font-size:14px; color:#B45309;">Observaciones del Administrador</h4>
-            <p style="margin:0; font-weight:600; line-height:1.5;">{{ stage.observaciones }}</p>
-          </div>
-        </div>
-
         <!-- SECCIÓN INFO + PROGRESO INTEGRADO -->
-        <div class="info-grid" :style="{ gridTemplateColumns: stage?.apprenticeId?.instructorAsignado ? '1fr 1fr' : '1fr' }">
-          <!-- CARD EMPRESA -->
+        <div class="info-grid">
           <div class="company-card">
             <div class="company-card-body">
               <div class="card-header">
@@ -309,13 +233,11 @@ onMounted(load)
                   <span class="label">INFORMACIÓN DE LA EMPRESA</span>
                   <span class="desc">Detalles del convenio de etapa productiva</span>
                 </div>
-                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
-                  <span v-if="!loading" class="status-badge">ESTADO: {{ aprendiz.estadoActual }}</span>
-                  <div v-else class="skel-badge"></div>
-                </div>
+                <span v-if="!loading" class="status-badge">ESTADO: {{ aprendiz.estadoActual }}</span>
+                <div v-else class="skel-badge"></div>
               </div>
               
-              <div class="company-details" v-if="!loading" style="grid-template-columns: repeat(2, 1fr);">
+              <div class="company-details" v-if="!loading">
                 <div class="detail-item">
                   <div class="icon"><span class="material-symbols-outlined">corporate_fare</span></div>
                   <div class="txt">
@@ -354,9 +276,6 @@ onMounted(load)
                   </div>
                 </div>
               </div>
-              <button v-if="stage" @click="openFullDetails" class="btn-new" style="background:#1A4D2E; font-size:11px; padding:6px 12px; margin-top:16px; box-shadow:none; display:flex; align-items:center; gap:6px;">
-                <span class="material-symbols-outlined" style="font-size:16px;">pageview</span> Ver Registro Completo
-              </button>
             </div>
 
             <!-- FOOTER DE PROGRESO INTEGRADO -->
@@ -387,178 +306,123 @@ onMounted(load)
               </template>
             </div>
           </div>
+        </div>
 
-          <!-- CARD INSTRUCTOR ASIGNADO (RF-APR-17) -->
-          <div v-if="stage?.apprenticeId?.instructorAsignado" class="company-card" style="border-top: 4px solid #1A4D2E;">
-            <div class="company-card-body" style="height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+        <!-- CHECKLIST DE ENTREGAS -->
+        <div class="checklist-container">
+          <div class="checklist-header">
+            <div class="checklist-title-group">
+              <span class="material-symbols-outlined icon-checklist">checklist</span>
               <div>
-                <div class="card-header">
-                  <div class="header-text">
-                    <span class="label">INSTRUCTOR ASIGNADO</span>
-                    <span class="desc">Instructor de seguimiento y bitácoras</span>
-                  </div>
-                  <span class="status-badge" style="background:#F0FDF4; color:#16A34A; font-weight:800; font-size:10px;">ASIGNADO</span>
-                </div>
-                
-                <div class="company-details" style="grid-template-columns: repeat(1, 1fr); gap: 12px;">
-                  <div class="detail-item">
-                    <div class="icon" style="color:#1A4D2E;"><span class="material-symbols-outlined">person</span></div>
-                    <div class="txt">
-                      <span class="key">NOMBRE</span>
-                      <span class="val">{{ stage.apprenticeId.instructorAsignado.name }}</span>
-                    </div>
-                  </div>
-                  <div class="detail-item">
-                    <div class="icon" style="color:#1A4D2E;"><span class="material-symbols-outlined">mail</span></div>
-                    <div class="txt">
-                      <span class="key">CORREO</span>
-                      <span class="val">{{ stage.apprenticeId.instructorAsignado.email }}</span>
-                    </div>
-                  </div>
-                  <div class="detail-item" v-if="stage.apprenticeId.instructorAsignado.telefono">
-                    <div class="icon" style="color:#1A4D2E;"><span class="material-symbols-outlined">call</span></div>
-                    <div class="txt">
-                      <span class="key">TELÉFONO</span>
-                      <span class="val">{{ stage.apprenticeId.instructorAsignado.telefono }}</span>
-                    </div>
-                  </div>
-                </div>
+                <h3>Estado de Mis Entregas Quincenales</h3>
+                <p class="checklist-subtitle">Estado y control de tus 12 bitácoras de Etapa Productiva</p>
               </div>
             </div>
+            <div class="checklist-summary" v-if="!loading">
+              <span class="summary-pill total">
+                Entregadas: <strong>{{ bitacoras.length }} / 12</strong>
+              </span>
+              <span class="summary-pill aprobadas">
+                Aprobadas: <strong>{{ bitacoras.filter(b => b.estado === 'APROBADA').length }}</strong>
+              </span>
+            </div>
+            <div v-else class="checklist-summary">
+              <div class="skel-badge"></div>
+            </div>
+          </div>
+          
+          <div v-if="!loading" class="checklist-grid">
+            <div 
+              v-for="item in checklist" 
+              :key="item.semana" 
+              class="checklist-card"
+              :class="[item.estado.toLowerCase(), { 'is-clickable': item.cargado }]"
+              @click="item.cargado && openView(item.bitacora)"
+              :title="item.cargado ? 'Ver detalle de Bitácora' : 'Bitácora no cargada aún'"
+            >
+              <div class="card-top">
+                <span class="week-number">Quincena {{ item.semana }}</span>
+                <span class="material-symbols-outlined status-icon">
+                  {{ 
+                    item.estado === 'APROBADA' ? 'check_circle' : 
+                    item.estado === 'PENDIENTE' ? 'schedule' : 
+                    item.estado === 'RECHAZADA' ? 'warning' : 'draft' 
+                  }}
+                </span>
+              </div>
+              <div class="card-bottom">
+                <span class="status-label">
+                  {{ 
+                    item.estado === 'APROBADA' ? 'Aprobada' : 
+                    item.estado === 'PENDIENTE' ? 'Pendiente' : 
+                    item.estado === 'RECHAZADA' ? 'Rechazada' : 'No Cargado' 
+                  }}
+                </span>
+                <span v-if="item.cargado" class="hours-count">{{ item.bitacora.horasReportadas }}h</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="checklist-grid">
+            <div v-for="i in 12" :key="i" class="checklist-card no_cargado skel-anim" style="min-height: 72px;"></div>
           </div>
         </div>
 
-        <!-- CONTENEDOR CON TABS (RF-APR-19) -->
-        <div class="table-container" style="margin-top:24px;">
-          <div style="display:flex; border-bottom:1px solid #E2E8F0; background:#F8FAFC; border-radius: 20px 20px 0 0; overflow:hidden;">
-            <button 
-              @click="dashboardTab = 'bitacoras'" 
-              :style="{ 
-                padding:'16px 24px', 
-                border:'none', 
-                background:'none', 
-                fontFamily: 'inherit',
-                fontSize:'13px', 
-                fontWeight:'800', 
-                letterSpacing:'0.5px',
-                textTransform: 'uppercase',
-                borderBottom: dashboardTab === 'bitacoras' ? '3px solid #1A4D2E' : '3px solid transparent', 
-                color: dashboardTab === 'bitacoras' ? '#1A4D2E' : '#64748B', 
-                cursor:'pointer',
-                outline: 'none'
-              }"
-            >
-              Mis Bitácoras
-            </button>
-            <button 
-              @click="dashboardTab = 'historial'; loadLogs()" 
-              :style="{ 
-                padding:'16px 24px', 
-                border:'none', 
-                background:'none', 
-                fontFamily: 'inherit',
-                fontSize:'13px', 
-                fontWeight:'800', 
-                letterSpacing:'0.5px',
-                textTransform: 'uppercase',
-                borderBottom: dashboardTab === 'historial' ? '3px solid #1A4D2E' : '3px solid transparent', 
-                color: dashboardTab === 'historial' ? '#1A4D2E' : '#64748B', 
-                cursor:'pointer',
-                outline: 'none'
-              }"
-            >
-              Historial (Timeline)
-            </button>
-          </div>
-
-          <!-- TAB 1: BITACORAS -->
-          <div v-show="dashboardTab === 'bitacoras'">
-            <div class="table-header">
-              <h3>Mis Bitácoras Quincenales</h3>
-              <div class="table-icons" style="display:flex;align-items:center;gap:12px">
-                <div style="display:flex;align-items:center;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:0 12px;height:36px">
-                  <span class="material-symbols-outlined" style="font-size:18px;color:#94A3B8">search</span>
-                  <input v-model="searchQuery" type="text" placeholder="Buscar bitácora..." style="border:none;background:transparent;outline:none;font-size:12px;color:#334155;width:150px;margin-left:8px" />
-                </div>
-                <span class="material-symbols-outlined action-btn">filter_list</span>
+        <!-- TABLA BITACORAS -->
+        <div class="table-container">
+          <div class="table-header">
+            <h3>Mis Bitácoras Quincenales</h3>
+            <div class="table-icons" style="display:flex;align-items:center;gap:12px">
+              <div class="search-bar-container">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input v-model="searchQuery" type="text" placeholder="Buscar bitácora..." class="search-bar-input" />
               </div>
-            </div>
-            <table class="bitacora-table" v-if="!loading">
-              <thead>
-                <tr>
-                  <th>NÚMERO</th>
-                  <th>DESCRIPCIÓN</th>
-                  <th class="center">HORAS REPORTADAS</th>
-                  <th class="center">ESTADO</th>
-                  <th class="right">ACCIONES</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="filteredBitacoras.length === 0">
-                  <td colspan="5" style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No tienes bitácoras que coincidan con la búsqueda.</td>
-                </tr>
-                <tr v-for="item in paginatedBitacoras" :key="item._id">
-                  <td class="bold">Semana {{ item.semana }}</td>
-                  <td class="faded">
-                    <span class="material-symbols-outlined mini">description</span> 
-                    <span style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" :title="item.descripcion">
-                      {{ item.descripcion }}
-                    </span>
-                  </td>
-                  <td class="center"><span class="hours-badge">{{ item.horasReportadas }}h</span></td>
-                  <td class="center">
-                    <span class="badge" :style="{
-                      background: item.estado === 'APROBADA' ? '#F0FDF4' : item.estado === 'RECHAZADA' ? '#FEF2F2' : '#FEF3C7',
-                      color: item.estado === 'APROBADA' ? '#16A34A' : item.estado === 'RECHAZADA' ? '#EF4444' : '#D97706',
-                      borderColor: item.estado === 'APROBADA' ? '#DCFCE7' : item.estado === 'RECHAZADA' ? '#FEE2E2' : '#FEF3C7'
-                    }">
-                      <span class="dot" :style="{ background: item.estado === 'APROBADA' ? '#16A34A' : item.estado === 'RECHAZADA' ? '#EF4444' : '#D97706' }"></span> 
-                      {{ item.estado }}
-                    </span>
-                  </td>
-                  <td class="right">
-                    <button v-if="item.estado === 'APROBADA'" @click="openView(item)" style="background:none;border:none;color:#16A34A;cursor:pointer;padding:6px;border-radius:8px" title="Ver Detalle" class="action-btn-hover">
-                      <span class="material-symbols-outlined">visibility</span>
-                    </button>
-                    <button v-else @click="openEdit(item)" style="background:none;border:none;color:#3B82F6;cursor:pointer;padding:6px;border-radius:8px" title="Editar Bitácora" class="action-btn-hover">
-                      <span class="material-symbols-outlined">edit_square</span>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-else style="padding: 24px;">
-              <SkeletonLoader variant="table" :rows="4" :columns="5" />
-            </div>
-            <div class="table-footer">
-              <span class="footer-stats">PÁGINA {{ currentPage }} DE {{ totalPages }} ({{ filteredBitacoras.length }} REGISTROS)</span>
-              <div class="pagination">
-                <button @click="prevPage" :disabled="currentPage === 1" class="pag-btn" :class="{ disabled: currentPage === 1 }">Anterior</button>
-                <button @click="nextPage" :disabled="currentPage === totalPages" class="pag-btn" :class="{ disabled: currentPage === totalPages }">Siguiente</button>
-              </div>
+              <span class="material-symbols-outlined action-btn">filter_list</span>
             </div>
           </div>
-
-          <!-- TAB 2: HISTORIAL TIMELINE (RF-APR-19) -->
-          <div v-show="dashboardTab === 'historial'" style="padding: 32px 24px;">
-            <div v-if="loadingLogs" style="text-align:center; padding:32px;">
-              <p style="color:#64748B; font-weight:600;">Cargando historial de acciones...</p>
-            </div>
-            <div v-else-if="logs.length === 0" style="text-align:center; padding:32px; color:#94A3B8;">
-              No se registran acciones en tu bitácora de auditoría.
-            </div>
-            <div v-else class="timeline-container" style="display:flex; flex-direction:column; gap:16px; position:relative; padding-left: 24px; border-left: 2px solid #E2E8F0; margin-left: 10px;">
-              <div v-for="log in logs" :key="log._id" class="timeline-item" style="position:relative; margin-bottom: 8px;">
-                <!-- Dot -->
-                <div style="position:absolute; left:-31px; top:4px; width:12px; height:12px; border-radius:50%; background:#1A4D2E; border:2px solid #FFF; box-shadow:0 0 0 2px #E2E8F0;"></div>
-                <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px 16px; border-radius:12px;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <span style="font-size:12px; font-weight:800; color:#1A4D2E; text-transform:uppercase; letter-spacing:0.5px;">{{ log.action }}</span>
-                    <span style="font-size:11px; color:#94A3B8; font-weight:600;">{{ new Date(log.createdAt).toLocaleString() }}</span>
-                  </div>
-                  <p style="font-size:12px; color:#334155; margin:0; line-height:1.4;">{{ log.details }}</p>
-                </div>
-              </div>
+          <table class="bitacora-table" v-if="!loading">
+            <thead>
+              <tr>
+                <th>NÚMERO</th>
+                <th>RANGO DE FECHAS</th>
+                <th class="center">HORAS REPORTADAS</th>
+                <th class="center">ESTADO</th>
+                <th class="right">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="filteredBitacoras.length === 0">
+                <td colspan="5" class="empty-row">No tienes bitácoras que coincidan con la búsqueda.</td>
+              </tr>
+              <tr v-for="item in paginatedBitacoras" :key="item._id">
+                <td class="bold">Semana {{ item.semana }}</td>
+                <td class="faded">
+                  <span class="material-symbols-outlined mini">calendar_today</span> <span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" :title="item.descripcion">{{ item.descripcion }}</span>
+                </td>
+                <td class="center"><span class="hours-badge">{{ item.horasReportadas }}h</span></td>
+                <td class="center">
+                  <span class="badge" :class="item.estado === 'APROBADA' ? 'success' : 'pending'">
+                    <span class="dot"></span> {{ item.estado }}
+                  </span>
+                </td>
+                <td class="right">
+                  <button v-if="item.estado === 'APROBADA'" @click="openView(item)" class="action-table-btn view" title="Ver Detalle">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+                  <button v-else @click="openEdit(item)" class="action-table-btn edit" title="Editar Bitácora">
+                    <span class="material-symbols-outlined">edit_square</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else style="padding: 24px;">
+            <SkeletonLoader variant="table" :rows="4" :columns="5" />
+          </div>
+          <div class="table-footer">
+            <span class="footer-stats">PÁGINA {{ currentPage }} DE {{ totalPages }} ({{ filteredBitacoras.length }} REGISTROS)</span>
+            <div class="pagination">
+              <button @click="prevPage" :disabled="currentPage === 1" class="pag-btn" :class="{ disabled: currentPage === 1 }">Anterior</button>
+              <button @click="nextPage" :disabled="currentPage === totalPages" class="pag-btn" :class="{ disabled: currentPage === totalPages }">Siguiente</button>
             </div>
           </div>
         </div>
@@ -577,222 +441,111 @@ onMounted(load)
       </main>
 
       <!-- ERROR -->
-      <div v-if="error && !loading" style="margin:24px;padding:16px 20px;background:#FFF1F2;border-radius:12px;color:#E11D48;font-size:13px;font-weight:600;display:flex;align-items:center;gap:12px">
+      <div v-if="error && !loading" class="error-banner">
         <span class="material-symbols-outlined">error</span> {{ error }}
-        <button @click="load" style="margin-left:auto;background:#E11D48;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Reintentar</button>
+        <button @click="load" class="error-banner-btn">Reintentar</button>
       </div>
     </div>
 
-    <!-- MODAL NUEVA BITÁCORA (RF-APR-08) -->
-    <div v-if="showModal" @click.self="showModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
-      <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15)">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #F1F5F9">
-          <h3 style="font-size:16px;font-weight:800;color:#1E293B;margin:0">Nueva Bitácora</h3>
-          <button @click="showModal = false" style="background:none;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center"><span class="material-symbols-outlined">close</span></button>
+    <!-- MODAL NUEVA BITÁCORA -->
+    <div v-if="showModal" @click.self="showModal = false" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Nueva Bitácora</h3>
+          <button @click="showModal = false" class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
         </div>
-        <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="font-size:11px;font-weight:700;color:#64748B">Número de Semana</label>
-            <input v-model="form.semana" type="number" min="1" placeholder="Ej: 1" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
+        <div class="modal-body">
+          <div class="modal-form-group">
+            <label class="modal-label">Número de Semana</label>
+            <input v-model="form.semana" type="number" min="1" placeholder="Ej: 1" class="modal-input" />
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="font-size:11px;font-weight:700;color:#64748B">Descripción de Actividades</label>
-            <textarea v-model="form.descripcion" rows="4" placeholder="Describe las actividades realizadas..." style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%;resize:vertical;font-family:inherit"></textarea>
+          <div class="modal-form-group">
+            <label class="modal-label">Descripción de Actividades</label>
+            <textarea v-model="form.descripcion" rows="4" placeholder="Describe las actividades realizadas..." class="modal-textarea"></textarea>
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="font-size:11px;font-weight:700;color:#64748B">Horas Reportadas</label>
-            <input v-model="form.horasReportadas" type="number" min="0" placeholder="Ej: 40" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
+          <div class="modal-form-group">
+            <label class="modal-label">Horas Reportadas</label>
+            <input v-model="form.horasReportadas" type="number" min="0" placeholder="Ej: 40" class="modal-input" />
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="font-size:11px;font-weight:700;color:#64748B">Archivo PDF de Bitácora (Evidencia - Máx 5MB)</label>
-            <input type="file" @change="handleBitacoraFileChange" accept=".pdf" style="border:1px solid #E2E8F0;border-radius:8px;padding:8px;font-size:13px;outline:none;width:100%;background:#F8FAFC;cursor:pointer;" />
-          </div>
-          <div v-if="submitError" style="font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;background:#FFF1F2;color:#E11D48">{{ submitError }}</div>
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
-            <button @click="showModal = false" style="background:#F1F5F9;color:#475569;border:none;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Cancelar</button>
-            <button @click="crearBitacora" :disabled="saving" class="btn-new">{{ saving ? 'Guardando...' : 'Guardar Bitácora' }}</button>
+          <div v-if="submitError" class="modal-error-banner">{{ submitError }}</div>
+          <div class="modal-footer-actions">
+            <button @click="showModal = false" class="modal-btn-cancel">Cancelar</button>
+            <button @click="crearBitacora" :disabled="saving" class="modal-btn-confirm">{{ saving ? 'Guardando...' : 'Guardar Bitácora' }}</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MODAL EDITAR BITÁCORA (RF-APR-08) -->
-    <div v-if="showEditModal" @click.self="showEditModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
-      <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15)">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #F1F5F9">
-          <h3 style="font-size:16px;font-weight:800;color:#1E293B;margin:0">Editar Bitácora</h3>
-          <button @click="showEditModal = false" style="background:none;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center"><span class="material-symbols-outlined">close</span></button>
+    <!-- MODAL EDITAR BITÁCORA -->
+    <div v-if="showEditModal" @click.self="showEditModal = false" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Editar Bitácora</h3>
+          <button @click="showEditModal = false" class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
         </div>
-        <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="font-size:11px;font-weight:700;color:#64748B">Número de Semana</label>
-            <input v-model="editForm.semana" type="number" min="1" placeholder="Ej: 1" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
+        <div class="modal-body">
+          <div class="modal-form-group">
+            <label class="modal-label">Número de Semana</label>
+            <input v-model="editForm.semana" type="number" min="1" placeholder="Ej: 1" class="modal-input" />
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="font-size:11px;font-weight:700;color:#64748B">Descripción de Actividades</label>
-            <textarea v-model="editForm.descripcion" rows="4" placeholder="Describe las actividades realizadas..." style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%;resize:vertical;font-family:inherit"></textarea>
+          <div class="modal-form-group">
+            <label class="modal-label">Descripción de Actividades</label>
+            <textarea v-model="editForm.descripcion" rows="4" placeholder="Describe las actividades realizadas..." class="modal-textarea"></textarea>
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="font-size:11px;font-weight:700;color:#64748B">Horas Reportadas</label>
-            <input v-model="editForm.horasReportadas" type="number" min="0" placeholder="Ej: 40" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
+          <div class="modal-form-group">
+            <label class="modal-label">Horas Reportadas</label>
+            <input v-model="editForm.horasReportadas" type="number" min="0" placeholder="Ej: 40" class="modal-input" />
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="font-size:11px;font-weight:700;color:#64748B">Reemplazar archivo PDF de Bitácora (Opcional - Máx 5MB)</label>
-            <input type="file" @change="handleEditBitacoraFileChange" accept=".pdf" style="border:1px solid #E2E8F0;border-radius:8px;padding:8px;font-size:13px;outline:none;width:100%;background:#F8FAFC;cursor:pointer;" />
-          </div>
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
-            <button @click="showEditModal = false" style="background:#F1F5F9;color:#475569;border:none;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Cancelar</button>
-            <button @click="saveEdit" class="btn-new">Guardar Cambios</button>
+          <div class="modal-footer-actions">
+            <button @click="showEditModal = false" class="modal-btn-cancel">Cancelar</button>
+            <button @click="saveEdit" class="modal-btn-confirm">Guardar Cambios</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MODAL VER DETALLES (RF-APR-08) -->
-    <div v-if="showViewModal && selectedBitacora" @click.self="showViewModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
-      <div style="background:#fff;border-radius:20px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden">
-        <div style="background:#F8FAFC;padding:24px;border-bottom:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:flex-start">
+    <!-- MODAL VER DETALLES -->
+    <div v-if="showViewModal && selectedBitacora" @click.self="showViewModal = false" class="modal-overlay">
+      <div class="modal-content view-details-modal">
+        <div class="modal-header-view">
           <div>
-            <span style="font-size:11px;font-weight:800;color:#16A34A;letter-spacing:1px;display:block;margin-bottom:4px">BITÁCORA {{ selectedBitacora.estado }}</span>
-            <h3 style="font-size:18px;font-weight:800;color:#1E293B;margin:0">Semana {{ selectedBitacora.semana }}</h3>
+            <span class="modal-view-badge" :class="selectedBitacora.estado.toLowerCase()">BITÁCORA {{ selectedBitacora.estado }}</span>
+            <h3 class="modal-view-title">Semana {{ selectedBitacora.semana }}</h3>
           </div>
-          <button @click="showViewModal = false" style="background:#fff;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center;padding:4px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.05)"><span class="material-symbols-outlined">close</span></button>
+          <button @click="showViewModal = false" class="modal-close-btn-view"><span class="material-symbols-outlined">close</span></button>
         </div>
-        <div style="padding:24px;display:flex;flex-direction:column;gap:20px">
-          <div>
-            <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:6px">ACTIVIDADES REALIZADAS</label>
-            <p style="font-size:13px;color:#334155;line-height:1.6;margin:0;background:#F8FAFC;padding:16px;border-radius:12px;border:1px solid #F1F5F9">{{ selectedBitacora.descripcion }}</p>
+        <div class="modal-body-view">
+          <div class="view-section">
+            <label class="view-label">ACTIVIDADES REALIZADAS</label>
+            <p class="view-desc-text">{{ selectedBitacora.descripcion }}</p>
           </div>
-          <div style="display:flex;gap:24px;flex-wrap:wrap;">
-            <div>
-              <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:4px">HORAS REPORTADAS</label>
-              <span style="font-size:16px;font-weight:800;color:#1E293B">{{ selectedBitacora.horasReportadas }} h</span>
+          <div class="view-row-stats">
+            <div class="stat-col">
+              <label class="view-label">HORAS REPORTADAS</label>
+              <span class="stat-value">{{ selectedBitacora.horasReportadas }} h</span>
             </div>
-            <div>
-              <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:4px">ESTADO</label>
-              <span v-if="selectedBitacora.estado === 'APROBADA'" style="font-size:12px;font-weight:700;color:#16A34A;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">check_circle</span> Aprobada</span>
-              <span v-else-if="selectedBitacora.estado === 'RECHAZADA'" style="font-size:12px;font-weight:700;color:#E11D48;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">cancel</span> Rechazada</span>
-              <span v-else style="font-size:12px;font-weight:700;color:#CA8A04;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">schedule</span> Pendiente</span>
+            <div class="stat-col">
+              <label class="view-label">ESTADO</label>
+              <span v-if="selectedBitacora.estado === 'APROBADA'" class="status-indicator aprobada"><span class="material-symbols-outlined">check_circle</span> Aprobada</span>
+              <span v-else-if="selectedBitacora.estado === 'RECHAZADA'" class="status-indicator rechazada"><span class="material-symbols-outlined">cancel</span> Rechazada</span>
+              <span v-else class="status-indicator pendiente"><span class="material-symbols-outlined">schedule</span> Pendiente</span>
             </div>
           </div>
-          <div v-if="selectedBitacora.observacionesInstructor" style="border-top:1px solid #F1F5F9; padding-top:16px;">
-            <label style="font-size:11px;font-weight:800;color:#E11D48;display:block;margin-bottom:4px">OBSERVACIONES DEL INSTRUCTOR</label>
-            <p style="font-size:12px;color:#991B1B;background:#FEF2F2;padding:12px;border-radius:8px;margin:0;line-height:1.5;">{{ selectedBitacora.observacionesInstructor }}</p>
-          </div>
-          <div v-if="selectedBitacora.evidencias && selectedBitacora.evidencias.length > 0" style="border-top:1px solid #F1F5F9; padding-top:16px;">
-            <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:6px">ARCHIVO ADJUNTO</label>
-            <a :href="selectedBitacora.evidencias[0].url" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:#1A4D2E;font-weight:800;text-decoration:none;font-size:12px;background:#F0FDF4;padding:8px 16px;border-radius:8px;border:1px solid #DCFCE7;">
-              <span class="material-symbols-outlined">description</span>
-              {{ selectedBitacora.evidencias[0].nombreArchivo || 'Ver Evidencia PDF' }}
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL DETALLES COMPLETOS DE REGISTRO (RF-APR-18) -->
-    <div v-if="showFullDetailsModal" @click.self="showFullDetailsModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
-      <div style="background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden;display:flex;flex-direction:column;">
-        <div style="background:#F8FAFC;padding:24px;border-bottom:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
-          <div>
-            <span style="font-size:11px;font-weight:800;color:#1A4D2E;letter-spacing:1px;display:block;margin-bottom:4px">DETALLE COMPLETO DE ETAPA PRODUCTIVA</span>
-            <h3 style="font-size:18px;font-weight:800;color:#1E293B;margin:0">Radicado: {{ stage?.radicado || 'Pendiente' }}</h3>
-          </div>
-          <button @click="showFullDetailsModal = false" style="background:#fff;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center;padding:4px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.05)"><span class="material-symbols-outlined">close</span></button>
-        </div>
-        <div style="padding:24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:20px;">
-          <div v-if="loadingFullDetails" style="text-align:center;padding:40px;">
-            <p style="color:#64748B;font-weight:600;">Cargando información del registro...</p>
-          </div>
-          <template v-else-if="fullDetails">
-            <!-- Sección: Datos Generales -->
-            <div>
-              <h4 style="font-size:12px;font-weight:800;color:#1A4D2E;margin-bottom:12px;border-bottom:1px solid #E2E8F0;padding-bottom:6px;">DATOS DEL REGISTRO</h4>
-              <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;font-size:13px;color:#334155;">
-                <p><strong>Modalidad:</strong> {{ fullDetails.stage?.modalidad }}</p>
-                <p><strong>Tipo Formación:</strong> {{ fullDetails.stage?.tipoFormacion }}</p>
-                <p><strong>Jornada:</strong> {{ fullDetails.stage?.jornada || 'Por configurar' }}</p>
-                <p><strong>Estado:</strong> {{ fullDetails.stage?.estado }}</p>
-                <p><strong>Fecha Inicio:</strong> {{ fullDetails.stage?.fechaInicio ? new Date(fullDetails.stage.fechaInicio).toLocaleDateString() : 'Por iniciar' }}</p>
-                <p><strong>Fecha Fin Proyectada:</strong> {{ fullDetails.stage?.fechaProyectadaFin ? new Date(fullDetails.stage.fechaProyectadaFin).toLocaleDateString() : 'Por definir' }}</p>
-                <p><strong>Horas Completadas/Requeridas:</strong> {{ fullDetails.stage?.horasCompletadas }}h / {{ fullDetails.stage?.horasRequeridas }}h</p>
-                <p><strong>Empresa:</strong> {{ fullDetails.stage?.companySnapshot?.razonSocial }} (NIT: {{ fullDetails.stage?.companySnapshot?.nit }})</p>
-              </div>
-            </div>
-
-            <!-- Sección: Documentos Cargados -->
-            <div>
-              <h4 style="font-size:12px;font-weight:800;color:#1A4D2E;margin-bottom:12px;border-bottom:1px solid #E2E8F0;padding-bottom:6px;">DOCUMENTOS ASOCIADOS</h4>
-              <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;">
-                <thead>
-                  <tr style="background:#F8FAFC;">
-                    <th style="padding:8px;color:#64748B;">Tipo</th>
-                    <th style="padding:8px;color:#64748B;">Nombre Archivo</th>
-                    <th style="padding:8px;color:#64748B;">Estado</th>
-                    <th style="padding:8px;color:#64748B;">Observaciones</th>
-                    <th style="padding:8px;color:#64748B;text-align:right;">Enlace</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="doc in fullDetails.documentos" :key="doc._id" style="border-bottom:1px solid #F1F5F9;">
-                    <td style="padding:8px;font-weight:700;">{{ doc.tipoDocumento }}</td>
-                    <td style="padding:8px;color:#64748B;">{{ doc.nombreArchivo }}</td>
-                    <td style="padding:8px;">
-                      <span style="font-weight:800;padding:2px 6px;border-radius:4px;" :style="{
-                        background: doc.estado==='APROBADO' ? '#DCFCE7' : doc.estado==='RECHAZADO' ? '#FEE2E2' : '#FEF3C7',
-                        color: doc.estado==='APROBADO' ? '#166534' : doc.estado==='RECHAZADO' ? '#991B1B' : '#92400E'
-                      }">
-                        {{ doc.estado }}
-                      </span>
-                    </td>
-                    <td style="padding:8px;color:#64748B;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" :title="doc.observaciones">{{ doc.observaciones || '---' }}</td>
-                    <td style="padding:8px;text-align:right;">
-                      <a :href="doc.url" target="_blank" style="color:#1A4D2E;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:2px;">
-                        <span class="material-symbols-outlined" style="font-size:16px;">open_in_new</span> Ver
-                      </a>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Sección: Observaciones Generales -->
-            <div>
-              <h4 style="font-size:12px;font-weight:800;color:#1A4D2E;margin-bottom:8px;border-bottom:1px solid #E2E8F0;padding-bottom:6px;">OBSERVACIONES GENERALES</h4>
-              <p style="font-size:13px;color:#475569;background:#F8FAFC;padding:12px;border-radius:8px;margin:0;line-height:1.5;">
-                {{ fullDetails.stage?.observaciones || 'Sin observaciones registradas por el administrador.' }}
-              </p>
-            </div>
-
-            <!-- Sección: Historial de Estados -->
-            <div>
-              <h4 style="font-size:12px;font-weight:800;color:#1A4D2E;margin-bottom:12px;border-bottom:1px solid #E2E8F0;padding-bottom:6px;">HISTORIAL DE ESTADOS</h4>
-              <div style="display:flex;flex-direction:column;gap:12px;">
-                <div v-for="(h, hIdx) in fullDetails.stage?.historialEstados" :key="hIdx" style="display:flex;gap:12px;font-size:12px;">
-                  <span style="color:#94A3B8;font-weight:700;white-space:nowrap;">{{ new Date(h.fecha).toLocaleDateString() }}</span>
-                  <div>
-                    <span style="font-weight:800;color:#1E293B;">{{ h.estadoNuevo }}</span>
-                    <span style="color:#64748B;"> (desde {{ h.estadoAnterior || 'Inicio' }})</span>
-                    <p style="margin:4px 0 0 0;color:#64748B;" v-if="h.motivo"><strong>Motivo:</strong> {{ h.motivo }}</p>
-                    <p style="margin:2px 0 0 0;color:#94A3B8;font-size:11px;" v-if="h.realizadoPor?.name">Realizado por: {{ h.realizadoPor.name }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
         </div>
       </div>
     </div>
 
     <!-- MODAL CALENDARIO -->
-    <div v-if="showCalendarModal" @click.self="showCalendarModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
-      <div style="background:#fff;border-radius:20px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.15);padding:32px;text-align:center">
-        <div style="width:64px;height:64px;background:#F0FDF4;color:#16A34A;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
-          <span class="material-symbols-outlined" style="font-size:32px">event</span>
+    <div v-if="showCalendarModal" @click.self="showCalendarModal = false" class="modal-overlay">
+      <div class="modal-content calendar-modal">
+        <div class="calendar-icon-wrapper">
+          <span class="material-symbols-outlined">event</span>
         </div>
-        <h3 style="font-size:18px;font-weight:800;color:#1E293B;margin:0 0 8px">Fechas de Corte Quincenales</h3>
-        <p style="font-size:13px;color:#64748B;line-height:1.5;margin:0 0 24px">Las bitácoras deben enviarse los días 15 y 30 de cada mes. Asegúrate de tenerlas firmadas por tu jefe inmediato.</p>
-        <button @click="showCalendarModal = false" class="btn-new" style="width:100%;justify-content:center;background:#1A4D2E">Entendido</button>
+        <h3 class="modal-title">Fechas de Corte Quincenales</h3>
+        <p class="modal-message">Las bitácoras deben enviarse los días 15 y 30 de cada mes. Asegúrate de tenerlas firmadas por tu jefe inmediato antes de la fecha límite.</p>
+        <div class="modal-footer-actions single-action">
+          <button @click="showCalendarModal = false" class="modal-btn-confirm wide">Entendido</button>
+        </div>
       </div>
     </div>
 
@@ -815,9 +568,9 @@ onMounted(load)
 .repfora-dashboard {
   display: flex;
   min-height: 100vh;
-  background: #F4F7F6;
+  background: var(--bg-app);
   font-family: 'Inter', sans-serif;
-  color: #334155;
+  color: var(--text-primary);
   overflow: hidden;
   width: 100%;
 }
@@ -825,8 +578,8 @@ onMounted(load)
 /* --- Sidebar --- */
 .sidebar {
   width: 230px;
-  background: #FFFFFF;
-  border-right: 1px solid #F1F5F9;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-primary);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -845,12 +598,12 @@ onMounted(load)
 .logo-icon {
   width: 40px;
   height: 40px;
-  background: #1A4D2E;
+  background: var(--color_button);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #FFF;
+  color: var(--color_text_button);
   flex-shrink: 0;
 }
 
@@ -858,14 +611,14 @@ onMounted(load)
   display: block;
   font-size: 14px;
   font-weight: 800;
-  color: #0F172A;
+  color: var(--text-primary);
   line-height: 1;
 }
 
 .logo-text .subtitle {
   font-size: 9px;
   font-weight: 700;
-  color: #94A3B8;
+  color: var(--text-muted);
   letter-spacing: 1px;
 }
 
@@ -881,7 +634,7 @@ onMounted(load)
   padding: 12px 16px;
   font-size: 13px;
   font-weight: 600;
-  color: #94A3B8;
+  color: var(--text-secondary);
   text-decoration: none;
   border-radius: 12px;
   transition: all 0.2s;
@@ -892,19 +645,19 @@ onMounted(load)
   text-align: left;
 }
 
-.nav-item:hover { color: #334155; background: #F8FAFC; }
+.nav-item:hover { color: var(--text-primary); background: var(--bg-hover); }
 .nav-item.active {
   color: var(--color_button);
-  background: #F0FDF4;
+  background: var(--bg-active);
   border-left: 4px solid var(--color_button);
   border-radius: 4px 12px 12px 4px;
 }
 
-.sidebar-footer { padding: 24px 16px; border-top: 1px solid #F1F5F9; display: flex; flex-direction: column; gap: 12px; }
+.sidebar-footer { padding: 24px 16px; border-top: 1px solid var(--border-primary); display: flex; flex-direction: column; gap: 12px; }
 .btn-new-visit-sidebar {
   width: 100%;
-  background: #1A4D2E;
-  color: #FFF;
+  background: var(--color_button);
+  color: var(--color_text_button);
   border: none;
   padding: 12px;
   border-radius: 10px;
@@ -915,10 +668,9 @@ onMounted(load)
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  transition: background 0.2s;
   margin-bottom: 8px;
 }
-.btn-new-visit-sidebar:hover { background: #143b23; }
+.btn-new-visit-sidebar:hover { filter: brightness(0.9); }
 .logout-btn:hover { color: #EF4444; }
 
 /* --- Main Layout --- */
@@ -934,8 +686,8 @@ onMounted(load)
 
 .topbar {
   height: 64px;
-  background: #FFF;
-  border-bottom: 1px solid #F1F5F9;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -946,12 +698,12 @@ onMounted(load)
   flex-shrink: 0;
 }
 
-.page-title { font-size: 20px; font-weight: 800; color: #1E293B; }
+.page-title { font-size: 20px; font-weight: 800; color: var(--text-primary); }
 
 .topbar-actions { display: flex; align-items: center; gap: 24px; }
 .btn-new {
-  background: var(--color_card);
-  color: #FFF;
+  background: var(--color_button);
+  color: var(--color_text_button);
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
@@ -961,15 +713,15 @@ onMounted(load)
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(57, 169, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(26, 77, 46, 0.15);
 }
 
-.divider { width: 1px; height: 32px; background: #F1F5F9; }
-.notification { color: #94A3B8; cursor: pointer; }
+.divider { width: 1px; height: 32px; background: var(--border-primary); }
+.notification { color: var(--text-muted); cursor: pointer; }
 
 .user-profile { display: flex; align-items: center; gap: 12px; }
-.user-name { font-size: 12px; font-weight: 800; color: #1E293B; }
-.user-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 2px solid #F1F5F9; flex-shrink: 0; }
+.user-name { font-size: 12px; font-weight: 800; color: var(--text-primary); }
+.user-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border-primary); flex-shrink: 0; }
 .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 /* --- Content --- */
@@ -977,42 +729,43 @@ onMounted(load)
 
 .info-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 24px; }
 
-.company-card { background: #FFF; border-radius: 20px; border: 1px solid #F1F5F9; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+.company-card { background: var(--bg-primary); border-radius: 20px; border: 1px solid var(--border-primary); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
 .company-card-body { padding: 24px; }
 .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-.header-text .label { display: block; font-size: 11px; font-weight: 900; color: #94A3B8; letter-spacing: 1px; }
-.header-text .desc { font-size: 11px; color: #94A3B8; }
+.header-text .label { display: block; font-size: 11px; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; }
+.header-text .desc { font-size: 11px; color: var(--text-muted); }
 .status-badge { background: #FFF1F2; color: #E11D48; padding: 6px 12px; border-radius: 8px; font-size: 9px; font-weight: 900; }
+[data-theme="dark"] .status-badge { background: rgba(225, 29, 72, 0.15); color: #fda4af; }
 
 .company-details { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-.detail-item { display: flex; align-items: center; gap: 12px; background: #F8FAFC; padding: 12px; border-radius: 12px; border: 1px solid #F1F5F9; transition: all 0.3s; }
-.detail-item:hover { background: #FFF; border-color: var(--color_button); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-.detail-item .icon { width: 36px; height: 36px; background: #FFF; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--color_button); box-shadow: 0 2px 8px rgba(0,0,0,0.02); flex-shrink: 0; }
-.detail-item .key { display: block; font-size: 9px; font-weight: 900; color: #94A3B8; margin-bottom: 2px; }
-.detail-item .val { font-size: 13px; font-weight: 700; color: #1E293B; }
+.detail-item { display: flex; align-items: center; gap: 12px; background: var(--bg-secondary); padding: 12px; border-radius: 12px; border: 1px solid var(--border-primary); transition: all 0.3s; }
+.detail-item:hover { background: var(--bg-primary); border-color: var(--color_button); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.detail-item .icon { width: 36px; height: 36px; background: var(--bg-primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--color_button); box-shadow: 0 2px 8px rgba(0,0,0,0.02); flex-shrink: 0; border: 1px solid var(--border-primary); }
+.detail-item .key { display: block; font-size: 9px; font-weight: 900; color: var(--text-muted); margin-bottom: 2px; }
+.detail-item .val { font-size: 13px; font-weight: 700; color: var(--text-primary); }
 
-.company-footer { background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%); padding: 16px 24px; border-top: 1px solid #F1F5F9; }
+.company-footer { background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-hover) 100%); padding: 16px 24px; border-top: 1px solid var(--border-primary); }
 .footer-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.footer-progress-header .label { font-size: 10px; font-weight: 900; color: #64748B; letter-spacing: 1px; }
-.footer-progress-header .stats { font-size: 11px; color: #94A3B8; margin: 4px 0 0; }
-.footer-progress-header .stats b { color: #1A4D2E; }
-.progress-percentage { font-size: 20px; font-weight: 900; color: #1A4D2E; letter-spacing: -0.5px; }
+.footer-progress-header .label { font-size: 10px; font-weight: 900; color: var(--text-secondary); letter-spacing: 1px; }
+.footer-progress-header .stats { font-size: 11px; color: var(--text-muted); margin: 4px 0 0; }
+.footer-progress-header .stats b { color: var(--color_button); }
+.progress-percentage { font-size: 20px; font-weight: 900; color: var(--color_button); letter-spacing: -0.5px; }
 .progress-bar-container-mini {
   width: 100%;
   height: 14px;
-  background: #E2E8F0;
+  background: var(--border-primary);
   border-radius: 20px;
   overflow: hidden;
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
 }
 .progress-bar-mini {
   height: 100%;
-  background: linear-gradient(90deg, #1A4D2E 0%, #2d7a4a 50%, #1A4D2E 100%);
+  background: linear-gradient(90deg, var(--color_button) 0%, #2d7a4a 50%, var(--color_button) 100%);
   background-size: 200% 100%;
   border-radius: 20px;
   transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
   animation: progress-shimmer 2.5s linear infinite;
-  box-shadow: 0 2px 8px rgba(26, 77, 46, 0.35);
+  box-shadow: 0 2px 8px rgba(26, 77, 46, 0.25);
   position: relative;
 }
 .progress-bar-mini::after {
@@ -1022,7 +775,7 @@ onMounted(load)
   left: 6px;
   right: 6px;
   height: 4px;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.2);
   border-radius: 10px;
 }
 @keyframes progress-shimmer {
@@ -1031,49 +784,56 @@ onMounted(load)
 }
 
 /* --- Table --- */
-.table-container { background: #FFF; border-radius: 20px; border: 1px solid #F1F5F9; overflow: hidden; }
+.table-container { background: var(--bg-primary); border-radius: 20px; border: 1px solid var(--border-primary); overflow: hidden; }
 .table-header { padding: 24px; display: flex; justify-content: space-between; align-items: center; }
-.table-header h3 { font-size: 15px; font-weight: 700; color: #1E293B; }
-.table-icons { display: flex; gap: 16px; color: #CBD5E1; }
+.table-header h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.table-icons { display: flex; gap: 16px; color: var(--text-muted); }
 
 .bitacora-table { width: 100%; border-collapse: collapse; }
-.bitacora-table th { background: #F8FAFC; padding: 12px 24px; text-align: left; font-size: 10px; font-weight: 900; color: #94A3B8; letter-spacing: 1px; }
-.bitacora-table td { padding: 16px 24px; border-top: 1px solid #F1F5F9; font-size: 13px; }
-.bitacora-table .bold { font-weight: 700; color: #1E293B; }
-.bitacora-table .faded { color: #64748B; font-weight: 500; display: flex; align-items: center; gap: 8px; }
-.bitacora-table .mini { font-size: 18px; color: #CBD5E1; }
+.bitacora-table th { background: var(--bg-secondary); padding: 12px 24px; text-align: left; font-size: 10px; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; }
+.bitacora-table td { padding: 16px 24px; border-top: 1px solid var(--border-primary); font-size: 13px; }
+.bitacora-table .bold { font-weight: 700; color: var(--text-primary); }
+.bitacora-table .faded { color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.bitacora-table .mini { font-size: 18px; color: var(--text-muted); }
 .bitacora-table .center { text-align: center; }
 .bitacora-table .right { text-align: right; }
 
-.hours-badge { background: #F1F5F9; color: #64748B; padding: 6px 12px; border-radius: 8px; font-size: 10px; font-weight: 900; }
+.hours-badge { background: var(--bg-secondary); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 10px; font-weight: 900; border: 1px solid var(--border-primary); }
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 9px; font-weight: 900; letter-spacing: 0.5px; border: 1px solid transparent; }
 .badge.success { background: #F0FDF4; color: #16A34A; border-color: #DCFCE7; }
 .badge.pending { background: #FFF1F2; color: #E11D48; border-color: #FFE4E6; }
+[data-theme="dark"] .badge.success { background: rgba(22, 163, 74, 0.15); color: #4ade80; border-color: rgba(22, 163, 74, 0.3); }
+[data-theme="dark"] .badge.pending { background: rgba(225, 29, 72, 0.15); color: #fda4af; border-color: rgba(225, 29, 72, 0.3); }
+
 .badge .dot { width: 6px; height: 6px; border-radius: 50%; }
 .badge.success .dot { background: #16A34A; }
 .badge.pending .dot { background: #E11D48; }
+[data-theme="dark"] .badge.success .dot { background: #4ade80; }
+[data-theme="dark"] .badge.pending .dot { background: #fda4af; }
 
-.action-btn { color: #CBD5E1; cursor: pointer; transition: color 0.2s; }
+.action-btn { color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
 .action-btn:hover { color: var(--color_button); }
 
-.table-footer { padding: 24px 32px; background: #F8FAFC; border-top: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center; }
-.footer-stats { font-size: 10px; font-weight: 900; color: #94A3B8; letter-spacing: 0.5px; }
+.table-footer { padding: 24px 32px; background: var(--bg-secondary); border-top: 1px solid var(--border-primary); display: flex; justify-content: space-between; align-items: center; }
+.footer-stats { font-size: 10px; font-weight: 900; color: var(--text-muted); letter-spacing: 0.5px; }
 .pagination { display: flex; gap: 8px; }
-.pag-btn { background: #FFF; border: 1px solid #E2E8F0; padding: 8px 16px; border-radius: 8px; font-size: 10px; font-weight: 700; color: #475569; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.pag-btn { background: var(--bg-primary); border: 1px solid var(--border-primary); padding: 8px 16px; border-radius: 8px; font-size: 10px; font-weight: 700; color: var(--text-secondary); cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.2s; }
+.pag-btn:hover:not(.disabled) { background: var(--bg-hover); color: var(--text-primary); }
 
 /* --- Banner --- */
-.reminder-banner { background: #F1F5F9; border-radius: 24px; padding: 32px; display: flex; justify-content: space-between; align-items: center; margin-top: 32px; border: 1px solid #E2E8F0; }
+.reminder-banner { background: var(--bg-secondary); border-radius: 24px; padding: 32px; display: flex; justify-content: space-between; align-items: center; margin-top: 32px; border: 1px solid var(--border-primary); }
 .reminder-content { display: flex; align-items: center; gap: 24px; }
-.lamp-icon { width: 56px; height: 56px; background: #FFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color_button); border: 1px solid #E2E8F0; flex-shrink: 0; }
-.rtitle { display: block; font-size: 14px; font-weight: 700; color: #1E293B; margin-bottom: 4px; }
-.rdesc { font-size: 12px; color: #94A3B8; font-weight: 500; max-width: 500px; margin: 0; }
-.btn-cal { background: #E2E8F0; border: none; padding: 12px 24px; border-radius: 12px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer; white-space: nowrap; }
+.lamp-icon { width: 56px; height: 56px; background: var(--bg-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color_button); border: 1px solid var(--border-primary); flex-shrink: 0; box-shadow: var(--shadow-sm); }
+.rtitle { display: block; font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.rdesc { font-size: 12px; color: var(--text-muted); font-weight: 500; max-width: 500px; margin: 0; }
+.btn-cal { background: var(--border-primary); border: none; padding: 12px 24px; border-radius: 12px; font-size: 11px; font-weight: 700; color: var(--text-secondary); cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+.btn-cal:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 /* --- Material Symbols --- */
 .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
 
 /* --- Spinner --- */
-.ep-spinner { width: 40px; height: 40px; border: 4px solid #F1F5F9; border-top: 4px solid #1A4D2E; border-radius: 50%; animation: ep-spin .8s linear infinite; }
+.ep-spinner { width: 40px; height: 40px; border: 4px solid var(--border-primary); border-top: 4px solid var(--color_button); border-radius: 50%; animation: ep-spin .8s linear infinite; }
 @keyframes ep-spin { to { transform: rotate(360deg); } }
 
 /* --- Responsiveness fixes --- */
@@ -1099,7 +859,7 @@ onMounted(load)
   .btn-cal { width: 100%; }
 }
 
-.action-btn-hover:hover { background: #F1F5F9 !important; }
+.action-btn-hover:hover { background: var(--bg-hover) !important; }
 .pag-btn.disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* --- Toast Notification --- */
@@ -1107,17 +867,680 @@ onMounted(load)
 .toast-notification.ok { background: #16A34A; color: #FFF; }
 .toast-notification.err { background: #E11D48; color: #FFF; }
 .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
+
 @keyframes shimmer {
   0% { background-position: -400px 0; }
   100% { background-position: 400px 0; }
 }
 .skel-line, .skel-badge, .skel-anim {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-hover) 37%, var(--bg-secondary) 63%);
   background-size: 800px 100%;
   animation: shimmer 1.8s ease-in-out infinite;
   border-radius: 6px;
 }
 .skel-badge { width: 80px; height: 24px; border-radius: 8px; }
 .progress-card .skel-line { background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 37%, rgba(255,255,255,0.1) 63%); }
+
+/* ─── MODAL CUSTOM CLASSES FOR PREMIUM DARK MODE ─── */
+
+/* --- Revision Message Banner --- */
+.revision-msg-banner {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+.revision-msg-banner.ok {
+  background: #F0FDF4;
+  color: #16A34A;
+}
+.revision-msg-banner.err {
+  background: #FFF1F2;
+  color: #E11D48;
+}
+[data-theme="dark"] .revision-msg-banner.ok {
+  background: rgba(22, 163, 74, 0.15);
+  color: #4ade80;
+}
+[data-theme="dark"] .revision-msg-banner.err {
+  background: rgba(225, 29, 72, 0.15);
+  color: #fda4af;
+}
+
+/* --- Search Bar --- */
+.search-bar-container {
+  display: flex;
+  align-items: center;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 0 12px;
+  height: 36px;
+  transition: all 0.2s;
+}
+[data-theme="dark"] .search-bar-container {
+  background: var(--bg-secondary);
+  border-color: var(--border-primary);
+}
+.search-icon {
+  font-size: 18px;
+  color: #94A3B8;
+}
+[data-theme="dark"] .search-icon {
+  color: var(--text-muted);
+}
+.search-bar-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: #334155;
+  width: 150px;
+  margin-left: 8px;
+}
+[data-theme="dark"] .search-bar-input {
+  color: var(--text-primary);
+}
+
+/* --- Error Banner --- */
+.error-banner {
+  margin: 24px;
+  padding: 16px 20px;
+  background: #FFF1F2;
+  border-radius: 12px;
+  color: #E11D48;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid transparent;
+}
+[data-theme="dark"] .error-banner {
+  background: rgba(225, 29, 72, 0.15);
+  color: #fda4af;
+  border-color: rgba(225, 29, 72, 0.3);
+}
+.error-banner-btn {
+  margin-left: auto;
+  background: #E11D48;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+[data-theme="dark"] .error-banner-btn {
+  background: #ef4444;
+}
+
+/* --- Action Table Buttons --- */
+.action-table-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.action-table-btn.view {
+  color: #16A34A;
+}
+[data-theme="dark"] .action-table-btn.view {
+  color: #4ade80;
+}
+.action-table-btn.edit {
+  color: #3B82F6;
+}
+[data-theme="dark"] .action-table-btn.edit {
+  color: #60a5fa;
+}
+.action-table-btn:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* --- Empty Table Row --- */
+.empty-row {
+  text-align: center;
+  padding: 32px !important;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* --- Modal Base --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-content {
+  background: var(--bg-elevated);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-primary);
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-primary);
+}
+.modal-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+.modal-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.modal-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.modal-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.modal-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.modal-input {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  outline: none;
+  width: 100%;
+  transition: all 0.2s;
+}
+.modal-input:focus {
+  border-color: var(--color_button);
+  box-shadow: 0 0 0 3px var(--bg-active);
+}
+.modal-textarea {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.modal-textarea:focus {
+  border-color: var(--color_button);
+  box-shadow: 0 0 0 3px var(--bg-active);
+}
+.modal-error-banner {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(225, 29, 72, 0.15);
+  color: #fda4af;
+  border: 1px solid rgba(225, 29, 72, 0.2);
+}
+.modal-footer-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.modal-btn-cancel {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.modal-btn-cancel:hover {
+  background: var(--bg-hover);
+}
+.modal-btn-confirm {
+  background: var(--color_button);
+  color: var(--color_text_button);
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.modal-btn-confirm:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+}
+.modal-btn-confirm.wide {
+  width: 100%;
+  justify-content: center;
+}
+
+/* --- View Details Modal --- */
+.view-details-modal {
+  max-width: 500px;
+}
+.modal-header-view {
+  background: var(--bg-secondary);
+  padding: 24px;
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.modal-view-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.modal-view-badge.aprobada {
+  color: #16A34A;
+}
+[data-theme="dark"] .modal-view-badge.aprobada {
+  color: #4ade80;
+}
+.modal-view-badge.rechazada {
+  color: #E11D48;
+}
+[data-theme="dark"] .modal-view-badge.rechazada {
+  color: #fda4af;
+}
+.modal-view-badge.pendiente {
+  color: #CA8A04;
+}
+[data-theme="dark"] .modal-view-badge.pendiente {
+  color: #facc15;
+}
+.modal-view-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+.modal-close-btn-view {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+.modal-close-btn-view:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.modal-body-view {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.view-section {
+  display: flex;
+  flex-direction: column;
+}
+.view-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 6px;
+}
+.view-desc-text {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0;
+  background: var(--bg-secondary);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+}
+.view-row-stats {
+  display: flex;
+  gap: 24px;
+}
+.stat-col {
+  display: flex;
+  flex-direction: column;
+}
+.stat-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.status-indicator {
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-indicator.aprobada {
+  color: #16A34A;
+}
+[data-theme="dark"] .status-indicator.aprobada {
+  color: #4ade80;
+}
+.status-indicator.rechazada {
+  color: #E11D48;
+}
+[data-theme="dark"] .status-indicator.rechazada {
+  color: #fda4af;
+}
+.status-indicator.pendiente {
+  color: #CA8A04;
+}
+[data-theme="dark"] .status-indicator.pendiente {
+  color: #facc15;
+}
+
+/* --- Calendar Modal --- */
+.calendar-modal {
+  max-width: 400px;
+  padding: 32px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.calendar-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  background: var(--bg-active);
+  color: var(--color_button);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.calendar-icon-wrapper span {
+  font-size: 32px;
+}
+
+/* --- Checklist Premium Styling --- */
+.checklist-container {
+  background: var(--bg-primary);
+  border-radius: 20px;
+  border: 1px solid var(--border-primary);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+}
+
+.checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.checklist-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-checklist {
+  font-size: 24px;
+  color: var(--color_button);
+  background: var(--bg-active);
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.checklist-header h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.checklist-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 2px 0 0 0;
+}
+
+.checklist-summary {
+  display: flex;
+  gap: 10px;
+}
+
+.summary-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-primary);
+}
+
+.summary-pill.total {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.summary-pill.aprobadas {
+  background: #F0FDF4;
+  color: #16A34A;
+  border-color: #DCFCE7;
+}
+[data-theme="dark"] .summary-pill.aprobadas {
+  background: rgba(22, 163, 74, 0.15);
+  color: #4ade80;
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+.checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1024px) {
+  .checklist-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .checklist-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .checklist-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .checklist-summary {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.checklist-card {
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 72px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px dashed var(--color-gray-400);
+  background: transparent;
+  cursor: default;
+}
+
+.checklist-card.is-clickable {
+  cursor: pointer;
+  border-style: solid;
+}
+
+.checklist-card.is-clickable:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+}
+
+/* --- Estados de la carta --- */
+.checklist-card.no_cargado {
+  border: 1px dashed var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+}
+.checklist-card.no_cargado .status-icon {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+.checklist-card.no_cargado .week-number {
+  color: var(--text-secondary);
+}
+
+.checklist-card.pendiente {
+  background: #FFFBEB;
+  border-color: #F59E0B;
+  color: #B45309;
+}
+[data-theme="dark"] .checklist-card.pendiente {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+.checklist-card.pendiente .status-icon {
+  color: #D97706;
+}
+.checklist-card.pendiente .week-number {
+  color: #B45309;
+}
+[data-theme="dark"] .checklist-card.pendiente .week-number {
+  color: #fbbf24;
+}
+
+.checklist-card.aprobada {
+  background: #F0FDF4;
+  border-color: #10B981;
+  color: #047857;
+}
+[data-theme="dark"] .checklist-card.aprobada {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+.checklist-card.aprobada .status-icon {
+  color: #10B981;
+}
+.checklist-card.aprobada .week-number {
+  color: #047857;
+}
+[data-theme="dark"] .checklist-card.aprobada .week-number {
+  color: #34d399;
+}
+
+.checklist-card.rechazada {
+  background: #FEF2F2;
+  border-color: #EF4444;
+  color: #B91C1C;
+}
+[data-theme="dark"] .checklist-card.rechazada {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+.checklist-card.rechazada .status-icon {
+  color: #EF4444;
+}
+.checklist-card.rechazada .week-number {
+  color: #B91C1C;
+}
+[data-theme="dark"] .checklist-card.rechazada .week-number {
+  color: #f87171;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.week-number {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.status-icon {
+  font-size: 18px;
+}
+
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.status-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.hours-count {
+  font-size: 9px;
+  font-weight: 800;
+  background: rgba(0,0,0,0.05);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+[data-theme="dark"] .hours-count {
+  background: rgba(255,255,255,0.1);
+}
 </style>
 

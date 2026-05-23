@@ -368,6 +368,52 @@ const getReportStats = async (req, res) => {
   }
 };
 
+/**
+ * PATCH /api/productive-stages/:id/authorize-extraordinary
+ */
+const authorizeExtraordinary = async (req, res) => {
+  try {
+    const authorized = req.body.authorized !== undefined ? req.body.authorized : true;
+    const stage = await service.authorizeExtraordinary(req.params.id, authorized);
+    res.json({
+      success: true,
+      data: stage,
+      message: authorized 
+        ? 'Seguimientos extraordinarios autorizados con éxito.'
+        : 'Autorización de seguimientos extraordinarios revocada.'
+    });
+  } catch (error) {
+    const status = error.message.includes('no encontrada') ? 404 : 400;
+    res.status(status).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+/**
+ * POST /api/productive-stages/:id/chat
+ * Agregar un mensaje al chat de observaciones (RF-INS-15)
+ */
+const agregarMensajeChat = async (req, res) => {
+  try {
+    const { remitente, texto } = req.body;
+    if (!remitente || !texto) {
+      return res.status(400).json({ success: false, message: 'remitente y texto son obligatorios.' });
+    }
+    const stage = await service.agregarMensajeChat(req.params.id, { remitente, texto });
+    res.json({
+      success: true,
+      data: stage.chatObservaciones,
+      message: 'Mensaje agregado al chat de observaciones.',
+    });
+  } catch (error) {
+    const status = error.message.includes('no encontrada') ? 404 : 400;
+    res.status(status).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   registrar,
   getAll,
@@ -382,4 +428,6 @@ module.exports = {
   certificarEP,
   getEstadoCertificacion,
   getReportStats,
+  authorizeExtraordinary,
+  agregarMensajeChat,
 };

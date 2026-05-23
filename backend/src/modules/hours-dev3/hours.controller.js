@@ -34,6 +34,7 @@ const getAll = async (req, res) => {
     const filtros = {
       stageId: req.query.stageId,
       apprenticeId: req.query.apprenticeId,
+      isAdditionalHour: req.query.isAdditionalHour,
     };
     
     if (req.user.role === 'APRENDIZ') {
@@ -72,8 +73,47 @@ const getResumen = async (req, res) => {
   }
 };
 
+const actualizarEstado = async (req, res) => {
+  try {
+    const data = await service.actualizarEstado(req.params.id, req.body);
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/hours/historico-pagos (RF-INS-17)
+ */
+const getHistoricoPagos = async (req, res) => {
+  try {
+    const data = await service.obtenerHistoricoPagos({
+      userId: req.user._id,
+      userRole: req.user.role,
+      filtroInstructorId: req.query.instructorId
+    });
+    res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   registrar,
   getAll,
   getResumen,
+  actualizarEstado,
+  getHistoricoPagos,
 };

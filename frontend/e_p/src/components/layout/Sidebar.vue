@@ -18,6 +18,7 @@ const menuItems = computed(() => {
       { name: 'Gestión de Fichas', icon: 'folder_open', path: '/fichas' },
       { name: 'Parámetros Formativos', icon: 'settings', path: '/configuraciones' },
       { name: 'Revisión de Documentos', icon: 'folder_shared', path: '/instructor-dashboard' },
+      { name: 'Histórico de Pagos', icon: 'payments', path: '/historico-pagos' },
     ];
   }
 
@@ -27,6 +28,8 @@ const menuItems = computed(() => {
       { name: 'Seguimientos', icon: 'assessment', path: '/seguimiento' },
       { name: 'Bitácoras', icon: 'description', path: '/bitacoras' },
       { name: 'Certificación', icon: 'workspace_premium', path: '/certificacion' },
+      { name: 'Informe de Horas', icon: 'schedule', path: '/informe-horas' },
+      { name: 'Histórico de Pagos', icon: 'payments', path: '/historico-pagos' },
     ];
   }
 

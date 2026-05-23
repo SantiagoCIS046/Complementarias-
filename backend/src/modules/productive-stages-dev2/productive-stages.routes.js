@@ -109,6 +109,24 @@ router.post(
   controller.certificarEP
 );
 
+// --- RF-INS-10: Autorizar Seguimientos Extraordinarios ---
+// PATCH /api/productive-stages/:id/authorize-extraordinary
+router.patch(
+  '/:id/authorize-extraordinary',
+  verifyToken,
+  checkRole(['ADMIN']),
+  controller.authorizeExtraordinary
+);
+
+// --- RF-INS-15: Chat de Observaciones ---
+// POST /api/productive-stages/:id/chat
+router.post(
+  '/:id/chat',
+  verifyToken,
+  checkRole(['ADMIN', 'INSTRUCTOR']),
+  controller.agregarMensajeChat
+);
+
 // --- CRUD general ---
 
 // GET /api/productive-stages/:id - Detalle de una EP

@@ -108,8 +108,8 @@ const routes = [
   {
     path: '/seguimiento',
     name: 'TrackingCalendar',
-    component: () => import('../../modules/ep-management-dev2/views/EPSeguimiento.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
+    component: () => import('../../modules/operation-tracking-dev3/views/TrackingCalendar.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
   },
   {
     path: '/instructor-dashboard',
@@ -130,6 +130,20 @@ const routes = [
     name: 'EPDashboardSeg',
     component: () => import('../../modules/ep-management-dev2/views/EPSeguimiento.vue'),
     meta: { requiresAuth: true, roles: ['APRENDIZ'] },
+  },
+  {
+    // RF-INS-16: Informe de Horas del Instructor
+    path: '/informe-horas',
+    name: 'HoursReport',
+    component: () => import('../../modules/operation-tracking-dev3/views/HoursReport.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
+  },
+  {
+    // RF-INS-17: Histórico de Pagos por Mes
+    path: '/historico-pagos',
+    name: 'PaymentsHistory',
+    component: () => import('../../modules/operation-tracking-dev3/views/PaymentsHistory.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR'] },
   },
 
   // ── Redirección Inteligente (raíz) ─────────────────────────────

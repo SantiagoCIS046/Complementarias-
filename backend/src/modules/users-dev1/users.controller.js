@@ -115,141 +115,37 @@ const getFichasSummary = async (req, res) => {
 };
 
 /**
- * POST /api/users/:id/reassign
+ * POST /api/users/reassign-instructor
  */
-const reassignApprentices = async (req, res) => {
+const reassignInstructor = async (req, res) => {
   try {
-    const outgoingId = req.params.id;
-    const { newInstructorId } = req.body;
-
-    if (!newInstructorId) {
+    const { oldInstructorId, newInstructorId, motivo } = req.body;
+    if (!oldInstructorId || !newInstructorId) {
       return res.status(400).json({
         success: false,
-        message: 'El nuevo instructor es requerido para la migración.'
+        message: 'El ID de los instructores saliente y entrante son obligatorios.'
       });
     }
 
-    const result = await service.reassignApprentices(outgoingId, newInstructorId);
-
-    // Registrar en auditoría
-    await registrarAuditoria({
-      action: 'REASSIGN_INSTRUCTOR',
-      userId: req.user._id,
-      details: `Reasignados aprendices y fichas del instructor ${outgoingId} al nuevo instructor ${newInstructorId}. Totales: Aprendices: ${result.apprenticesReassigned}, Fichas: ${result.batchesReassigned}, Trackings: ${result.trackingsReassigned}`
-    });
+    const result = await service.reassignInstructor(oldInstructorId, newInstructorId, motivo);
+    
+    try {
+      await registrarAuditoria({
+        usuarioId: req.user._id,
+        accion: 'REASSIGN_INSTRUCTOR',
+        detalles: `Reasignados ${result.count} aprendices del instructor ${oldInstructorId} al instructor ${newInstructorId}.`
+      });
+    } catch (auditError) {
+      console.error('Error registrando auditoría de reasignación:', auditError.message);
+    }
 
     res.json({
       success: true,
-      message: 'Migración y reasignación de instructor completada con éxito.',
+      message: result.message,
       data: result
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-/**
- * POST /api/users/import
- */
-const importExcel = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No se subió ningún archivo Excel.'
-      });
-    }
-
-    const data = await service.importExcel(req.file.buffer);
-
-    // Registrar en auditoría
-    await registrarAuditoria({
-      action: 'IMPORT_USERS',
-      userId: req.user._id,
-      details: `Importados aprendices masivamente. Creados: ${data.creados}, Errores/Ignorados: ${data.errores.length}`
-    });
-
-    res.json({
-      success: true,
-      message: 'Proceso de importación masiva finalizado.',
-      data
-    });
-  } catch (error) {
     res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-/**
- * GET /api/users/me/logs
- */
-const getMyLogs = async (req, res) => {
-  try {
-    const logs = await service.getMyLogs(req.user._id);
-    res.json({
-      success: true,
-      data: logs
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-/**
- * GET /api/users/instructors/hours
- */
-const getInstructorsHours = async (req, res) => {
-  try {
-    const data = await service.getInstructorsHours();
-    res.json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-/**
- * PATCH /api/users/instructors/:id/pay-hours
- */
-const payInstructorsHours = async (req, res) => {
-  try {
-    const { hours } = req.body;
-    if (hours === undefined || isNaN(hours)) {
-      return res.status(400).json({
-        success: false,
-        message: 'La cantidad de horas a pagar es requerida y debe ser un número.'
-      });
-    }
-
-    const data = await service.payInstructorsHours(req.params.id, Number(hours));
-
-    // Registrar en auditoría
-    await registrarAuditoria({
-      action: 'PAY_INSTRUCTOR_HOURS',
-      userId: req.user._id,
-      details: `Registrado pago de ${hours} horas para el instructor ${data.name}. Total horas pagadas acumuladas: ${data.horasPagadas}`
-    });
-
-    res.json({
-      success: true,
-      message: `Se registraron ${hours} horas pagadas correctamente.`,
-      data
-    });
-  } catch (error) {
-    res.status(400).json({
       success: false,
       message: error.message
     });
@@ -262,9 +158,5 @@ module.exports = {
   actualizar,
   toggleStatus,
   getFichasSummary,
-  reassignApprentices,
-  importExcel,
-  getMyLogs,
-  getInstructorsHours,
-  payInstructorsHours,
+  reassignInstructor,
 };

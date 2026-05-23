@@ -8,6 +8,11 @@ const multer = require('multer');
 const { verifyToken } = require('../../core/middlewares/auth.middleware');
 const { checkRole }   = require('../../core/middlewares/roles.middleware');
 const controller      = require('./bitacoras.controller');
+const multer = require('multer');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -24,6 +29,12 @@ const upload = multer({
 });
 
 router.use(verifyToken);
+
+/**
+ * @route   POST /api/bitacoras/validate-signatures
+ * @access  Private (APRENDIZ, INSTRUCTOR, ADMIN)
+ */
+router.post('/validate-signatures', checkRole(['APRENDIZ', 'INSTRUCTOR', 'ADMIN']), upload.single('file'), controller.validarFirmasIA);
 
 /**
  * @route   POST /api/bitacoras

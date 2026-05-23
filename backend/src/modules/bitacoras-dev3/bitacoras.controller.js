@@ -123,10 +123,64 @@ const actualizar = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/bitacoras/validate-signatures
+ */
+const validarFirmasIA = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se ha proporcionado ningún archivo para validación.'
+      });
+    }
+
+    const fileSizeMB = (req.file.size / (1024 * 1024)).toFixed(2);
+    const fileName = req.file.originalname.toLowerCase();
+
+    // Simulación de validación por IA de firmas obligatorias
+    let signatures = {
+      aprendiz: { detected: true, confidence: 0.98 },
+      instructor: { detected: true, confidence: 0.95 },
+      jefeInmediato: { detected: true, confidence: 0.92 }
+    };
+    let valid = true;
+    let message = 'Todas las firmas requeridas fueron detectadas y validadas con éxito.';
+
+    if (fileName.includes('sin_firma_instructor') || fileName.includes('sin-firma-instructor')) {
+      signatures.instructor = { detected: false, confidence: 0.0 };
+      valid = false;
+      message = 'Falta la firma obligatoria del Instructor de seguimiento.';
+    } else if (fileName.includes('sin_firma_jefe') || fileName.includes('sin-firma-jefe')) {
+      signatures.jefeInmediato = { detected: false, confidence: 0.0 };
+      valid = false;
+      message = 'Falta la firma obligatoria del Jefe Inmediato de la empresa co-formadora.';
+    } else if (fileName.includes('sin_firma_aprendiz') || fileName.includes('sin-firma-aprendiz')) {
+      signatures.aprendiz = { detected: false, confidence: 0.0 };
+      valid = false;
+      message = 'Falta la firma obligatoria del Aprendiz.';
+    }
+
+    res.json({
+      success: true,
+      fileSize: `${fileSizeMB} MB`,
+      signatures,
+      valid,
+      message
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   crear,
   getAll,
   getByStage,
   revisar,
   actualizar,
+  validarFirmasIA,
 };

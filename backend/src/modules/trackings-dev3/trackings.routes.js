@@ -8,7 +8,29 @@ const { verifyToken } = require('../../core/middlewares/auth.middleware');
 const { checkRole }   = require('../../core/middlewares/roles.middleware');
 const controller      = require('./trackings.controller');
 
+const multer = require('multer');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 7 * 1024 * 1024 } // 7MB limit
+});
+
 router.use(verifyToken);
+
+router.post('/validate-pdf', checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), upload.single('file'), (err, req, res, next) => {
+  if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      success: false,
+      message: 'El archivo excede el tamaño máximo permitido de 7MB.'
+    });
+  }
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+  next();
+}, controller.validarPdfIA);
 
 router.post('/',    checkRole(['ADMIN', 'INSTRUCTOR']), controller.crear);
 router.get('/',     checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), controller.getAll);

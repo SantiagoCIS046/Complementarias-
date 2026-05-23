@@ -39,6 +39,10 @@ const BatchSchema = new mongoose.Schema({
     nombre: {
       type: String,
       trim: true
+    },
+    fecha_asignacion: {
+      type: Date,
+      default: null
     }
   },
   centro_formacion: {

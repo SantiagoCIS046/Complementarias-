@@ -32,5 +32,37 @@ export const trackingService = {
      */
     uploadDocument: (formData) => http.post('/documents/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    }),
+
+    /**
+     * Validar firmas del acta de seguimiento con IA
+     */
+    validatePdf: (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return http.post('/trackings/validate-pdf', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+
+    /**
+     * Autorizar seguimientos extraordinarios para una EP (Admin)
+     */
+    authorizeExtraordinary: (stageId, authorized = true) => {
+        return http.patch(`/productive-stages/${stageId}/authorize-extraordinary`, { authorized });
+    },
+
+    /**
+     * Listar horas adicionales de instructores (Seguimientos Extraordinarios)
+     */
+    getAdditionalHours: (params = {}) => {
+        return http.get('/hours', { params: { ...params, isAdditionalHour: true } });
+    },
+
+    /**
+     * Actualizar estado de las horas adicionales
+     */
+    updateAdditionalHourStatus: (id, payload) => {
+        return http.patch(`/hours/${id}/estado`, payload);
+    }
 }

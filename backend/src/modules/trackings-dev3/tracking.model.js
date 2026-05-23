@@ -56,6 +56,18 @@ const trackingSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    evidenciaSize: {
+      type: Number,
+      default: 0,
+    },
+    isValidatedByIA: {
+      type: Boolean,
+      default: false,
+    },
+    signaturesValidated: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
     estadoVisita: {
       type: String,
       enum: ['PROGRAMADO', 'REALIZADO', 'PENDIENTE', 'CANCELADO'],
@@ -75,6 +87,10 @@ const trackingSchema = new mongoose.Schema(
       default: '',
     },
     alertaEnviada: {
+      type: Boolean,
+      default: false,
+    },
+    esExtraordinario: {
       type: Boolean,
       default: false,
     },

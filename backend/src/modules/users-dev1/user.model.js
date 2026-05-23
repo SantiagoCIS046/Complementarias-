@@ -85,6 +85,18 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    lastRegistrationReminderSent: {
+      type: Date,
+      default: null
+    },
+    lastCronVisitReminderSent: {
+      type: Date,
+      default: null
+    },
+    lastCronBitacoraReminderSent: {
+      type: Date,
+      default: null
+    },
     // Recuperación de Contraseña
     resetPasswordToken: {
       type: String,

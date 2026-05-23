@@ -160,7 +160,7 @@ const expiredMsg    = ref('')
 
 // Detectar si el sistema cerró la sesión automáticamente por inactividad
 if (route.query.expired === '1') {
-  expiredMsg.value = '⏰ Tu sesión expiró por inactividad (24 horas). Por favor inicia sesión nuevamente.'
+  expiredMsg.value = '⏰ Tu sesión expiró por inactividad (1 hora). Por favor inicia sesión nuevamente.'
 }
 
 async function handleLogin() {
@@ -177,9 +177,10 @@ async function handleLogin() {
 
     successMsg.value = '¡Acceso concedido! Entrando...'
 
-    // 2. Redirigir: si venía de una ruta protegida, volver a ella;
-    //    de lo contrario el guard de '/' lo llevará a su dashboard.
-    const redirectTo = route.query.redirect || '/'
+    // 2. Redirigir: si es primer ingreso, mandar a /primer-ingreso mandatorio;
+    //    de lo contrario a la ruta protegida o dashboard.
+    const isFirst = res.data.data?.usuario?.isFirstLogin || res.data.data?.user?.isFirstLogin
+    const redirectTo = isFirst ? '/primer-ingreso' : (route.query.redirect || '/')
     setTimeout(() => router.push(redirectTo), 150)
 
   } catch (err) {

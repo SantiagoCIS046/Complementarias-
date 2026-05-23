@@ -4,6 +4,8 @@
 // =============================================
 
 const User = require('./user.model');
+const { sendEmail } = require('../../core/utils/mailer');
+const AuditLog = require('../system-config-dev1/AuditLog.model');
 
 const parseExcelDate = (value) => {
   if (!value) return null;
@@ -275,6 +277,55 @@ const importExcel = async (fileBuffer) => {
         isFirstLogin: true
       });
 
+      // Enviar correo de habilitación (RF-APR-01)
+      try {
+        await sendEmail({
+          to: email.toLowerCase().trim(),
+          subject: '¡Habilitación de cuenta en RepFora! Credenciales de acceso',
+          html: `
+            <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+              <div style="background: #1b5e20; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 1.2rem;">🎉 ¡Bienvenido a RepFora!</h1>
+                <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Gestión de Etapas Productivas — SENA</p>
+              </div>
+              <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                  Hola <strong>${name.trim()}</strong>,
+                </p>
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                  Tu cuenta ha sido habilitada en la plataforma RepFora para que gestiones tu Etapa Productiva.
+                </p>
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                  A continuación, tus credenciales iniciales de acceso:
+                </p>
+                <div style="background: #f8fafc; border-left: 4px solid #1b5e20; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Usuario:</strong> ${email.toLowerCase().trim()}</p>
+                  <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Contraseña:</strong> ${documento}</p>
+                </div>
+                <p style="color: #ea580c; font-size: 0.85rem; font-weight: 700; margin-top: 16px;">
+                  ⚠️ Por motivos de seguridad, el sistema te obligará a cambiar esta contraseña en tu primer ingreso.
+                </p>
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.6; margin-top: 20px;">
+                  Puedes acceder a la plataforma haciendo clic en el siguiente enlace:
+                </p>
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login"
+                   style="display:inline-block;padding:12px 24px;background:#1b5e20;
+                          color:#fff;text-decoration:none;border-radius:6px;margin:16px 0;font-weight:700;">
+                  Ingresar a la Plataforma
+                </a>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+                <p style="color: #94a3b8; font-size: 0.75rem; text-align: center;">
+                  Este correo fue generado automáticamente por el sistema REPFORA.<br>
+                  No responda a este mensaje.
+                </p>
+              </div>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error('Error enviando correo de habilitacion:', emailErr.message);
+      }
+
       creados++;
     } catch (err) {
       errores.push({
@@ -287,6 +338,13 @@ const importExcel = async (fileBuffer) => {
   return { creados, errores };
 };
 
+/**
+ * Obtener logs de auditoría de un usuario específico (RF-APR-19).
+ */
+const getMyLogs = async (userId) => {
+  return await AuditLog.find({ usuario: userId }).sort({ createdAt: -1 });
+};
+
 module.exports = {
   getAll,
   getById,
@@ -295,4 +353,5 @@ module.exports = {
   getFichasSummary,
   reassignApprentices,
   importExcel,
+  getMyLogs,
 };

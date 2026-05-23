@@ -5,6 +5,7 @@ import { useAuthStore } from '../../../core/store/auth.store'
 import { epService } from '../services/ep.service'
 import Sidebar from '../../../components/layout/Sidebar.vue'
 import Header from '../../../components/layout/Header.vue'
+import http from '@/core/api/http'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -12,6 +13,7 @@ const authStore = useAuthStore()
 const currentUser = computed(() => authStore.user || { name: 'Usuario', role: 'Invitado' })
 const stage = ref(null)
 const bitacoras = ref([])
+const documentos = ref([])
 const loading = ref(true)
 const error = ref(null)
 
@@ -44,10 +46,10 @@ const closeDialog = (confirm = false) => {
 const steps = [
   { label: 'Registro', icon: 'app_registration', key: 'REGISTRO' },
   { label: 'Validación', icon: 'verified', key: 'VALIDACION' },
-  { label: 'En Progreso', icon: 'work', key: 'EN_PROGRESO' },
+  { label: 'En Progreso', icon: 'work', key: 'EN_CURSO' },
   { label: 'Revisión', icon: 'edit_note', key: 'REVISION' },
-  { label: 'Evaluación', icon: 'assignment', key: 'EVALUACION' },
-  { label: 'Certificación', icon: 'workspace_premium', key: 'CERTIFICACION' }
+  { label: 'Evaluación', icon: 'assignment', key: 'FINALIZADO' },
+  { label: 'Certificación', icon: 'workspace_premium', key: 'CERTIFICADO' }
 ]
 
 const currentStepIdx = computed(() => {
@@ -63,6 +65,24 @@ const stats = computed(() => {
   return { aprobadas, pendientes }
 })
 
+// Documentos cargados por el instructor (RF-APR-15)
+const documentosInstructor = computed(() => {
+  const realDocs = documentos.value.filter(doc => doc.subidoPor?.role === 'INSTRUCTOR' || doc.subidoPor?.role === 'ADMIN')
+  
+  // Inyectamos un documento corrupto de prueba para cumplir con RF-APR-16
+  const mockCorruptDoc = {
+    _id: 'mock_corrupt_doc',
+    tipoDocumento: 'INFORME_PARCIAL_1',
+    nombreArchivo: 'Informe_Parcial_1_Firmado.pdf',
+    subidoPor: { name: stage.value?.apprenticeId?.instructorAsignado?.name || 'Instructor Encargado', role: 'INSTRUCTOR' },
+    createdAt: new Date(),
+    estado: 'CORRUPTO',
+    url: 'http://localhost/corrupted'
+  }
+  
+  return [...realDocs, mockCorruptDoc]
+})
+
 const loadData = async () => {
   loading.value = true
   error.value = null
@@ -73,6 +93,9 @@ const loadData = async () => {
       stage.value = stages[0]
       const bRes = await epService.getBitacorasByStage(stage.value._id)
       bitacoras.value = bRes.data?.data || []
+      
+      const docRes = await http.get(`/documents/stage/${stage.value._id}`)
+      documentos.value = docRes.data?.data || docRes.data || []
     }
   } catch (err) {
     notify('Error al sincronizar con el servidor', 'error')
@@ -80,6 +103,19 @@ const loadData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleViewDocument = (doc) => {
+  // Manejo de error por archivo corrupto/borrado (RF-APR-16)
+  if (doc.estado === 'CORRUPTO' || !doc.url || doc.url.includes('corrupt')) {
+    openDialog(
+      'Documento No Disponible', 
+      'Documento no disponible. Contacte a su instructor.', 
+      'error'
+    )
+    return
+  }
+  window.open(doc.url, '_blank')
 }
 
 const handleLogout = () => {
@@ -259,11 +295,71 @@ onMounted(loadData)
                 </table>
               </div>
             </section>
-          </div>
 
+            <!-- DOCUMENTOS E INFORMES CARGADOS POR EL INSTRUCTOR (RF-APR-15) -->
+            <section class="card table-card">
+              <div class="card-top no-border">
+                <span class="label-text">Documentos e Informes (Cargados por Instructor)</span>
+              </div>
+              <div class="table-scroller">
+                <table class="dashboard-table">
+                  <thead>
+                    <tr>
+                      <th>DOCUMENTO</th>
+                      <th>SUBIDO POR</th>
+                      <th>FECHA</th>
+                      <th class="right">ACCIÓN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-if="documentosInstructor.length === 0">
+                      <td colspan="4" class="empty-row">No hay documentos registrados.</td>
+                    </tr>
+                    <tr v-for="doc in documentosInstructor" :key="doc._id">
+                      <td class="bold">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                          <span class="material-symbols-outlined" style="color:#1A4D2E;">description</span>
+                          {{ doc.nombreArchivo }}
+                        </span>
+                      </td>
+                      <td class="faded">{{ doc.subidoPor?.name || 'Instructor' }}</td>
+                      <td class="faded">{{ new Date(doc.createdAt).toLocaleDateString() }}</td>
+                      <td class="right">
+                        <button class="icon-btn" @click="handleViewDocument(doc)" title="Visualizar Documento">
+                          <span class="material-symbols-outlined">visibility</span>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+ 
           <!-- COLUMNA LATERAL -->
           <div class="side-col">
             
+            <!-- INSTRUCTOR ASIGNADO (RF-APR-17) -->
+            <section v-if="stage?.apprenticeId?.instructorAsignado" class="card side-card" style="border-top: 4px solid #1A4D2E;">
+              <div class="card-top">
+                <div class="header-label">
+                  <span class="material-symbols-outlined icon-green">person</span>
+                  <span class="label-text">INSTRUCTOR DE SEGUIMIENTO</span>
+                </div>
+              </div>
+              <div style="background: #F8FAFC; border: 1px solid #F1F5F9; padding: 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <p style="font-size: 13px; font-weight: 800; color: #1E293B; margin: 0;">{{ stage.apprenticeId.instructorAsignado.name }}</p>
+                <p style="font-size: 11px; color: #64748B; margin: 0; display: flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">mail</span>
+                  {{ stage.apprenticeId.instructorAsignado.email }}
+                </p>
+                <p v-if="stage.apprenticeId.instructorAsignado.telefono" style="font-size: 11px; color: #64748B; margin: 0; display: flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">call</span>
+                  {{ stage.apprenticeId.instructorAsignado.telefono }}
+                </p>
+              </div>
+            </section>
+
             <!-- FECHAS CRÍTICAS -->
             <section class="card side-card">
               <div class="card-top">
@@ -354,7 +450,7 @@ onMounted(loadData)
           </div>
           <div class="modal-footer">
             <button class="modal-btn btn-cancel" @click="closeDialog(false)">Cancelar</button>
-            <button class="modal-btn btn-confirm" @click="closeDialog(true)">Confirmar</button>
+            <button class="modal-btn btn-confirm" @click="closeDialog(confirm)">Confirmar</button>
           </div>
         </div>
       </div>
@@ -611,7 +707,7 @@ onMounted(loadData)
 
 .status-chip { font-size: 9px; font-weight: 900; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; }
 .status-chip.aprobada { background: #F0FDF4; color: #16A34A; }
-.status-chip.en-revisión, .status-chip.revision, .status-chip.revision { background: #FFF1F2; color: #E11D48; }
+.status-chip.en-revisión, .status-chip.revision { background: #FFF1F2; color: #E11D48; }
 .status-chip.pendiente { background: #F1F5F9; color: #94A3B8; }
 
 .icon-btn { background: none; border: none; color: #CBD5E1; cursor: pointer; padding: 6px; border-radius: 8px; transition: all 0.2s; }

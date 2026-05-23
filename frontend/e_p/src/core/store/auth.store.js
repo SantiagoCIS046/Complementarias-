@@ -4,8 +4,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 // ── Constante de expiración ──────────────────────────────────────────────────
-/** Tiempo máximo de inactividad: 24 horas en milisegundos */
-const SESSION_TTL = 24 * 60 * 60 * 1000   // 24 h
+/** Tiempo máximo de inactividad: 1 hora en milisegundos */
+const SESSION_TTL = 1 * 60 * 60 * 1000   // 1 h
 const LAST_ACTIVITY_KEY = 'repfora_last_activity'
 
 export const useAuthStore = defineStore('auth', () => {

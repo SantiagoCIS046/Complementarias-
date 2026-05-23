@@ -73,6 +73,7 @@ const TIPO_DOCUMENTO = Object.freeze({
   ACTA_INICIO:      'ACTA_INICIO',
   EVALUACION_FINAL: 'EVALUACION_FINAL',
   CERTIFICADO_EP:   'CERTIFICADO_EP',
+  SOPORTES_FINALES: 'SOPORTES_FINALES',
 });
 
 // Documentos obligatorios para registrar la EP

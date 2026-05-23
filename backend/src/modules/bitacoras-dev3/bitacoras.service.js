@@ -10,7 +10,7 @@ const ProductiveStage = require('../productive-stages-dev2/productive-stage.mode
 /**
  * Crear una nueva bitacora semanal.
  */
-const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportadas, evidencias }) => {
+const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportadas, evidencias, file }) => {
   // Verificar que la EP existe y esta EN_CURSO
   const stage = await ProductiveStage.findById(stageId);
   if (!stage) {
@@ -36,13 +36,25 @@ const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportad
     throw new Error(`Se ha alcanzado el número máximo permitido de bitácoras (${maxBitacoras}).`);
   }
 
+  let finalEvidencias = evidencias || [];
+  if (file) {
+    const driveService = require('../documents-dev2/storage.service');
+    const folderId = stage.driveFolders && stage.driveFolders.bitacoras ? stage.driveFolders.bitacoras : null;
+    const uploadResult = await driveService.subirDocumentoEP(file.buffer, file.originalname, folderId);
+    finalEvidencias = [{
+      nombreArchivo: file.originalname,
+      url: uploadResult.viewUrl,
+      driveFileId: uploadResult.driveFileId
+    }];
+  }
+
   const bitacora = await Bitacora.create({
     stageId,
     apprenticeId,
     semana,
     descripcion,
     horasReportadas,
-    evidencias: evidencias || [],
+    evidencias: finalEvidencias,
   });
 
   // Actualizar horas completadas en la EP
@@ -117,8 +129,23 @@ const actualizar = async (bitacoraId, data) => {
     throw new Error('No se puede editar una bitacora que ya fue aprobada.');
   }
 
+  // Si se subió un nuevo archivo de evidencia
+  if (data.file) {
+    const stage = await ProductiveStage.findById(bitacora.stageId);
+    if (stage) {
+      const driveService = require('../documents-dev2/storage.service');
+      const folderId = stage.driveFolders && stage.driveFolders.bitacoras ? stage.driveFolders.bitacoras : null;
+      const uploadResult = await driveService.subirDocumentoEP(data.file.buffer, data.file.originalname, folderId);
+      bitacora.evidencias = [{
+        nombreArchivo: data.file.originalname,
+        url: uploadResult.viewUrl,
+        driveFileId: uploadResult.driveFileId
+      }];
+    }
+  }
+
   // Si cambian las horas, actualizar la EP
-  if (data.horasReportadas !== undefined && data.horasReportadas !== bitacora.horasReportadas) {
+  if (data.horasReportadas !== undefined && !isNaN(data.horasReportadas) && data.horasReportadas !== bitacora.horasReportadas) {
     const stage = await ProductiveStage.findById(bitacora.stageId);
     if (stage) {
       stage.horasCompletadas = (stage.horasCompletadas || 0) - bitacora.horasReportadas + data.horasReportadas;
@@ -127,7 +154,7 @@ const actualizar = async (bitacoraId, data) => {
     bitacora.horasReportadas = data.horasReportadas;
   }
 
-  if (data.semana !== undefined) bitacora.semana = data.semana;
+  if (data.semana !== undefined && !isNaN(data.semana)) bitacora.semana = data.semana;
   if (data.descripcion !== undefined) bitacora.descripcion = data.descripcion;
 
   await bitacora.save();

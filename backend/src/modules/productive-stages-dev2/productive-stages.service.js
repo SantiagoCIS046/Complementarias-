@@ -152,7 +152,7 @@ const getAll = async (filtros = {}) => {
     .populate({
       path: 'apprenticeId',
       select: 'name email role documento instructorAsignado',
-      populate: { path: 'instructorAsignado', select: 'name' }
+      populate: { path: 'instructorAsignado', select: 'name email telefono' }
     })
     .populate('companyId', 'razonSocial nit')
     .populate('seguimientos')
@@ -173,7 +173,11 @@ const getAll = async (filtros = {}) => {
  */
 const getById = async (id) => {
   const stage = await ProductiveStage.findById(id)
-    .populate('apprenticeId', 'name email role')
+    .populate({
+      path: 'apprenticeId',
+      select: 'name email role documento instructorAsignado',
+      populate: { path: 'instructorAsignado', select: 'name email telefono' }
+    })
     .populate('companyId', 'razonSocial nit jefeInmediato')
     .populate('historialEstados.realizadoPor', 'name email')
     .populate('seguimientos');
@@ -208,6 +212,11 @@ const transicionar = async (stageId, nuevoEstado, userId, motivo) => {
   const stageActualizada = await ejecutarTransicion(stage, nuevoEstado, userId, motivo);
   const historial = stageActualizada.historialEstados;
   const estadoAnterior = historial.length >= 2 ? historial[historial.length - 2].estadoNuevo : 'N/A';
+
+  // --- Hook post-transicion: enviar correo de aprobacion (RF-APR-06) ---
+  if (nuevoEstado === ESTADO_EP.APROBADO) {
+    await enviarCorreoAprobacion(stageActualizada);
+  }
 
   // --- Hook post-transicion: crear carpetas en Drive al APROBAR ---
   let driveInfo = null;
@@ -480,6 +489,11 @@ const evaluarEP = async (stageId, { decision, comentario, documentosRevisados },
     comentario || 'Evaluacion completada: ' + decision
   );
 
+  // --- Hook post-transicion: enviar correo de aprobacion (RF-APR-06) ---
+  if (nuevoEstado === ESTADO_EP.APROBADO) {
+    await enviarCorreoAprobacion(stageActualizada);
+  }
+
   // Guardar el comentario en las observaciones de la EP
   if (comentario) {
     stageActualizada.observaciones = (stageActualizada.observaciones || '') +
@@ -595,9 +609,11 @@ const certificarEP = async (stageId, userId) => {
   // Obtener todos los documentos de esta EP
   const documentos = await Document.find({ stageId });
 
-  // Verificar que los 3 documentos finales esten subidos
+  const TODOS_CERTIFICACION = [...DOCUMENTOS_CERTIFICACION_OBLIGATORIOS, 'SOPORTES_FINALES'];
+
+  // Verificar que los documentos finales esten subidos
   const tiposSubidos = documentos.map((d) => d.tipoDocumento);
-  const faltantes = DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.filter(
+  const faltantes = TODOS_CERTIFICACION.filter(
     (tipo) => !tiposSubidos.includes(tipo)
   );
 
@@ -608,9 +624,9 @@ const certificarEP = async (stageId, userId) => {
     );
   }
 
-  // Verificar que los 3 documentos esten APROBADOS
+  // Verificar que los documentos esten APROBADOS
   const docsCertificacion = documentos.filter(
-    (d) => DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.includes(d.tipoDocumento)
+    (d) => TODOS_CERTIFICACION.includes(d.tipoDocumento)
   );
   const docsNoAprobados = docsCertificacion.filter((d) => d.estado !== 'APROBADO');
 
@@ -646,7 +662,7 @@ const certificarEP = async (stageId, userId) => {
 
 /**
  * Obtener el estado de los documentos de certificacion de una EP.
- * Muestra cuales de los 3 documentos finales estan subidos y su estado.
+ * Muestra cuales de los documentos finales estan subidos y su estado.
  */
 const getEstadoCertificacion = async (stageId) => {
   const stage = await ProductiveStage.findById(stageId);
@@ -655,9 +671,10 @@ const getEstadoCertificacion = async (stageId) => {
   }
 
   const documentos = await Document.find({ stageId });
+  const TODOS_CERTIFICACION = [...DOCUMENTOS_CERTIFICACION_OBLIGATORIOS, 'SOPORTES_FINALES'];
 
   // Verificar cada documento de certificacion
-  const estadoDocumentos = DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.map((tipo) => {
+  const estadoDocumentos = TODOS_CERTIFICACION.map((tipo) => {
     const doc = documentos.find((d) => d.tipoDocumento === tipo);
     return {
       tipoDocumento: tipo,
@@ -665,6 +682,7 @@ const getEstadoCertificacion = async (stageId) => {
       estado: doc ? doc.estado : 'NO_SUBIDO',
       url: doc ? doc.url : null,
       nombreArchivo: doc ? doc.nombreArchivo : null,
+      observaciones: doc ? doc.observaciones : '',
     };
   });
 
@@ -679,9 +697,68 @@ const getEstadoCertificacion = async (stageId) => {
     resumen: {
       subidos: estadoDocumentos.filter((d) => d.subido).length,
       aprobados: estadoDocumentos.filter((d) => d.estado === 'APROBADO').length,
-      total: DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.length,
+      total: TODOS_CERTIFICACION.length,
     },
   };
+};
+
+const enviarCorreoAprobacion = async (stage) => {
+  try {
+    const User = require('../users-dev1/user.model');
+    // Cargar aprendiz e instructor
+    const apprentice = await User.findById(stage.apprenticeId).populate('instructorAsignado', 'name email telefono');
+    if (!apprentice) return;
+
+    const instructor = apprentice.instructorAsignado;
+    const instructorName = instructor ? instructor.name : 'Por asignar';
+    const instructorEmail = instructor ? instructor.email : 'N/A';
+    const instructorPhone = instructor ? instructor.telefono || 'N/A' : 'N/A';
+
+    const { sendEmail } = require('../../core/utils/mailer');
+    await sendEmail({
+      to: apprentice.email,
+      subject: '🎉 ¡Tu Registro de Etapa Productiva ha sido APROBADO!',
+      html: `
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+          <div style="background: #1b5e20; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 1.2rem;">🎉 ¡Etapa Productiva Aprobada!</h1>
+            <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Plataforma REPFORA — SENA</p>
+          </div>
+          <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              Estimado(a) aprendiz <strong>${apprentice.name}</strong>,
+            </p>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              Nos complace informarte que tu registro de Etapa Productiva (Radicado: <strong>${stage.radicado}</strong>) ha sido <strong>APROBADO</strong> con éxito.
+            </p>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              Se ha asignado al siguiente instructor para realizar tu seguimiento y bitácoras:
+            </p>
+            <div style="background: #f0fdf4; border-left: 4px solid #1b5e20; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Instructor:</strong> ${instructorName}</p>
+              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Correo:</strong> ${instructorEmail}</p>
+              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Teléfono:</strong> ${instructorPhone}</p>
+            </div>
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 20px;">
+              <h4 style="margin: 0 0 8px 0; color: #1b5e20;">📋 Recomendaciones Clave:</h4>
+              <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: #475569; line-height: 1.6;">
+                <li>Completa y sube tus bitácoras de manera quincenal (los días 15 y 30 de cada mes).</li>
+                <li>Mantén contacto activo con tu instructor asignado.</li>
+                <li>Informa de inmediato cualquier novedad o cambio de tu situación laboral.</li>
+              </ul>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+            <p style="color: #94a3b8; font-size: 0.75rem; text-align: center;">
+              Este correo fue generado automáticamente por el sistema REPFORA.<br>
+              No responda a este mensaje.
+            </p>
+          </div>
+        </div>
+      `
+    });
+  } catch (err) {
+    console.error('Error enviando correo de aprobacion:', err.message);
+  }
 };
 
 module.exports = {

@@ -12,7 +12,10 @@ const crear = async (req, res) => {
   try {
     const data = await service.crear({
       ...req.body,
+      semana: req.body.semana ? Number(req.body.semana) : undefined,
+      horasReportadas: req.body.horasReportadas ? Number(req.body.horasReportadas) : undefined,
       apprenticeId: req.user._id,
+      file: req.file,
     });
     res.status(201).json({
       success: true,
@@ -101,7 +104,12 @@ const revisar = async (req, res) => {
  */
 const actualizar = async (req, res) => {
   try {
-    const data = await service.actualizar(req.params.id, req.body);
+    const data = await service.actualizar(req.params.id, {
+      ...req.body,
+      semana: req.body.semana ? Number(req.body.semana) : undefined,
+      horasReportadas: req.body.horasReportadas ? Number(req.body.horasReportadas) : undefined,
+      file: req.file,
+    });
     res.json({
       success: true,
       data,

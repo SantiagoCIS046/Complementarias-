@@ -185,6 +185,24 @@ const importExcel = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/users/me/logs
+ */
+const getMyLogs = async (req, res) => {
+  try {
+    const logs = await service.getMyLogs(req.user._id);
+    res.json({
+      success: true,
+      data: logs
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   getAll,
   getById,
@@ -193,4 +211,5 @@ module.exports = {
   getFichasSummary,
   reassignApprentices,
   importExcel,
+  getMyLogs,
 };

@@ -56,11 +56,30 @@ const login = async ({ email, password }) => {
     throw new Error('Credenciales inválidas.');
   }
 
+  // Verificar si la cuenta está bloqueada
+  if (usuario.isLocked) {
+    const minutosRestantes = Math.ceil((usuario.lockUntil - Date.now()) / 1000 / 60);
+    throw new Error(`Cuenta bloqueada temporalmente por intentos fallidos. Intenta de nuevo en ${minutosRestantes} minuto(s).`);
+  }
+
   // Verificar contraseña
   const passwordValido = await usuario.comparePassword(password);
   if (!passwordValido) {
+    // Incrementar intentos fallidos
+    usuario.loginAttempts = (usuario.loginAttempts || 0) + 1;
+    if (usuario.loginAttempts >= 3) {
+      usuario.lockUntil = new Date(Date.now() + 2 * 60 * 1000); // 2 minutos
+      await usuario.save();
+      throw new Error('Cuenta bloqueada temporalmente por 2 minutos tras 3 intentos fallidos.');
+    }
+    await usuario.save();
     throw new Error('Credenciales inválidas.');
   }
+
+  // Resetear intentos en login exitoso
+  usuario.loginAttempts = 0;
+  usuario.lockUntil = null;
+  await usuario.save();
 
   // Verificar que esté activo
   if (usuario.status === 'INACTIVO') {
@@ -72,10 +91,11 @@ const login = async ({ email, password }) => {
 
   return {
     usuario: {
-      _id:   usuario._id,
-      name:  usuario.name,
-      email: usuario.email,
-      role:  usuario.role,
+      _id:          usuario._id,
+      name:         usuario.name,
+      email:        usuario.email,
+      role:         usuario.role,
+      isFirstLogin: usuario.isFirstLogin,
     },
     token,
   };
@@ -162,8 +182,9 @@ const resetPassword = async ({ token, newPassword }) => {
     throw new Error('Token y nueva contraseña son requeridos.');
   }
 
-  if (newPassword.length < 6) {
-    throw new Error('La contraseña debe tener al menos 6 caracteres.');
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]\{\};':",.\/<>?]).{8,}$/;
+  if (!passwordRegex.test(newPassword)) {
+    throw new Error('La contraseña debe tener al menos 8 caracteres, incluyendo una letra mayúscula, una minúscula, un número y un carácter especial.');
   }
 
   // Hashear el token recibido para comparar con el de la BD
@@ -180,6 +201,7 @@ const resetPassword = async ({ token, newPassword }) => {
 
   // Actualizar contraseña y limpiar el token
   usuario.password             = newPassword;
+  usuario.isFirstLogin         = false; // Ya no es primer ingreso tras restablecer
   usuario.resetPasswordToken   = null;
   usuario.resetPasswordExpires = null;
   await usuario.save();
@@ -191,8 +213,9 @@ const resetPassword = async ({ token, newPassword }) => {
  * Cambiar la contraseña del usuario autenticado.
  */
 const changePassword = async (userId, newPassword) => {
-  if (!newPassword || newPassword.length < 6) {
-    throw new Error('La contraseña debe tener al menos 6 caracteres.');
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]\{\};':",.\/<>?]).{8,}$/;
+  if (!newPassword || !passwordRegex.test(newPassword)) {
+    throw new Error('La contraseña debe tener al menos 8 caracteres, incluyendo una letra mayúscula, una minúscula, un número y un carácter especial.');
   }
 
   const usuario = await User.findById(userId);
@@ -201,6 +224,7 @@ const changePassword = async (userId, newPassword) => {
   }
 
   usuario.password = newPassword;
+  usuario.isFirstLogin = false; // Se marca como falso al cambiar la clave
   await usuario.save();
 
   return { message: 'Contraseña actualizada exitosamente.' };

@@ -28,6 +28,28 @@ const formData = reactive({
   camaraFile: null
 })
 
+const requisitosPorModalidad = computed(() => {
+  if (formData.modalidad === 'Contrato de Aprendizaje') {
+    return [
+      'RUT de la empresa (obligatorio)',
+      'Cámara de Comercio (obligatorio)',
+      'Copia del Contrato de Aprendizaje firmado (obligatorio)'
+    ]
+  } else if (formData.modalidad === 'Vínculo Laboral') {
+    return [
+      'RUT de la empresa (obligatorio)',
+      'Cámara de Comercio (obligatorio)',
+      'Certificación Laboral con funciones y vigencia (obligatorio)'
+    ]
+  } else {
+    return [
+      'RUT de la empresa (obligatorio)',
+      'Cámara de Comercio (obligatorio)',
+      'Acuerdo/Convenio de Pasantía firmado (obligatorio)'
+    ]
+  }
+})
+
 const errors = reactive({
   nit: '',
   empresa: '',
@@ -123,8 +145,8 @@ const handleFileChange = (e, type) => {
     return
   }
 
-  if (file.size > 2 * 1024 * 1024) { // 2MB
-    notify('El archivo es demasiado grande (máximo 2MB).', 'error')
+  if (file.size > 5 * 1024 * 1024) { // 5MB
+    notify('El archivo es demasiado grande (máximo 5MB).', 'error')
     e.target.value = ''
     return
   }
@@ -353,9 +375,18 @@ onMounted(loadData)
                       <p><strong>Jefe:</strong> {{ formData.supervisor.nombre }}</p>
                     </div>
 
+                    <!-- Requisitos según modalidad (RF-APR-04) -->
+                    <div class="requirements-checklist mt-16" style="background:#F8FAFC; padding: 12px; border-radius: 12px; border: 1px solid #E2E8F0;">
+                      <h4 style="font-size:10px; font-weight:800; color:#64748B; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">REQUISITOS REQUERIDOS:</h4>
+                      <div v-for="(reqText, rIdx) in requisitosPorModalidad" :key="rIdx" style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                        <span class="material-symbols-outlined" style="font-size:16px; color:#16A34A; font-variation-settings: 'FILL' 1;">task_alt</span>
+                        <span style="font-size:12px; color:#475569; font-weight:600;">{{ reqText }}</span>
+                      </div>
+                    </div>
+
                     <div class="doc-upload-section mt-32">
                       <div class="form-group">
-                        <label>RUT DE LA EMPRESA (PDF)</label>
+                        <label>RUT DE LA EMPRESA (PDF - MÁX 5MB)</label>
                         <div class="file-input-wrapper">
                           <input type="file" @change="handleFileChange($event, 'rut')" accept=".pdf" class="file-input">
                           <div v-if="formData.rutFile" class="file-selected-tag">
@@ -364,7 +395,7 @@ onMounted(loadData)
                         </div>
                       </div>
                       <div class="form-group mt-16">
-                        <label>CÁMARA DE COMERCIO (PDF)</label>
+                        <label>CÁMARA DE COMERCIO (PDF - MÁX 5MB)</label>
                         <div class="file-input-wrapper">
                           <input type="file" @change="handleFileChange($event, 'camara')" accept=".pdf" class="file-input">
                           <div v-if="formData.camaraFile" class="file-selected-tag">

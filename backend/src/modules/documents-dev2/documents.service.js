@@ -16,7 +16,7 @@ const { ESTADO_DOCUMENTO, TIPO_DOCUMENTO } = require('../../core/utils/enums');
  * 2. Si hay archivo (buffer), lo sube a Google Drive
  * 3. Guarda solo la URL de visualizacion en la BD
  */
-const subir = async ({ stageId, tipoDocumento, nombreArchivo, url, userId, fileBuffer }) => {
+const subir = async ({ stageId, tipoDocumento, nombreArchivo, url, userId, fileBuffer, driveFileId }) => {
   // Verificar que la EP existe
   const stage = await ProductiveStage.findById(stageId);
   if (!stage) {
@@ -29,7 +29,7 @@ const subir = async ({ stageId, tipoDocumento, nombreArchivo, url, userId, fileB
   }
 
   let finalUrl = url || '';
-  let driveFileId = null;
+  let finalDriveFileId = driveFileId || null;
 
   // Si hay un archivo fisico, subirlo a Google Drive
   if (fileBuffer) {
@@ -45,7 +45,7 @@ const subir = async ({ stageId, tipoDocumento, nombreArchivo, url, userId, fileB
     );
 
     finalUrl = driveResult.viewUrl;
-    driveFileId = driveResult.driveFileId;
+    finalDriveFileId = driveResult.driveFileId;
   }
 
   // Verificar si ya existe un documento de este tipo para esta EP
@@ -54,7 +54,7 @@ const subir = async ({ stageId, tipoDocumento, nombreArchivo, url, userId, fileB
     // Actualizar el existente en vez de crear uno nuevo
     existente.nombreArchivo = nombreArchivo;
     existente.url = finalUrl;
-    existente.driveFileId = driveFileId || existente.driveFileId;
+    existente.driveFileId = finalDriveFileId || existente.driveFileId;
     existente.estado = ESTADO_DOCUMENTO.PENDIENTE; // Resetear a pendiente
     existente.subidoPor = userId;
     existente.revisadoPor = null;
@@ -70,7 +70,7 @@ const subir = async ({ stageId, tipoDocumento, nombreArchivo, url, userId, fileB
     tipoDocumento,
     nombreArchivo,
     url: finalUrl,
-    driveFileId,
+    driveFileId: finalDriveFileId,
     subidoPor: userId,
   });
 
@@ -116,6 +116,7 @@ const subirConArchivo = async ({ stageId, tipoDocumento, userId, file }) => {
     url: driveResult.viewUrl,
     userId,
     fileBuffer: null, // Ya se subio arriba
+    driveFileId: driveResult.driveFileId,
   });
 };
 

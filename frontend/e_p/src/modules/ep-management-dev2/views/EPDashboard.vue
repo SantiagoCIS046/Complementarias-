@@ -98,6 +98,20 @@ const editForm = ref({ id: '', semana: '', descripcion: '', horasReportadas: '' 
 
 const showCalendarModal = ref(false)
 
+// Tabs del Dashboard: 'bitacoras' | 'historial'
+const dashboardTab = ref('bitacoras')
+const logs = ref([])
+const loadingLogs = ref(false)
+
+// Modal Registro Completo
+const showFullDetailsModal = ref(false)
+const fullDetails = ref(null)
+const loadingFullDetails = ref(false)
+
+// Archivos de bitácora
+const bitacoraFile = ref(null)
+const editBitacoraFile = ref(null)
+
 // Toast
 const toastMsg = ref(null)
 const showToast = (msg, type = 'ok') => {
@@ -117,18 +131,71 @@ function openEdit(bitacora) {
     descripcion: bitacora.descripcion, 
     horasReportadas: bitacora.horasReportadas 
   }
+  editBitacoraFile.value = null
   showEditModal.value = true
+}
+
+function handleBitacoraFileChange(e) {
+  const file = e.target.files[0]
+  if (file && file.size > 5 * 1024 * 1024) {
+    showToast('El archivo es demasiado grande (máximo 5MB).', 'err')
+    e.target.value = ''
+    bitacoraFile.value = null
+    return
+  }
+  bitacoraFile.value = file
+}
+
+function handleEditBitacoraFileChange(e) {
+  const file = e.target.files[0]
+  if (file && file.size > 5 * 1024 * 1024) {
+    showToast('El archivo es demasiado grande (máximo 5MB).', 'err')
+    e.target.value = ''
+    editBitacoraFile.value = null
+    return
+  }
+  editBitacoraFile.value = file
+}
+
+async function openFullDetails() {
+  if (!stage.value) return
+  showFullDetailsModal.value = true
+  loadingFullDetails.value = true
+  try {
+    const res = await epService.getById(stage.value._id)
+    fullDetails.value = res.data?.data || res.data
+  } catch (err) {
+    showToast('Error al cargar detalles completos.', 'err')
+  } finally {
+    loadingFullDetails.value = false
+  }
+}
+
+async function loadLogs() {
+  loadingLogs.value = true
+  try {
+    const res = await epService.getMyLogs()
+    logs.value = res.data?.data || res.data || []
+  } catch (err) {
+    showToast('Error al cargar el historial.', 'err')
+  } finally {
+    loadingLogs.value = false
+  }
 }
 
 async function saveEdit() {
   try {
-    const data = {
-      semana: Number(editForm.value.semana),
-      descripcion: editForm.value.descripcion,
-      horasReportadas: Number(editForm.value.horasReportadas)
+    const fData = new FormData()
+    fData.append('semana', Number(editForm.value.semana))
+    fData.append('descripcion', editForm.value.descripcion)
+    fData.append('horasReportadas', Number(editForm.value.horasReportadas))
+    if (editBitacoraFile.value) {
+      fData.append('archivo', editBitacoraFile.value)
     }
-    await epService.actualizarBitacora(editForm.value.id, data)
+
+    await epService.actualizarBitacora(editForm.value.id, fData)
     showEditModal.value = false
+    editBitacoraFile.value = null
     showToast('Bitácora actualizada exitosamente.')
     await load()
   } catch (err) {
@@ -181,9 +248,19 @@ async function enviarRevision() {
 async function crearBitacora() {
   saving.value = true; submitError.value = null
   try {
-    await epService.crearBitacora({ stageId: stage.value._id, semana: Number(form.value.semana), descripcion: form.value.descripcion, horasReportadas: Number(form.value.horasReportadas) })
+    const fData = new FormData()
+    fData.append('stageId', stage.value._id)
+    fData.append('semana', Number(form.value.semana))
+    fData.append('descripcion', form.value.descripcion)
+    fData.append('horasReportadas', Number(form.value.horasReportadas))
+    if (bitacoraFile.value) {
+      fData.append('archivo', bitacoraFile.value)
+    }
+
+    await epService.crearBitacora(fData)
     showModal.value = false
     form.value = { semana: '', descripcion: '', horasReportadas: '' }
+    bitacoraFile.value = null
     await load()
     showToast('Bitácora registrada correctamente.')
   } catch (e) { submitError.value = e.response?.data?.message || 'Error al guardar.' }
@@ -203,6 +280,9 @@ onMounted(load)
     <div class="main-wrapper">
       <Header title="Seguimiento de Aprendiz">
         <template #actions>
+          <a href="https://sena.edu.co/es-co/Formacion/Paginas/etapa-productiva.aspx" target="_blank" class="btn-new" style="background:#10B981; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+            <span class="material-symbols-outlined">download</span> Formatos Bitácora
+          </a>
           <button v-if="puedeEnviarRevision" @click="enviarRevision" :disabled="enviando" class="btn-new" style="background:#3B82F6">{{ enviando ? 'Enviando...' : 'Enviar a Revisión' }}</button>
           <button @click="showModal = true" class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
           <div v-if="msgRevision" :style="{ fontSize:'11px', fontWeight:'700', padding:'6px 12px', borderRadius:'8px', background: msgRevision.type==='ok'?'#F0FDF4':'#FFF1F2', color: msgRevision.type==='ok'?'#16A34A':'#E11D48' }">{{ msgRevision.text }}</div>
@@ -210,8 +290,18 @@ onMounted(load)
       </Header>
 
       <main class="content">
+        <!-- OBSERVACIONES DEL ADMINISTRADOR (RF-APR-05) -->
+        <div v-if="stage && stage.observaciones" style="margin-bottom: 24px; padding: 20px; background: #FEF3C7; border-left: 5px solid #D97706; border-radius: 16px; font-size: 13px; color: #92400E; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+          <span class="material-symbols-outlined" style="color:#D97706; font-size: 24px;">info</span>
+          <div>
+            <h4 style="margin:0 0 4px 0; font-weight:800; font-size:14px; color:#B45309;">Observaciones del Administrador</h4>
+            <p style="margin:0; font-weight:600; line-height:1.5;">{{ stage.observaciones }}</p>
+          </div>
+        </div>
+
         <!-- SECCIÓN INFO + PROGRESO INTEGRADO -->
-        <div class="info-grid">
+        <div class="info-grid" :style="{ gridTemplateColumns: stage?.apprenticeId?.instructorAsignado ? '1fr 1fr' : '1fr' }">
+          <!-- CARD EMPRESA -->
           <div class="company-card">
             <div class="company-card-body">
               <div class="card-header">
@@ -219,11 +309,13 @@ onMounted(load)
                   <span class="label">INFORMACIÓN DE LA EMPRESA</span>
                   <span class="desc">Detalles del convenio de etapa productiva</span>
                 </div>
-                <span v-if="!loading" class="status-badge">ESTADO: {{ aprendiz.estadoActual }}</span>
-                <div v-else class="skel-badge"></div>
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                  <span v-if="!loading" class="status-badge">ESTADO: {{ aprendiz.estadoActual }}</span>
+                  <div v-else class="skel-badge"></div>
+                </div>
               </div>
               
-              <div class="company-details" v-if="!loading">
+              <div class="company-details" v-if="!loading" style="grid-template-columns: repeat(2, 1fr);">
                 <div class="detail-item">
                   <div class="icon"><span class="material-symbols-outlined">corporate_fare</span></div>
                   <div class="txt">
@@ -262,6 +354,9 @@ onMounted(load)
                   </div>
                 </div>
               </div>
+              <button v-if="stage" @click="openFullDetails" class="btn-new" style="background:#1A4D2E; font-size:11px; padding:6px 12px; margin-top:16px; box-shadow:none; display:flex; align-items:center; gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:16px;">pageview</span> Ver Registro Completo
+              </button>
             </div>
 
             <!-- FOOTER DE PROGRESO INTEGRADO -->
@@ -292,64 +387,178 @@ onMounted(load)
               </template>
             </div>
           </div>
-        </div>
 
-        <!-- TABLA BITACORAS -->
-        <div class="table-container">
-          <div class="table-header">
-            <h3>Mis Bitácoras Quincenales</h3>
-            <div class="table-icons" style="display:flex;align-items:center;gap:12px">
-              <div style="display:flex;align-items:center;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:0 12px;height:36px">
-                <span class="material-symbols-outlined" style="font-size:18px;color:#94A3B8">search</span>
-                <input v-model="searchQuery" type="text" placeholder="Buscar bitácora..." style="border:none;background:transparent;outline:none;font-size:12px;color:#334155;width:150px;margin-left:8px" />
+          <!-- CARD INSTRUCTOR ASIGNADO (RF-APR-17) -->
+          <div v-if="stage?.apprenticeId?.instructorAsignado" class="company-card" style="border-top: 4px solid #1A4D2E;">
+            <div class="company-card-body" style="height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div class="card-header">
+                  <div class="header-text">
+                    <span class="label">INSTRUCTOR ASIGNADO</span>
+                    <span class="desc">Instructor de seguimiento y bitácoras</span>
+                  </div>
+                  <span class="status-badge" style="background:#F0FDF4; color:#16A34A; font-weight:800; font-size:10px;">ASIGNADO</span>
+                </div>
+                
+                <div class="company-details" style="grid-template-columns: repeat(1, 1fr); gap: 12px;">
+                  <div class="detail-item">
+                    <div class="icon" style="color:#1A4D2E;"><span class="material-symbols-outlined">person</span></div>
+                    <div class="txt">
+                      <span class="key">NOMBRE</span>
+                      <span class="val">{{ stage.apprenticeId.instructorAsignado.name }}</span>
+                    </div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="icon" style="color:#1A4D2E;"><span class="material-symbols-outlined">mail</span></div>
+                    <div class="txt">
+                      <span class="key">CORREO</span>
+                      <span class="val">{{ stage.apprenticeId.instructorAsignado.email }}</span>
+                    </div>
+                  </div>
+                  <div class="detail-item" v-if="stage.apprenticeId.instructorAsignado.telefono">
+                    <div class="icon" style="color:#1A4D2E;"><span class="material-symbols-outlined">call</span></div>
+                    <div class="txt">
+                      <span class="key">TELÉFONO</span>
+                      <span class="val">{{ stage.apprenticeId.instructorAsignado.telefono }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <span class="material-symbols-outlined action-btn">filter_list</span>
             </div>
           </div>
-          <table class="bitacora-table" v-if="!loading">
-            <thead>
-              <tr>
-                <th>NÚMERO</th>
-                <th>RANGO DE FECHAS</th>
-                <th class="center">HORAS REPORTADAS</th>
-                <th class="center">ESTADO</th>
-                <th class="right">ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="filteredBitacoras.length === 0">
-                <td colspan="5" style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No tienes bitácoras que coincidan con la búsqueda.</td>
-              </tr>
-              <tr v-for="item in paginatedBitacoras" :key="item._id">
-                <td class="bold">Semana {{ item.semana }}</td>
-                <td class="faded">
-                  <span class="material-symbols-outlined mini">calendar_today</span> <span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" :title="item.descripcion">{{ item.descripcion }}</span>
-                </td>
-                <td class="center"><span class="hours-badge">{{ item.horasReportadas }}h</span></td>
-                <td class="center">
-                  <span class="badge" :class="item.estado === 'APROBADA' ? 'success' : 'pending'">
-                    <span class="dot"></span> {{ item.estado }}
-                  </span>
-                </td>
-                <td class="right">
-                  <button v-if="item.estado === 'APROBADA'" @click="openView(item)" style="background:none;border:none;color:#16A34A;cursor:pointer;padding:6px;border-radius:8px" title="Ver Detalle" class="action-btn-hover">
-                    <span class="material-symbols-outlined">visibility</span>
-                  </button>
-                  <button v-else @click="openEdit(item)" style="background:none;border:none;color:#3B82F6;cursor:pointer;padding:6px;border-radius:8px" title="Editar Bitácora" class="action-btn-hover">
-                    <span class="material-symbols-outlined">edit_square</span>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else style="padding: 24px;">
-            <SkeletonLoader variant="table" :rows="4" :columns="5" />
+        </div>
+
+        <!-- CONTENEDOR CON TABS (RF-APR-19) -->
+        <div class="table-container" style="margin-top:24px;">
+          <div style="display:flex; border-bottom:1px solid #E2E8F0; background:#F8FAFC; border-radius: 20px 20px 0 0; overflow:hidden;">
+            <button 
+              @click="dashboardTab = 'bitacoras'" 
+              :style="{ 
+                padding:'16px 24px', 
+                border:'none', 
+                background:'none', 
+                fontFamily: 'inherit',
+                fontSize:'13px', 
+                fontWeight:'800', 
+                letterSpacing:'0.5px',
+                textTransform: 'uppercase',
+                borderBottom: dashboardTab === 'bitacoras' ? '3px solid #1A4D2E' : '3px solid transparent', 
+                color: dashboardTab === 'bitacoras' ? '#1A4D2E' : '#64748B', 
+                cursor:'pointer',
+                outline: 'none'
+              }"
+            >
+              Mis Bitácoras
+            </button>
+            <button 
+              @click="dashboardTab = 'historial'; loadLogs()" 
+              :style="{ 
+                padding:'16px 24px', 
+                border:'none', 
+                background:'none', 
+                fontFamily: 'inherit',
+                fontSize:'13px', 
+                fontWeight:'800', 
+                letterSpacing:'0.5px',
+                textTransform: 'uppercase',
+                borderBottom: dashboardTab === 'historial' ? '3px solid #1A4D2E' : '3px solid transparent', 
+                color: dashboardTab === 'historial' ? '#1A4D2E' : '#64748B', 
+                cursor:'pointer',
+                outline: 'none'
+              }"
+            >
+              Historial (Timeline)
+            </button>
           </div>
-          <div class="table-footer">
-            <span class="footer-stats">PÁGINA {{ currentPage }} DE {{ totalPages }} ({{ filteredBitacoras.length }} REGISTROS)</span>
-            <div class="pagination">
-              <button @click="prevPage" :disabled="currentPage === 1" class="pag-btn" :class="{ disabled: currentPage === 1 }">Anterior</button>
-              <button @click="nextPage" :disabled="currentPage === totalPages" class="pag-btn" :class="{ disabled: currentPage === totalPages }">Siguiente</button>
+
+          <!-- TAB 1: BITACORAS -->
+          <div v-show="dashboardTab === 'bitacoras'">
+            <div class="table-header">
+              <h3>Mis Bitácoras Quincenales</h3>
+              <div class="table-icons" style="display:flex;align-items:center;gap:12px">
+                <div style="display:flex;align-items:center;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:0 12px;height:36px">
+                  <span class="material-symbols-outlined" style="font-size:18px;color:#94A3B8">search</span>
+                  <input v-model="searchQuery" type="text" placeholder="Buscar bitácora..." style="border:none;background:transparent;outline:none;font-size:12px;color:#334155;width:150px;margin-left:8px" />
+                </div>
+                <span class="material-symbols-outlined action-btn">filter_list</span>
+              </div>
+            </div>
+            <table class="bitacora-table" v-if="!loading">
+              <thead>
+                <tr>
+                  <th>NÚMERO</th>
+                  <th>DESCRIPCIÓN</th>
+                  <th class="center">HORAS REPORTADAS</th>
+                  <th class="center">ESTADO</th>
+                  <th class="right">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="filteredBitacoras.length === 0">
+                  <td colspan="5" style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No tienes bitácoras que coincidan con la búsqueda.</td>
+                </tr>
+                <tr v-for="item in paginatedBitacoras" :key="item._id">
+                  <td class="bold">Semana {{ item.semana }}</td>
+                  <td class="faded">
+                    <span class="material-symbols-outlined mini">description</span> 
+                    <span style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" :title="item.descripcion">
+                      {{ item.descripcion }}
+                    </span>
+                  </td>
+                  <td class="center"><span class="hours-badge">{{ item.horasReportadas }}h</span></td>
+                  <td class="center">
+                    <span class="badge" :style="{
+                      background: item.estado === 'APROBADA' ? '#F0FDF4' : item.estado === 'RECHAZADA' ? '#FEF2F2' : '#FEF3C7',
+                      color: item.estado === 'APROBADA' ? '#16A34A' : item.estado === 'RECHAZADA' ? '#EF4444' : '#D97706',
+                      borderColor: item.estado === 'APROBADA' ? '#DCFCE7' : item.estado === 'RECHAZADA' ? '#FEE2E2' : '#FEF3C7'
+                    }">
+                      <span class="dot" :style="{ background: item.estado === 'APROBADA' ? '#16A34A' : item.estado === 'RECHAZADA' ? '#EF4444' : '#D97706' }"></span> 
+                      {{ item.estado }}
+                    </span>
+                  </td>
+                  <td class="right">
+                    <button v-if="item.estado === 'APROBADA'" @click="openView(item)" style="background:none;border:none;color:#16A34A;cursor:pointer;padding:6px;border-radius:8px" title="Ver Detalle" class="action-btn-hover">
+                      <span class="material-symbols-outlined">visibility</span>
+                    </button>
+                    <button v-else @click="openEdit(item)" style="background:none;border:none;color:#3B82F6;cursor:pointer;padding:6px;border-radius:8px" title="Editar Bitácora" class="action-btn-hover">
+                      <span class="material-symbols-outlined">edit_square</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-else style="padding: 24px;">
+              <SkeletonLoader variant="table" :rows="4" :columns="5" />
+            </div>
+            <div class="table-footer">
+              <span class="footer-stats">PÁGINA {{ currentPage }} DE {{ totalPages }} ({{ filteredBitacoras.length }} REGISTROS)</span>
+              <div class="pagination">
+                <button @click="prevPage" :disabled="currentPage === 1" class="pag-btn" :class="{ disabled: currentPage === 1 }">Anterior</button>
+                <button @click="nextPage" :disabled="currentPage === totalPages" class="pag-btn" :class="{ disabled: currentPage === totalPages }">Siguiente</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: HISTORIAL TIMELINE (RF-APR-19) -->
+          <div v-show="dashboardTab === 'historial'" style="padding: 32px 24px;">
+            <div v-if="loadingLogs" style="text-align:center; padding:32px;">
+              <p style="color:#64748B; font-weight:600;">Cargando historial de acciones...</p>
+            </div>
+            <div v-else-if="logs.length === 0" style="text-align:center; padding:32px; color:#94A3B8;">
+              No se registran acciones en tu bitácora de auditoría.
+            </div>
+            <div v-else class="timeline-container" style="display:flex; flex-direction:column; gap:16px; position:relative; padding-left: 24px; border-left: 2px solid #E2E8F0; margin-left: 10px;">
+              <div v-for="log in logs" :key="log._id" class="timeline-item" style="position:relative; margin-bottom: 8px;">
+                <!-- Dot -->
+                <div style="position:absolute; left:-31px; top:4px; width:12px; height:12px; border-radius:50%; background:#1A4D2E; border:2px solid #FFF; box-shadow:0 0 0 2px #E2E8F0;"></div>
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px 16px; border-radius:12px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span style="font-size:12px; font-weight:800; color:#1A4D2E; text-transform:uppercase; letter-spacing:0.5px;">{{ log.action }}</span>
+                    <span style="font-size:11px; color:#94A3B8; font-weight:600;">{{ new Date(log.createdAt).toLocaleString() }}</span>
+                  </div>
+                  <p style="font-size:12px; color:#334155; margin:0; line-height:1.4;">{{ log.details }}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -374,7 +583,7 @@ onMounted(load)
       </div>
     </div>
 
-    <!-- MODAL NUEVA BITÁCORA -->
+    <!-- MODAL NUEVA BITÁCORA (RF-APR-08) -->
     <div v-if="showModal" @click.self="showModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
       <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15)">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #F1F5F9">
@@ -394,6 +603,10 @@ onMounted(load)
             <label style="font-size:11px;font-weight:700;color:#64748B">Horas Reportadas</label>
             <input v-model="form.horasReportadas" type="number" min="0" placeholder="Ej: 40" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
           </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:11px;font-weight:700;color:#64748B">Archivo PDF de Bitácora (Evidencia - Máx 5MB)</label>
+            <input type="file" @change="handleBitacoraFileChange" accept=".pdf" style="border:1px solid #E2E8F0;border-radius:8px;padding:8px;font-size:13px;outline:none;width:100%;background:#F8FAFC;cursor:pointer;" />
+          </div>
           <div v-if="submitError" style="font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;background:#FFF1F2;color:#E11D48">{{ submitError }}</div>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
             <button @click="showModal = false" style="background:#F1F5F9;color:#475569;border:none;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Cancelar</button>
@@ -403,7 +616,7 @@ onMounted(load)
       </div>
     </div>
 
-    <!-- MODAL EDITAR BITÁCORA -->
+    <!-- MODAL EDITAR BITÁCORA (RF-APR-08) -->
     <div v-if="showEditModal" @click.self="showEditModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
       <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15)">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #F1F5F9">
@@ -423,6 +636,10 @@ onMounted(load)
             <label style="font-size:11px;font-weight:700;color:#64748B">Horas Reportadas</label>
             <input v-model="editForm.horasReportadas" type="number" min="0" placeholder="Ej: 40" style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;outline:none;width:100%" />
           </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:11px;font-weight:700;color:#64748B">Reemplazar archivo PDF de Bitácora (Opcional - Máx 5MB)</label>
+            <input type="file" @change="handleEditBitacoraFileChange" accept=".pdf" style="border:1px solid #E2E8F0;border-radius:8px;padding:8px;font-size:13px;outline:none;width:100%;background:#F8FAFC;cursor:pointer;" />
+          </div>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
             <button @click="showEditModal = false" style="background:#F1F5F9;color:#475569;border:none;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Cancelar</button>
             <button @click="saveEdit" class="btn-new">Guardar Cambios</button>
@@ -431,7 +648,7 @@ onMounted(load)
       </div>
     </div>
 
-    <!-- MODAL VER DETALLES -->
+    <!-- MODAL VER DETALLES (RF-APR-08) -->
     <div v-if="showViewModal && selectedBitacora" @click.self="showViewModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
       <div style="background:#fff;border-radius:20px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden">
         <div style="background:#F8FAFC;padding:24px;border-bottom:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:flex-start">
@@ -446,7 +663,7 @@ onMounted(load)
             <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:6px">ACTIVIDADES REALIZADAS</label>
             <p style="font-size:13px;color:#334155;line-height:1.6;margin:0;background:#F8FAFC;padding:16px;border-radius:12px;border:1px solid #F1F5F9">{{ selectedBitacora.descripcion }}</p>
           </div>
-          <div style="display:flex;gap:24px">
+          <div style="display:flex;gap:24px;flex-wrap:wrap;">
             <div>
               <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:4px">HORAS REPORTADAS</label>
               <span style="font-size:16px;font-weight:800;color:#1E293B">{{ selectedBitacora.horasReportadas }} h</span>
@@ -458,6 +675,111 @@ onMounted(load)
               <span v-else style="font-size:12px;font-weight:700;color:#CA8A04;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">schedule</span> Pendiente</span>
             </div>
           </div>
+          <div v-if="selectedBitacora.observacionesInstructor" style="border-top:1px solid #F1F5F9; padding-top:16px;">
+            <label style="font-size:11px;font-weight:800;color:#E11D48;display:block;margin-bottom:4px">OBSERVACIONES DEL INSTRUCTOR</label>
+            <p style="font-size:12px;color:#991B1B;background:#FEF2F2;padding:12px;border-radius:8px;margin:0;line-height:1.5;">{{ selectedBitacora.observacionesInstructor }}</p>
+          </div>
+          <div v-if="selectedBitacora.evidencias && selectedBitacora.evidencias.length > 0" style="border-top:1px solid #F1F5F9; padding-top:16px;">
+            <label style="font-size:11px;font-weight:800;color:#94A3B8;display:block;margin-bottom:6px">ARCHIVO ADJUNTO</label>
+            <a :href="selectedBitacora.evidencias[0].url" target="_blank" style="display:inline-flex;align-items:center;gap:8px;color:#1A4D2E;font-weight:800;text-decoration:none;font-size:12px;background:#F0FDF4;padding:8px 16px;border-radius:8px;border:1px solid #DCFCE7;">
+              <span class="material-symbols-outlined">description</span>
+              {{ selectedBitacora.evidencias[0].nombreArchivo || 'Ver Evidencia PDF' }}
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DETALLES COMPLETOS DE REGISTRO (RF-APR-18) -->
+    <div v-if="showFullDetailsModal" @click.self="showFullDetailsModal = false" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px">
+      <div style="background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden;display:flex;flex-direction:column;">
+        <div style="background:#F8FAFC;padding:24px;border-bottom:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
+          <div>
+            <span style="font-size:11px;font-weight:800;color:#1A4D2E;letter-spacing:1px;display:block;margin-bottom:4px">DETALLE COMPLETO DE ETAPA PRODUCTIVA</span>
+            <h3 style="font-size:18px;font-weight:800;color:#1E293B;margin:0">Radicado: {{ stage?.radicado || 'Pendiente' }}</h3>
+          </div>
+          <button @click="showFullDetailsModal = false" style="background:#fff;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center;padding:4px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.05)"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div style="padding:24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:20px;">
+          <div v-if="loadingFullDetails" style="text-align:center;padding:40px;">
+            <p style="color:#64748B;font-weight:600;">Cargando información del registro...</p>
+          </div>
+          <template v-else-if="fullDetails">
+            <!-- Sección: Datos Generales -->
+            <div>
+              <h4 style="font-size:12px;font-weight:800;color:#1A4D2E;margin-bottom:12px;border-bottom:1px solid #E2E8F0;padding-bottom:6px;">DATOS DEL REGISTRO</h4>
+              <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;font-size:13px;color:#334155;">
+                <p><strong>Modalidad:</strong> {{ fullDetails.stage?.modalidad }}</p>
+                <p><strong>Tipo Formación:</strong> {{ fullDetails.stage?.tipoFormacion }}</p>
+                <p><strong>Jornada:</strong> {{ fullDetails.stage?.jornada || 'Por configurar' }}</p>
+                <p><strong>Estado:</strong> {{ fullDetails.stage?.estado }}</p>
+                <p><strong>Fecha Inicio:</strong> {{ fullDetails.stage?.fechaInicio ? new Date(fullDetails.stage.fechaInicio).toLocaleDateString() : 'Por iniciar' }}</p>
+                <p><strong>Fecha Fin Proyectada:</strong> {{ fullDetails.stage?.fechaProyectadaFin ? new Date(fullDetails.stage.fechaProyectadaFin).toLocaleDateString() : 'Por definir' }}</p>
+                <p><strong>Horas Completadas/Requeridas:</strong> {{ fullDetails.stage?.horasCompletadas }}h / {{ fullDetails.stage?.horasRequeridas }}h</p>
+                <p><strong>Empresa:</strong> {{ fullDetails.stage?.companySnapshot?.razonSocial }} (NIT: {{ fullDetails.stage?.companySnapshot?.nit }})</p>
+              </div>
+            </div>
+
+            <!-- Sección: Documentos Cargados -->
+            <div>
+              <h4 style="font-size:12px;font-weight:800;color:#1A4D2E;margin-bottom:12px;border-bottom:1px solid #E2E8F0;padding-bottom:6px;">DOCUMENTOS ASOCIADOS</h4>
+              <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;">
+                <thead>
+                  <tr style="background:#F8FAFC;">
+                    <th style="padding:8px;color:#64748B;">Tipo</th>
+                    <th style="padding:8px;color:#64748B;">Nombre Archivo</th>
+                    <th style="padding:8px;color:#64748B;">Estado</th>
+                    <th style="padding:8px;color:#64748B;">Observaciones</th>
+                    <th style="padding:8px;color:#64748B;text-align:right;">Enlace</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="doc in fullDetails.documentos" :key="doc._id" style="border-bottom:1px solid #F1F5F9;">
+                    <td style="padding:8px;font-weight:700;">{{ doc.tipoDocumento }}</td>
+                    <td style="padding:8px;color:#64748B;">{{ doc.nombreArchivo }}</td>
+                    <td style="padding:8px;">
+                      <span style="font-weight:800;padding:2px 6px;border-radius:4px;" :style="{
+                        background: doc.estado==='APROBADO' ? '#DCFCE7' : doc.estado==='RECHAZADO' ? '#FEE2E2' : '#FEF3C7',
+                        color: doc.estado==='APROBADO' ? '#166534' : doc.estado==='RECHAZADO' ? '#991B1B' : '#92400E'
+                      }">
+                        {{ doc.estado }}
+                      </span>
+                    </td>
+                    <td style="padding:8px;color:#64748B;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" :title="doc.observaciones">{{ doc.observaciones || '---' }}</td>
+                    <td style="padding:8px;text-align:right;">
+                      <a :href="doc.url" target="_blank" style="color:#1A4D2E;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:2px;">
+                        <span class="material-symbols-outlined" style="font-size:16px;">open_in_new</span> Ver
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Sección: Observaciones Generales -->
+            <div>
+              <h4 style="font-size:12px;font-weight:800;color:#1A4D2E;margin-bottom:8px;border-bottom:1px solid #E2E8F0;padding-bottom:6px;">OBSERVACIONES GENERALES</h4>
+              <p style="font-size:13px;color:#475569;background:#F8FAFC;padding:12px;border-radius:8px;margin:0;line-height:1.5;">
+                {{ fullDetails.stage?.observaciones || 'Sin observaciones registradas por el administrador.' }}
+              </p>
+            </div>
+
+            <!-- Sección: Historial de Estados -->
+            <div>
+              <h4 style="font-size:12px;font-weight:800;color:#1A4D2E;margin-bottom:12px;border-bottom:1px solid #E2E8F0;padding-bottom:6px;">HISTORIAL DE ESTADOS</h4>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div v-for="(h, hIdx) in fullDetails.stage?.historialEstados" :key="hIdx" style="display:flex;gap:12px;font-size:12px;">
+                  <span style="color:#94A3B8;font-weight:700;white-space:nowrap;">{{ new Date(h.fecha).toLocaleDateString() }}</span>
+                  <div>
+                    <span style="font-weight:800;color:#1E293B;">{{ h.estadoNuevo }}</span>
+                    <span style="color:#64748B;"> (desde {{ h.estadoAnterior || 'Inicio' }})</span>
+                    <p style="margin:4px 0 0 0;color:#64748B;" v-if="h.motivo"><strong>Motivo:</strong> {{ h.motivo }}</p>
+                    <p style="margin:2px 0 0 0;color:#94A3B8;font-size:11px;" v-if="h.realizadoPor?.name">Realizado por: {{ h.realizadoPor.name }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </div>

@@ -18,34 +18,53 @@ const formData = ref({
 const isSubmitting = ref(false);
 const message = ref({ text: '', type: '' });
 
-const handleSubmit = async () => {
+const showModal = ref(false);
+const tempEmail = ref('');
+const tempTelefono = ref('');
+const confirmCheck = ref(false);
+
+const openModal = () => {
+  tempEmail.value = formData.value.email;
+  tempTelefono.value = formData.value.telefono;
+  confirmCheck.value = false;
+  showModal.value = true;
+};
+
+const closeModal = () => {
+  if (!isSubmitting.value) {
+    showModal.value = false;
+    message.value = { text: '', type: '' };
+  }
+};
+
+const saveContactDetails = async () => {
+  if (!confirmCheck.value) return;
   isSubmitting.value = true;
   message.value = { text: '', type: '' };
 
   try {
     const response = await usersService.update(user._id, {
-      name: formData.value.name,
-      email: formData.value.email,
-      telefono: formData.value.telefono
+      email: tempEmail.value,
+      telefono: tempTelefono.value
     });
 
     if (response.data.success) {
-      // Actualizar el store global
+      formData.value.email = tempEmail.value;
+      formData.value.telefono = tempTelefono.value;
       authStore.updateUser(response.data.data);
-      message.value = { text: '¡Perfil actualizado correctamente!', type: 'success' };
+      message.value = { text: '¡Datos de contacto actualizados correctamente!', type: 'success' };
+      setTimeout(() => {
+        closeModal();
+      }, 1500);
     }
   } catch (error) {
-    console.error('Error al actualizar perfil:', error);
+    console.error('Error al actualizar datos de contacto:', error);
     message.value = { 
-      text: error.response?.data?.message || 'Error al actualizar el perfil. Intenta de nuevo.', 
+      text: error.response?.data?.message || 'Error al actualizar. Intenta de nuevo.', 
       type: 'error' 
     };
   } finally {
     isSubmitting.value = false;
-    // Limpiar mensaje después de 3 segundos
-    setTimeout(() => {
-      message.value = { text: '', type: '' };
-    }, 3000);
   }
 };
 
@@ -69,29 +88,30 @@ const getInitials = (name) => {
       </div>
 
       <div class="profile-body">
-        <form @submit.prevent="handleSubmit" class="profile-form">
+        <div class="profile-form">
           <div class="form-grid">
-            <div class="form-group">
+            <div class="form-group readonly">
               <label for="name">Nombre Completo</label>
               <div class="input-wrapper">
                 <span class="material-symbols-outlined">person</span>
-                <input id="name" v-model="formData.name" type="text" placeholder="Tu nombre" required />
+                <input id="name" :value="formData.name" type="text" readonly />
               </div>
+              <small>No se puede cambiar el nombre por seguridad.</small>
             </div>
 
-            <div class="form-group">
+            <div class="form-group readonly">
               <label for="email">Correo Electrónico</label>
               <div class="input-wrapper">
                 <span class="material-symbols-outlined">mail</span>
-                <input id="email" v-model="formData.email" type="email" placeholder="tu@correo.com" required />
+                <input id="email" :value="formData.email" type="email" readonly />
               </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group readonly">
               <label for="telefono">Teléfono / Celular</label>
               <div class="input-wrapper">
                 <span class="material-symbols-outlined">phone</span>
-                <input id="telefono" v-model="formData.telefono" type="text" placeholder="Número de contacto" />
+                <input id="telefono" :value="formData.telefono" type="text" readonly />
               </div>
             </div>
 
@@ -121,19 +141,61 @@ const getInitials = (name) => {
             </div>
           </div>
 
-          <div v-if="message.text" :class="['message', message.type]">
-            {{ message.text }}
-          </div>
-
           <div class="form-actions">
-            <button type="submit" class="submit-btn" :disabled="isSubmitting">
-              <span v-if="!isSubmitting">Guardar Cambios</span>
+            <button type="button" class="submit-btn" @click="openModal">
+              <span>Modificar Datos de Contacto</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición de Contacto (RF-APR-14) -->
+    <Transition name="fade">
+      <div v-if="showModal" class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>Actualizar Datos de Contacto</h3>
+            <button class="close-btn" @click="closeModal">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="modal-email">Nuevo Correo Electrónico</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined">mail</span>
+                <input id="modal-email" v-model="tempEmail" type="email" placeholder="tu@correo.com" required />
+              </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 1.5rem;">
+              <label for="modal-telefono">Nuevo Teléfono / Celular</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined">phone</span>
+                <input id="modal-telefono" v-model="tempTelefono" type="text" placeholder="Número de contacto" />
+              </div>
+            </div>
+
+            <div class="confirmation-checkbox" style="margin-top: 1.5rem;">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="confirmCheck" />
+                <span>Confirmo que deseo actualizar mis datos de contacto.</span>
+              </label>
+            </div>
+
+            <div v-if="message.text" :class="['message', message.type]" style="margin-top: 1.5rem;">
+              {{ message.text }}
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="cancel-btn" @click="closeModal" :disabled="isSubmitting">Cancelar</button>
+            <button type="button" class="save-btn" :disabled="isSubmitting || !confirmCheck" @click="saveContactDetails">
+              <span v-if="!isSubmitting">Guardar</span>
               <span v-else class="loader"></span>
             </button>
           </div>
-        </form>
+        </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
@@ -364,5 +426,125 @@ const getInitials = (name) => {
   .submit-btn {
     width: 100%;
   }
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: white;
+  width: 90%;
+  max-width: 480px;
+  border-radius: 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-header {
+  background: #2e7d32;
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.75rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 2rem 1.5rem;
+}
+
+.confirmation-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: 18px;
+  height: 18px;
+  accent-color: #2e7d32;
+  cursor: pointer;
+}
+
+.modal-actions {
+  padding: 1.5rem;
+  background: #f8fafc;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.cancel-btn {
+  background: #e2e8f0;
+  color: #475569;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #cbd5e1;
+}
+
+.save-btn {
+  background: #2e7d32;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #1b5e20;
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

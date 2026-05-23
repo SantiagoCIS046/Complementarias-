@@ -24,13 +24,33 @@ function checkSessionExpiry() {
   }
 }
 
+let lastRefreshTime = 0
+function handleUserActivity() {
+  const now = Date.now()
+  // Throttle to at most once every 10 seconds to reduce localStorage writes
+  if (now - lastRefreshTime > 10000) {
+    authStore.refreshActivity()
+    lastRefreshTime = now
+  }
+}
+
 onMounted(() => {
   themeStore.initTheme()
   sessionWatcher = setInterval(checkSessionExpiry, SESSION_CHECK_INTERVAL)
+
+  // Listeners for user activity (RF-APR-20)
+  window.addEventListener('keydown', handleUserActivity)
+  window.addEventListener('click', handleUserActivity)
+  window.addEventListener('mousemove', handleUserActivity)
+  window.addEventListener('scroll', handleUserActivity)
 })
 
 onUnmounted(() => {
   clearInterval(sessionWatcher)
+  window.removeEventListener('keydown', handleUserActivity)
+  window.removeEventListener('click', handleUserActivity)
+  window.removeEventListener('mousemove', handleUserActivity)
+  window.removeEventListener('scroll', handleUserActivity)
 })
 </script>
 

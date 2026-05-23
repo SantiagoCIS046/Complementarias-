@@ -32,4 +32,7 @@ export const epService = {
   // ── Certificación ─────────────────────────────────────────────
   getEstadoCertificacion: (id)      => http.get(`/productive-stages/${id}/certificacion`),
   descargarCertificado:   (id)      => http.get(`/productive-stages/${id}/download-certificate`, { responseType: 'blob' }),
+
+  // ── Logs de usuario (Historial) ──────────────────────────────
+  getMyLogs:              ()        => http.get('/users/me/logs'),
 }

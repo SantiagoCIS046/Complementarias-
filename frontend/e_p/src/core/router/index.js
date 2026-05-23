@@ -70,6 +70,12 @@ const routes = [
     component: () => import('../../modules/admin-auth-dev1/views/SystemConfig.vue'),
     meta: { requiresAuth: true, roles: ['ADMIN'] },
   },
+  {
+    path: '/primer-ingreso',
+    name: 'ResetMandatory',
+    component: () => import('../../modules/admin-auth-dev1/views/ResetMandatory.vue'),
+    meta: { requiresAuth: true },
+  },
 
   // ── 🔵 DEV 2: EP Management ─────────────────────────
   {
@@ -167,6 +173,14 @@ router.beforeEach((to, from) => {
   const isLoggedIn = !!token
   const userRole   = resolveRole(auth)
 
+  const isFirstLogin = auth.user?.isFirstLogin || (() => {
+    try {
+      const raw = localStorage.getItem('repfora_user')
+      if (raw && raw !== 'undefined') return JSON.parse(raw).isFirstLogin
+    } catch {}
+    return false
+  })()
+
   // ── 2. Verificar expiración de sesión (24 horas de inactividad) ───
   //    Solo aplica si el usuario tiene token pero ya caducó su sesión
   if (isLoggedIn && auth.isSessionExpired()) {
@@ -176,6 +190,12 @@ router.beforeEach((to, from) => {
       name: 'Login',
       query: { expired: '1' }, // Flag para mostrar mensaje en Login
     }
+  }
+
+  // ── 2.5. Mandatorio cambio de clave por primer ingreso ────────────
+  if (isLoggedIn && isFirstLogin && to.name !== 'ResetMandatory') {
+    ui.stopLoading()
+    return { name: 'ResetMandatory' }
   }
 
   // ── 3. Ruta pública — si ya está logueado redirigir a su home ─────

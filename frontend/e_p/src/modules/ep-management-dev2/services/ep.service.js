@@ -31,8 +31,12 @@ export const epService = {
 
   // ── Certificación ─────────────────────────────────────────────
   getEstadoCertificacion: (id)      => http.get(`/productive-stages/${id}/certificacion`),
+  certificarEP:           (id)      => http.post(`/productive-stages/${id}/certificar`),
   descargarCertificado:   (id)      => http.get(`/productive-stages/${id}/download-certificate`, { responseType: 'blob' }),
 
   // ── Logs de usuario (Historial) ──────────────────────────────
   getMyLogs:              ()        => http.get('/users/me/logs'),
+
+  // ── RF-ADM-21 Reportes Estadísticos ──────────────────────────
+  getReportStats: (params = {})     => http.get('/productive-stages/reports/stats', { params }),
 }

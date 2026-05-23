@@ -14,5 +14,6 @@ router.post('/',    checkRole(['ADMIN', 'INSTRUCTOR']), controller.crear);
 router.get('/',     checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), controller.getAll);
 router.get('/:id',  checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), controller.getById);
 router.put('/:id',  checkRole(['ADMIN', 'INSTRUCTOR']), controller.actualizar);
+router.patch('/:id/approve-extraordinary', checkRole(['ADMIN']), controller.approveExtraordinary);
 
 module.exports = router;

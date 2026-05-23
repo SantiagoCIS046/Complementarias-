@@ -10,6 +10,12 @@ import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 const instructorName = computed(() => authStore.user?.name || 'Instructor')
+const dashboardTitle = computed(() => {
+  if (authStore.user?.role === 'ADMIN') {
+    return 'Panel de Administración: Seguimiento de Aprendices'
+  }
+  return 'Panel del Instructor: ' + instructorName.value
+})
 const isAuthenticated = computed(() => !!authStore.user)
 
 // ── Estado REAL ──────────────────────────────────
@@ -195,7 +201,7 @@ const getPhaseStyle = (phase) => {
     <Sidebar />
 
     <div class="main-wrapper">
-      <Header :title="'Panel del Instructor: ' + instructorName" />
+      <Header :title="dashboardTitle" />
 
       <main class="content">
         <div class="w-full space-y-2">

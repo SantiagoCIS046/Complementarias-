@@ -244,9 +244,80 @@ const subirDocumentoEP = async (fileBuffer, fileName, folderId) => {
   };
 };
 
+/**
+ * Mueve una carpeta a un nuevo directorio padre
+ */
+const moverCarpeta = async (itemId, newParentId) => {
+  const token = await getAccessToken();
+  if (!token) {
+    console.log(`[ONEDRIVE-DEV] Carpeta movida: ${itemId} -> padre ${newParentId}`);
+    return { id: itemId, parentId: newParentId };
+  }
+
+  const pathUrl = `/v1.0/me/drive/items/${itemId}`;
+  const postData = JSON.stringify({
+    parentReference: {
+      id: newParentId
+    }
+  });
+
+  const options = {
+    hostname: 'graph.microsoft.com',
+    path: pathUrl,
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(postData),
+    },
+  };
+
+  return await makeRequest(options, postData);
+};
+
+/**
+ * Busca una carpeta por su nombre bajo un parentId en Microsoft OneDrive
+ */
+const buscarCarpetaPorNombre = async (nombre, parentId) => {
+  const token = await getAccessToken();
+  if (!token) {
+    console.log(`[ONEDRIVE-DEV] Buscando carpeta simulada por nombre: ${nombre} bajo parentId: ${parentId}`);
+    return null;
+  }
+
+  const parent = parentId || ROOT_FOLDER_ID;
+  const encodedName = encodeURIComponent(nombre);
+  const pathUrl = `/v1.0/me/drive/items/${parent}/children?$filter=name eq '${encodedName}'`;
+
+  const options = {
+    hostname: 'graph.microsoft.com',
+    path: pathUrl,
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  };
+
+  try {
+    const response = await makeRequest(options);
+    if (response.value && response.value.length > 0) {
+      return {
+        id: response.value[0].id,
+        name: response.value[0].name,
+        webViewLink: response.value[0].webUrl,
+      };
+    }
+  } catch (err) {
+    console.error('[ONEDRIVE SEARCH ERROR]', err);
+  }
+  return null;
+};
+
 module.exports = {
   crearCarpeta,
   subirArchivo,
   crearEstructuraCarpetas,
   subirDocumentoEP,
+  moverCarpeta,
+  buscarCarpetaPorNombre,
 };

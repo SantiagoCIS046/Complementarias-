@@ -203,6 +203,59 @@ const getMyLogs = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/users/instructors/hours
+ */
+const getInstructorsHours = async (req, res) => {
+  try {
+    const data = await service.getInstructorsHours();
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * PATCH /api/users/instructors/:id/pay-hours
+ */
+const payInstructorsHours = async (req, res) => {
+  try {
+    const { hours } = req.body;
+    if (hours === undefined || isNaN(hours)) {
+      return res.status(400).json({
+        success: false,
+        message: 'La cantidad de horas a pagar es requerida y debe ser un número.'
+      });
+    }
+
+    const data = await service.payInstructorsHours(req.params.id, Number(hours));
+
+    // Registrar en auditoría
+    await registrarAuditoria({
+      action: 'PAY_INSTRUCTOR_HOURS',
+      userId: req.user._id,
+      details: `Registrado pago de ${hours} horas para el instructor ${data.name}. Total horas pagadas acumuladas: ${data.horasPagadas}`
+    });
+
+    res.json({
+      success: true,
+      message: `Se registraron ${hours} horas pagadas correctamente.`,
+      data
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   getAll,
   getById,
@@ -212,4 +265,6 @@ module.exports = {
   reassignApprentices,
   importExcel,
   getMyLogs,
+  getInstructorsHours,
+  payInstructorsHours,
 };

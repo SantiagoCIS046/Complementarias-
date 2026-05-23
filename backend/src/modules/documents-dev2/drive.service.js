@@ -237,10 +237,64 @@ const subirDocumentoEP = async (fileBuffer, fileName, folderId) => {
   };
 };
 
+/**
+ * Mueve una carpeta/archivo a un nuevo padre
+ */
+const moverCarpeta = async (fileId, newParentId) => {
+  const drive = getDriveClient();
+  if (!drive) {
+    console.log(`[DRIVE-DEV] Carpeta movida: ${fileId} -> padre ${newParentId}`);
+    return { id: fileId, parentId: newParentId };
+  }
+
+  const file = await drive.files.get({
+    fileId: fileId,
+    fields: 'parents'
+  });
+  const previousParents = (file.data.parents || []).join(',');
+
+  const response = await drive.files.update({
+    fileId: fileId,
+    addParents: newParentId,
+    removeParents: previousParents,
+    fields: 'id, name, parents'
+  });
+
+  return response.data;
+};
+
+/**
+ * Busca una carpeta por su nombre bajo un parentId en Google Drive
+ */
+const buscarCarpetaPorNombre = async (nombre, parentId) => {
+  const drive = getDriveClient();
+  if (!drive) {
+    console.log(`[DRIVE-DEV] Buscando carpeta simulada por nombre: ${nombre} bajo parentId: ${parentId}`);
+    return null;
+  }
+
+  const query = `name = '${nombre.replace(/'/g, "\\'")}' and '${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+  const response = await drive.files.list({
+    q: query,
+    fields: 'files(id, name, webViewLink)',
+  });
+
+  if (response.data.files && response.data.files.length > 0) {
+    return {
+      id: response.data.files[0].id,
+      name: response.data.files[0].name,
+      webViewLink: response.data.files[0].webViewLink,
+    };
+  }
+  return null;
+};
+
 module.exports = {
   getDriveClient,
   crearCarpeta,
   subirArchivo,
   crearEstructuraCarpetas,
   subirDocumentoEP,
+  moverCarpeta,
+  buscarCarpetaPorNombre,
 };

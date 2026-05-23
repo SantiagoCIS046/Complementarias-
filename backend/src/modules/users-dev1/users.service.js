@@ -81,6 +81,23 @@ const actualizar = async (id, data) => {
   // No permitir cambiar el password por esta via
   delete data.password;
 
+  // RF-ADM-15 Verificación de estado activo para instructores asignados
+  const instructorFields = ['instructorAsignado', 'instructorTecnico', 'instructorProyecto'];
+  for (const field of instructorFields) {
+    if (data[field]) {
+      const inst = await User.findById(data[field]);
+      if (!inst) {
+        throw new Error(`El instructor asignado en ${field} no existe.`);
+      }
+      if (inst.role !== 'INSTRUCTOR') {
+        throw new Error(`El usuario asignado en ${field} debe tener el rol de INSTRUCTOR.`);
+      }
+      if (inst.activo === false || inst.status === 'INACTIVO') {
+        throw new Error(`El instructor asignado en ${field} (${inst.name}) debe estar en estado activo.`);
+      }
+    }
+  }
+
   const usuario = await User.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
@@ -144,16 +161,140 @@ const getFichasSummary = async () => {
  * También actualiza las fichas (Batches) y los trackings programados/pendientes.
  */
 const reassignApprentices = async (outgoingId, newInstructorId) => {
-  // 1. Validar nuevo instructor
+  // 1. Validar nuevo instructor y que esté activo (RF-ADM-16 / RF-ADM-15)
   const newInstructor = await User.findById(newInstructorId);
   if (!newInstructor || newInstructor.role !== 'INSTRUCTOR') {
     throw new Error('El instructor de destino seleccionado no es válido.');
+  }
+  if (newInstructor.activo === false || newInstructor.status === 'INACTIVO') {
+    throw new Error('El instructor de destino seleccionado debe estar en estado activo.');
+  }
+
+  // Identificar los aprendices afectados antes de actualizarlos en la base de datos
+  const affectedApprentices = await User.find({
+    role: 'APRENDIZ',
+    $or: [
+      { instructorAsignado: outgoingId },
+      { instructorTecnico: outgoingId },
+      { instructorProyecto: outgoingId }
+    ]
+  });
+
+  const storageService = require('../documents-dev2/storage.service');
+  const ProductiveStage = require('../productive-stages-dev2/productive-stage.model');
+  const provider = await storageService.getActiveProvider();
+
+  // Iterar por los aprendices afectados para realizar la migración y la notificación
+  for (const apprentice of affectedApprentices) {
+    let rolesCambiados = [];
+    const mainInstructorChanged = apprentice.instructorAsignado && apprentice.instructorAsignado.toString() === outgoingId.toString();
+
+    if (mainInstructorChanged) {
+      rolesCambiados.push('Seguimiento');
+    }
+    if (apprentice.instructorTecnico && apprentice.instructorTecnico.toString() === outgoingId.toString()) {
+      rolesCambiados.push('Técnico');
+    }
+    if (apprentice.instructorProyecto && apprentice.instructorProyecto.toString() === outgoingId.toString()) {
+      rolesCambiados.push('Proyecto');
+    }
+
+    // Si cambia el instructor de seguimiento principal, migrar la carpeta física
+    if (mainInstructorChanged) {
+      try {
+        const stage = await ProductiveStage.findOne({ apprenticeId: apprentice._id });
+        if (stage && stage.driveFolders && stage.driveFolders.aprendiz) {
+          // Asegurar que el instructor destino tenga una carpeta raíz de instructor
+          let newInstructorFolderId = provider === 'ONEDRIVE' ? newInstructor.onedriveFolderId : newInstructor.driveFolderId;
+          if (!newInstructorFolderId) {
+            const nombreFolderInstructor = 'INSTRUCTOR_' + newInstructor.name.replace(/\s+/g, '_');
+            const folderRes = await storageService.crearCarpeta(nombreFolderInstructor);
+            newInstructorFolderId = folderRes.id;
+            if (provider === 'ONEDRIVE') {
+              newInstructor.onedriveFolderId = newInstructorFolderId;
+            } else {
+              newInstructor.driveFolderId = newInstructorFolderId;
+            }
+            await newInstructor.save();
+          }
+
+          // Obtener o crear la carpeta de la ficha bajo el nuevo instructor
+          const nombreFicha = 'FICHA_' + (apprentice.ficha || 'SIN_FICHA');
+          const fichaFolder = await storageService.obtenerOCrearCarpeta(nombreFicha, newInstructorFolderId);
+          const newFichaFolderId = fichaFolder.id;
+
+          // Mover la carpeta del aprendiz a la nueva ficha
+          await storageService.moverCarpeta(stage.driveFolders.aprendiz, newFichaFolderId);
+          console.log(`[STORAGE] Carpeta del aprendiz ${apprentice.name} migrada exitosamente al instructor ${newInstructor.name}`);
+        }
+      } catch (storageErr) {
+        console.error(`[STORAGE ERROR] Falló la migración física del aprendiz ${apprentice.name}:`, storageErr.message || storageErr);
+      }
+    }
+
+    // Enviar correo de notificación
+    if (rolesCambiados.length > 0) {
+      try {
+        await sendEmail({
+          to: apprentice.email,
+          subject: 'Reasignación de Instructor asignado en RepFora',
+          html: `
+            <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+              <div style="background: #1b5e20; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 1.2rem;">📢 Reasignación de Instructor</h1>
+                <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Gestión de Etapas Productivas — SENA</p>
+              </div>
+              <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                  Hola <strong>${apprentice.name}</strong>,
+                </p>
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                  Te informamos que se ha realizado un cambio en tus instructores asignados para los siguientes roles: <strong>${rolesCambiados.join(', ')}</strong>.
+                </p>
+                <div style="background: #f8fafc; border-left: 4px solid #1b5e20; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Nuevo Instructor:</strong> ${newInstructor.name}</p>
+                  <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Correo de contacto:</strong> ${newInstructor.email}</p>
+                </div>
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                  Tus carpetas de evidencias y archivos en la nube han sido migrados de forma automática para que el nuevo instructor asignado pueda revisar tus documentos sin contratiempos.
+                </p>
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.6; margin-top: 20px;">
+                  Puedes acceder a la plataforma haciendo clic en el siguiente enlace:
+                </p>
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login"
+                   style="display:inline-block;padding:12px 24px;background:#1b5e20;
+                          color:#fff;text-decoration:none;border-radius:6px;margin:16px 0;font-weight:700;">
+                  Ingresar a la Plataforma
+                </a>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+                <p style="color: #94a3b8; font-size: 0.75rem; text-align: center;">
+                  Este correo fue generado automáticamente por el sistema REPFORA.<br>
+                  No responda a este mensaje.
+                </p>
+              </div>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error(`[MAIL ERROR] Error enviando correo de reasignación a ${apprentice.email}:`, emailErr.message || emailErr);
+      }
+    }
   }
 
   // 2. Reasignar en modelo User (Aprendices)
   const apprenticesResult = await User.updateMany(
     { instructorAsignado: outgoingId, role: 'APRENDIZ' },
     { instructorAsignado: newInstructorId }
+  );
+
+  const technicalResult = await User.updateMany(
+    { instructorTecnico: outgoingId, role: 'APRENDIZ' },
+    { instructorTecnico: newInstructorId }
+  );
+
+  const projectResult = await User.updateMany(
+    { instructorProyecto: outgoingId, role: 'APRENDIZ' },
+    { instructorProyecto: newInstructorId }
   );
 
   // 3. Reasignar en modelo Batch (Fichas)
@@ -173,8 +314,10 @@ const reassignApprentices = async (outgoingId, newInstructorId) => {
     { instructorId: newInstructorId }
   );
 
+  const totalApprenticesReassigned = affectedApprentices.length;
+
   return {
-    apprenticesReassigned: apprenticesResult.modifiedCount || apprenticesResult.nModified || 0,
+    apprenticesReassigned: totalApprenticesReassigned,
     batchesReassigned: batchesResult.modifiedCount || batchesResult.nModified || 0,
     trackingsReassigned: trackingsResult.modifiedCount || trackingsResult.nModified || 0,
   };
@@ -345,6 +488,114 @@ const getMyLogs = async (userId) => {
   return await AuditLog.find({ usuario: userId }).sort({ createdAt: -1 });
 };
 
+/**
+ * Obtener control de horas para todos los instructores
+ */
+const getInstructorsHours = async () => {
+  const SystemConfig = require('../system-config-dev1/system-config.model');
+  const Tracking = require('../trackings-dev3/tracking.model');
+  const Bitacora = require('../bitacoras-dev3/bitacora.model');
+  const ProductiveStage = require('../productive-stages-dev2/productive-stage.model');
+
+  // Obtener configuraciones de horas
+  let valSeguimiento = 2;
+  let valBitacoras = 1;
+  let valCertificacion = 2;
+
+  try {
+    const configSeg = await SystemConfig.findOne({ clave: 'HORAS_SEGUIMIENTO' });
+    if (configSeg) valSeguimiento = Number(configSeg.valor) || 2;
+
+    const configBit = await SystemConfig.findOne({ clave: 'HORAS_REVISION_BITACORAS' });
+    if (configBit) valBitacoras = Number(configBit.valor) || 1;
+
+    const configCert = await SystemConfig.findOne({ clave: 'HORAS_CERTIFICACION' });
+    if (configCert) valCertificacion = Number(configCert.valor) || 2;
+  } catch (err) {
+    console.error('Error fetching horas configs:', err);
+  }
+
+  const instructores = await User.find({ role: 'INSTRUCTOR' }).sort({ name: 1 });
+
+  const result = [];
+  for (const inst of instructores) {
+    // 1. Visitas de seguimiento realizadas (REALIZADO)
+    // Las visitas extraordinarias (esExtraordinario: true) solo cuentan si están aprobadas (APROBADO)
+    const visitasCount = await Tracking.countDocuments({ 
+      instructorId: inst._id, 
+      estadoVisita: 'REALIZADO',
+      $or: [
+        { esExtraordinario: { $ne: true } },
+        { esExtraordinario: true, estadoExtraordinario: 'APROBADO' }
+      ]
+    });
+
+    // 2. Bitácoras revisadas (APROBADA o RECHAZADA)
+    const bitacorasCount = await Bitacora.countDocuments({ 
+      revisadoPor: inst._id, 
+      estado: { $ne: 'PENDIENTE' } 
+    });
+
+    // 3. Certificaciones completas
+    const apprentices = await User.find({
+      role: 'APRENDIZ',
+      $or: [
+        { instructorAsignado: inst._id },
+        { instructorTecnico: inst._id },
+        { instructorProyecto: inst._id }
+      ]
+    }).select('_id');
+    const apprenticeIds = apprentices.map(a => a._id);
+    const certifiedCount = await ProductiveStage.countDocuments({
+      apprenticeId: { $in: apprenticeIds },
+      estado: 'CERTIFICADO'
+    });
+
+    const horasVisitas = visitasCount * valSeguimiento;
+    const horasBitacoras = bitacorasCount * valBitacoras;
+    const horasCertificacion = certifiedCount * valCertificacion;
+    const totalHoras = horasVisitas + horasBitacoras + horasCertificacion;
+    const horasPagadas = inst.horasPagadas || 0;
+    const saldoHoras = totalHoras - horasPagadas;
+
+    result.push({
+      _id: inst._id,
+      name: inst.name,
+      email: inst.email,
+      areaConocimiento: inst.areaConocimiento || 'General',
+      activo: inst.activo !== false,
+      visitasRealizadas: visitasCount,
+      bitacorasRevisadas: bitacorasCount,
+      certificacionesCompletas: certifiedCount,
+      horasVisitas,
+      horasBitacoras,
+      horasCertificacion,
+      totalHoras,
+      horasPagadas,
+      saldoHoras,
+    });
+  }
+
+  return result;
+};
+
+/**
+ * Registrar horas pagadas para un instructor
+ */
+const payInstructorsHours = async (instructorId, hoursPaid) => {
+  const inst = await User.findById(instructorId);
+  if (!inst || inst.role !== 'INSTRUCTOR') {
+    throw new Error('El instructor no es válido o no existe.');
+  }
+  if (hoursPaid <= 0) {
+    throw new Error('La cantidad de horas pagadas debe ser mayor a 0.');
+  }
+
+  inst.horasPagadas = (inst.horasPagadas || 0) + hoursPaid;
+  await inst.save();
+  return inst;
+};
+
 module.exports = {
   getAll,
   getById,
@@ -354,4 +605,6 @@ module.exports = {
   reassignApprentices,
   importExcel,
   getMyLogs,
+  getInstructorsHours,
+  payInstructorsHours,
 };

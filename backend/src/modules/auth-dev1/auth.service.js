@@ -15,11 +15,28 @@ const driveService = require('../documents-dev2/drive.service');
 /**
  * Registrar un nuevo usuario.
  */
-const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa, fechaFinLectiva }) => {
+const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa, fechaFinLectiva, instructorAsignado, instructorTecnico, instructorProyecto, tipoProyecto, modalidades }) => {
   // Verificar que no exista el email
   const existe = await User.findOne({ email });
   if (existe) {
     throw new Error('Ya existe un usuario registrado con el email: ' + email);
+  }
+
+  // RF-ADM-15 Verificación de estado activo para instructores asignados
+  const instructorFields = { instructorAsignado, instructorTecnico, instructorProyecto };
+  for (const [fieldName, instId] of Object.entries(instructorFields)) {
+    if (instId) {
+      const inst = await User.findById(instId);
+      if (!inst) {
+        throw new Error(`El instructor asignado en ${fieldName} no existe.`);
+      }
+      if (inst.role !== 'INSTRUCTOR') {
+        throw new Error(`El usuario asignado en ${fieldName} debe tener el rol de INSTRUCTOR.`);
+      }
+      if (inst.activo === false || inst.status === 'INACTIVO') {
+        throw new Error(`El instructor asignado en ${fieldName} (${inst.name}) debe estar en estado activo.`);
+      }
+    }
   }
 
   const usuario = await User.create({
@@ -32,6 +49,11 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
     ficha,
     programa,
     fechaFinLectiva: fechaFinLectiva || null,
+    instructorAsignado: instructorAsignado || null,
+    instructorTecnico: instructorTecnico || null,
+    instructorProyecto: instructorProyecto || null,
+    tipoProyecto: tipoProyecto || null,
+    modalidades: modalidades || [],
   });
 
   // Si es un instructor, crear su carpeta de almacenamiento en OneDrive y Google Drive

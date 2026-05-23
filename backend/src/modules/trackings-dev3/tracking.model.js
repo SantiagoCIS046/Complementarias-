@@ -61,6 +61,19 @@ const trackingSchema = new mongoose.Schema(
       enum: ['PROGRAMADO', 'REALIZADO', 'PENDIENTE', 'CANCELADO'],
       default: 'PROGRAMADO',
     },
+    esExtraordinario: {
+      type: Boolean,
+      default: false,
+    },
+    estadoExtraordinario: {
+      type: String,
+      enum: ['PENDIENTE', 'APROBADO', 'RECHAZADO', 'N/A'],
+      default: 'N/A',
+    },
+    observacionesEvaluacion: {
+      type: String,
+      default: '',
+    },
     alertaEnviada: {
       type: Boolean,
       default: false,

@@ -19,6 +19,8 @@ router.use(verifyToken);
 
 // Rutas restringidas a ADMIN e INSTRUCTOR
 router.post('/import',      checkRole(['ADMIN']), upload.single('file'), controller.importExcel);
+router.get('/instructors/hours', checkRole(['ADMIN']), controller.getInstructorsHours);
+router.patch('/instructors/:id/pay-hours', checkRole(['ADMIN']), controller.payInstructorsHours);
 router.get('/fichas/stats', checkRole(['ADMIN', 'INSTRUCTOR']), controller.getFichasSummary);
 router.get('/',             checkRole(['ADMIN', 'INSTRUCTOR']), controller.getAll);
 router.patch('/:id/toggle-status', checkRole(['ADMIN']),        controller.toggleStatus);

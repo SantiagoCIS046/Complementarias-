@@ -10,12 +10,14 @@ const ProductiveStage = require('../productive-stages-dev2/productive-stage.mode
 /**
  * Crear una nueva visita de seguimiento.
  */
-const crear = async ({ stageId, instructorId, apprenticeId, numeroVisita, fechaVisita, lugarVisita, observaciones, compromisos, calificacion, evidenciaUrl }) => {
+const crear = async ({ stageId, instructorId, apprenticeId, numeroVisita, fechaVisita, lugarVisita, observaciones, compromisos, calificacion, evidenciaUrl, esExtraordinario }) => {
   // Verificar que la EP existe
   const stage = await ProductiveStage.findById(stageId);
   if (!stage) {
     throw new Error('Etapa Productiva no encontrada.');
   }
+
+  const isExtraordinary = esExtraordinario === true || esExtraordinario === 'true';
 
   const tracking = await Tracking.create({
     stageId,
@@ -28,6 +30,8 @@ const crear = async ({ stageId, instructorId, apprenticeId, numeroVisita, fechaV
     compromisos: compromisos || '',
     calificacion: calificacion || null,
     evidenciaUrl: evidenciaUrl || '',
+    esExtraordinario: isExtraordinary,
+    estadoExtraordinario: isExtraordinary ? 'PENDIENTE' : 'N/A',
   });
 
   return tracking;
@@ -92,10 +96,37 @@ const actualizar = async (id, data) => {
   return tracking;
 };
 
+/**
+ * Aprobar o rechazar un seguimiento extraordinario.
+ */
+const approveExtraordinary = async (id, estado, observacionesEvaluacion) => {
+  if (!['APROBADO', 'RECHAZADO'].includes(estado)) {
+    throw new Error('Estado inválido. Debe ser APROBADO o RECHAZADO.');
+  }
+
+  const tracking = await Tracking.findById(id);
+  if (!tracking) {
+    throw new Error('Visita de seguimiento no encontrada.');
+  }
+  if (!tracking.esExtraordinario) {
+    throw new Error('Esta visita de seguimiento no es extraordinaria.');
+  }
+
+  if (estado === 'RECHAZADO' && (!observacionesEvaluacion || !observacionesEvaluacion.trim())) {
+    throw new Error('Las observaciones son obligatorias para rechazar un seguimiento extraordinario.');
+  }
+
+  tracking.estadoExtraordinario = estado;
+  tracking.observacionesEvaluacion = observacionesEvaluacion || '';
+  await tracking.save();
+  return tracking;
+};
+
 module.exports = {
   crear,
   getAll,
   getByStage,
   getById,
   actualizar,
+  approveExtraordinary,
 };

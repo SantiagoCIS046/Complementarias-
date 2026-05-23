@@ -63,6 +63,25 @@ const userSchema = new mongoose.Schema(
       ref: 'User',
       default: null,
     },
+    instructorTecnico: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    instructorProyecto: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    tipoProyecto: {
+      type: String,
+      enum: ['INDIVIDUAL', 'GRUPAL', null],
+      default: null,
+    },
+    modalidades: {
+      type: [String],
+      default: [],
+    },
     activo: {
       type: Boolean,
       default: true,
@@ -104,6 +123,10 @@ const userSchema = new mongoose.Schema(
     driveFolderId: {
       type: String,
       default: null,
+    },
+    horasPagadas: {
+      type: Number,
+      default: 0,
     },
     // Recuperación de Contraseña
     resetPasswordToken: {

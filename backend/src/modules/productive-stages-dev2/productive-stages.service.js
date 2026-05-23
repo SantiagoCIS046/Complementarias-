@@ -151,8 +151,12 @@ const getAll = async (filtros = {}) => {
   const stages = await ProductiveStage.find(query)
     .populate({
       path: 'apprenticeId',
-      select: 'name email role documento instructorAsignado',
-      populate: { path: 'instructorAsignado', select: 'name email telefono' }
+      select: 'name email role documento instructorAsignado instructorTecnico instructorProyecto tipoProyecto',
+      populate: [
+        { path: 'instructorAsignado', select: 'name email telefono' },
+        { path: 'instructorTecnico', select: 'name email telefono' },
+        { path: 'instructorProyecto', select: 'name email telefono' }
+      ]
     })
     .populate('companyId', 'razonSocial nit')
     .populate('seguimientos')
@@ -175,8 +179,12 @@ const getById = async (id) => {
   const stage = await ProductiveStage.findById(id)
     .populate({
       path: 'apprenticeId',
-      select: 'name email role documento instructorAsignado',
-      populate: { path: 'instructorAsignado', select: 'name email telefono' }
+      select: 'name email role documento instructorAsignado instructorTecnico instructorProyecto tipoProyecto',
+      populate: [
+        { path: 'instructorAsignado', select: 'name email telefono' },
+        { path: 'instructorTecnico', select: 'name email telefono' },
+        { path: 'instructorProyecto', select: 'name email telefono' }
+      ]
     })
     .populate('companyId', 'razonSocial nit jefeInmediato')
     .populate('historialEstados.realizadoPor', 'name email')
@@ -635,6 +643,47 @@ const certificarEP = async (stageId, userId) => {
     );
   }
 
+  // RF-ADM-19 Validación de certificación
+  // 1. Validar que no existan solicitudes de seguimientos extraordinarios pendientes
+  const Tracking = require('../trackings-dev3/tracking.model');
+  const pendingExtraordinary = await Tracking.findOne({
+    stageId: stage._id,
+    esExtraordinario: true,
+    estadoExtraordinario: 'PENDIENTE'
+  });
+  if (pendingExtraordinary) {
+    throw new Error('No se puede certificar. Existen solicitudes de seguimientos extraordinarios pendientes de evaluación.');
+  }
+
+  // 2. Validar visitas de seguimiento obligatorias (mínimo 3 visitas realizadas)
+  const completedVisitsCount = await Tracking.countDocuments({
+    stageId: stage._id,
+    estadoVisita: 'REALIZADO',
+    $or: [
+      { esExtraordinario: { $ne: true } },
+      { esExtraordinario: true, estadoExtraordinario: 'APROBADO' }
+    ]
+  });
+  if (completedVisitsCount < 3) {
+    throw new Error(`No se puede certificar. Se requieren al menos 3 visitas de seguimiento realizadas (actual: ${completedVisitsCount}).`);
+  }
+
+  // 3. Validar bitácoras aprobadas según la jornada (12 para TIEMPO_COMPLETO, 24 para MEDIO_TIEMPO)
+  const Bitacora = require('../bitacoras-dev3/bitacora.model');
+  const approvedBitacorasCount = await Bitacora.countDocuments({
+    stageId: stage._id,
+    estado: 'APROBADA'
+  });
+  const reqBitacoras = stage.jornada === 'MEDIO_TIEMPO' ? 24 : 12;
+  if (approvedBitacorasCount < reqBitacoras) {
+    throw new Error(`No se puede certificar. Se requieren al menos ${reqBitacoras} bitácoras aprobadas para la jornada ${stage.jornada === 'MEDIO_TIEMPO' ? 'Medio Tiempo' : 'Tiempo Completo'} (actual: ${approvedBitacorasCount}).`);
+  }
+
+  // 4. Validar totalidad de horas registradas
+  if ((stage.horasCompletadas || 0) < (stage.horasRequeridas || 880)) {
+    throw new Error(`No se puede certificar. El aprendiz no ha completado las horas requeridas (${stage.horasCompletadas || 0} de ${stage.horasRequeridas || 880} hrs).`);
+  }
+
   // Obtener todos los documentos de esta EP
   const documentos = await Document.find({ stageId });
 
@@ -677,6 +726,20 @@ const certificarEP = async (stageId, userId) => {
     'Certificacion completada: todos los documentos finales aprobados'
   );
 
+  // Archivado de documentación (RF-ADM-20)
+  if (stageActualizada.driveFolders && stageActualizada.driveFolders.aprendiz) {
+    try {
+      const storageService = require('../documents-dev2/storage.service');
+      const archiveFolder = await storageService.obtenerOCrearCarpeta('ARCHIVADOS');
+      await storageService.moverCarpeta(stageActualizada.driveFolders.aprendiz, archiveFolder.id);
+      stageActualizada.archivado = true;
+      await stageActualizada.save();
+    } catch (err) {
+      console.error('⚠️ [ARCHIVADO] Error al archivar la carpeta del aprendiz:', err.message);
+      // No propagamos el error para no invalidar el flujo principal si hay un error en Drive/OneDrive
+    }
+  }
+
   return {
     stage: stageActualizada,
     mensaje: 'La EP ha sido CERTIFICADA exitosamente.',
@@ -689,9 +752,11 @@ const certificarEP = async (stageId, userId) => {
   };
 };
 
+
 /**
  * Obtener el estado de los documentos de certificacion de una EP.
- * Muestra cuales de los documentos finales estan subidos y su estado.
+ * Muestra cuales de los documentos finales estan subidos y su estado,
+ * junto con la validacion de todos los requisitos de cierre.
  */
 const getEstadoCertificacion = async (stageId) => {
   const stage = await ProductiveStage.findById(stageId);
@@ -718,16 +783,190 @@ const getEstadoCertificacion = async (stageId) => {
   const todosSubidos = estadoDocumentos.every((d) => d.subido);
   const todosAprobados = estadoDocumentos.every((d) => d.estado === 'APROBADO');
 
+  // Validaciones académicas para checklist
+  const Tracking = require('../trackings-dev3/tracking.model');
+  const pendingExtraordinaryCount = await Tracking.countDocuments({
+    stageId: stage._id,
+    esExtraordinario: true,
+    estadoExtraordinario: 'PENDIENTE'
+  });
+
+  const completedVisitsCount = await Tracking.countDocuments({
+    stageId: stage._id,
+    estadoVisita: 'REALIZADO',
+    $or: [
+      { esExtraordinario: { $ne: true } },
+      { esExtraordinario: true, estadoExtraordinario: 'APROBADO' }
+    ]
+  });
+
+  const Bitacora = require('../bitacoras-dev3/bitacora.model');
+  const approvedBitacorasCount = await Bitacora.countDocuments({
+    stageId: stage._id,
+    estado: 'APROBADA'
+  });
+
+  const reqBitacoras = stage.jornada === 'MEDIO_TIEMPO' ? 24 : 12;
+
+  const horasCompletadas = stage.horasCompletadas || 0;
+  const horasRequeridas = stage.horasRequeridas || 880;
+
+  const cumpleVisitas = completedVisitsCount >= 3;
+  const cumpleBitacoras = approvedBitacorasCount >= reqBitacoras;
+  const cumpleHoras = horasCompletadas >= horasRequeridas;
+  const cumpleExtraordinarias = pendingExtraordinaryCount === 0;
+  const cumpleDocumentos = todosSubidos && todosAprobados;
+
+  const listoCertificar = cumpleVisitas && cumpleBitacoras && cumpleHoras && cumpleExtraordinarias && cumpleDocumentos && stage.estado === 'FINALIZADO';
+
   return {
     estadoEP: stage.estado,
     radicado: stage.radicado,
-    listoCertificar: todosSubidos && todosAprobados && stage.estado === 'FINALIZADO',
+    archivado: stage.archivado || false,
+    listoCertificar,
     documentos: estadoDocumentos,
     resumen: {
       subidos: estadoDocumentos.filter((d) => d.subido).length,
       aprobados: estadoDocumentos.filter((d) => d.estado === 'APROBADO').length,
       total: TODOS_CERTIFICACION.length,
     },
+    checklist: {
+      visitas: {
+        completadas: completedVisitsCount,
+        requeridas: 3,
+        cumple: cumpleVisitas
+      },
+      bitacoras: {
+        aprobadas: approvedBitacorasCount,
+        requeridas: reqBitacoras,
+        cumple: cumpleBitacoras
+      },
+      horas: {
+        completadas: horasCompletadas,
+        requeridas: horasRequeridas,
+        cumple: cumpleHoras
+      },
+      extraordinarias: {
+        pendientes: pendingExtraordinaryCount,
+        cumple: cumpleExtraordinarias
+      },
+      documentosFinales: {
+        aprobados: estadoDocumentos.filter((d) => d.estado === 'APROBADO').length,
+        total: TODOS_CERTIFICACION.length,
+        cumple: cumpleDocumentos
+      }
+    }
+  };
+};
+
+
+/**
+ * RF-ADM-21 Generación de reportes estadísticos.
+ * Filtra EPs por año, modalidad, empresa, instructor y rango de horas.
+ * Devuelve totales, promedios y desglose por modalidad.
+ *
+ * @param {Object} filtros
+ * @param {number} filtros.year          - Año de creación de la EP
+ * @param {string} filtros.modalidad     - Modalidad de EP
+ * @param {string} filtros.companyId     - ID de empresa
+ * @param {string} filtros.instructorId  - ID de instructor de seguimiento
+ * @param {number} filtros.minHoras      - Mínimo de horas completadas
+ * @param {number} filtros.maxHoras      - Máximo de horas completadas
+ */
+const getReportStats = async (filtros = {}) => {
+  const User = require('../users-dev1/user.model');
+
+  // ── Construir query de MongoDB ───────────────────────
+  const query = {};
+
+  // Filtro por año (basado en createdAt)
+  if (filtros.year) {
+    const yearNum = parseInt(filtros.year, 10);
+    query.createdAt = {
+      $gte: new Date(`${yearNum}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${yearNum}-12-31T23:59:59.999Z`),
+    };
+  }
+
+  // Filtro por modalidad
+  if (filtros.modalidad) {
+    query.modalidad = filtros.modalidad;
+  }
+
+  // Filtro por empresa
+  if (filtros.companyId) {
+    query.companyId = filtros.companyId;
+  }
+
+  // Filtro por instructor (buscar aprendices asignados a ese instructor)
+  if (filtros.instructorId) {
+    const apprentices = await User.find({
+      instructorAsignado: filtros.instructorId,
+      role: 'APRENDIZ'
+    }).select('_id');
+    query.apprenticeId = { $in: apprentices.map(a => a._id) };
+  }
+
+  // Filtro por rango de horas
+  if (filtros.minHoras !== undefined || filtros.maxHoras !== undefined) {
+    query.horasCompletadas = {};
+    if (filtros.minHoras !== undefined) query.horasCompletadas.$gte = Number(filtros.minHoras);
+    if (filtros.maxHoras !== undefined) query.horasCompletadas.$lte = Number(filtros.maxHoras);
+  }
+
+  // ── Ejecutar consulta ────────────────────────────────
+  const stages = await ProductiveStage.find(query)
+    .populate('apprenticeId', 'name documento instructorAsignado')
+    .populate('companyId', 'razonSocial nit')
+    .lean();
+
+  // ── Calcular estadísticas ────────────────────────────
+  const totalEPs = stages.length;
+  const totalHoras = stages.reduce((acc, s) => acc + (s.horasCompletadas || 0), 0);
+  const promedioHoras = totalEPs > 0 ? Math.round(totalHoras / totalEPs) : 0;
+
+  // Conteo por estado
+  const porEstado = stages.reduce((acc, s) => {
+    acc[s.estado] = (acc[s.estado] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Conteo por modalidad
+  const porModalidad = stages.reduce((acc, s) => {
+    acc[s.modalidad] = (acc[s.modalidad] || 0) + 1;
+    return acc;
+  }, {});
+
+  // EPs certificadas/archivadas
+  const certificadas = stages.filter(s => s.estado === 'CERTIFICADO').length;
+  const archivadas = stages.filter(s => s.archivado === true).length;
+
+  // Listado simplificado de EPs para la tabla de resultados
+  const lista = stages.map(s => ({
+    _id: s._id,
+    radicado: s.radicado,
+    modalidad: s.modalidad,
+    estado: s.estado,
+    horasCompletadas: s.horasCompletadas || 0,
+    horasRequeridas: s.horasRequeridas || 0,
+    fechaInicio: s.fechaInicio,
+    archivado: s.archivado || false,
+    aprendiz: s.apprenticeId ? { nombre: s.apprenticeId.name, documento: s.apprenticeId.documento } : null,
+    empresa: s.companyId ? { razonSocial: s.companyId.razonSocial, nit: s.companyId.nit } : null,
+  }));
+
+  return {
+    resumen: {
+      totalEPs,
+      totalHoras,
+      promedioHoras,
+      certificadas,
+      archivadas,
+    },
+    porEstado,
+    porModalidad,
+    lista,
+    filtrosAplicados: filtros,
   };
 };
 
@@ -803,4 +1042,5 @@ module.exports = {
   getSemaforo,
   certificarEP,
   getEstadoCertificacion,
+  getReportStats,
 };

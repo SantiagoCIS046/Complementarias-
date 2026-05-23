@@ -93,9 +93,37 @@ const actualizar = async (req, res) => {
   }
 };
 
+/**
+ * PATCH /api/trackings/:id/approve-extraordinary
+ */
+const approveExtraordinary = async (req, res) => {
+  try {
+    const { estado, observacionesEvaluacion } = req.body;
+    if (!estado) {
+      return res.status(400).json({
+        success: false,
+        message: 'El estado es requerido (APROBADO o RECHAZADO).'
+      });
+    }
+
+    const data = await service.approveExtraordinary(req.params.id, estado, observacionesEvaluacion);
+    res.json({
+      success: true,
+      message: `Seguimiento extraordinario ${estado.toLowerCase()} correctamente.`,
+      data
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   crear,
   getAll,
   getById,
   actualizar,
+  approveExtraordinary,
 };

@@ -113,6 +113,12 @@ const productiveStageSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+
+    // --- Archivado de documentación (RF-ADM-20) ---
+    archivado: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

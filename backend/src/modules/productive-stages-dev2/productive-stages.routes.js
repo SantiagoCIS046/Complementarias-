@@ -18,6 +18,15 @@ router.get(
   controller.checkElegibility
 );
 
+// --- RF-ADM-21 Reportes Estadísticos (debe ir ANTES de /:id) ---
+// GET /api/productive-stages/reports/stats
+router.get(
+  '/reports/stats',
+  verifyToken,
+  checkRole(['ADMIN']),
+  controller.getReportStats
+);
+
 // --- CRUD de Etapas Productivas ---
 
 // POST /api/productive-stages - Registrar nueva EP (solo APRENDIZ)

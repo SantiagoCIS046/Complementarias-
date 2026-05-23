@@ -338,6 +338,36 @@ const getEstadoCertificacion = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/productive-stages/reports/stats
+ * Genera reportes estadísticos filtrados (RF-ADM-21).
+ * Query params: year, modalidad, companyId, instructorId, minHoras, maxHoras
+ */
+const getReportStats = async (req, res) => {
+  try {
+    const filtros = {};
+    if (req.query.year)         filtros.year         = req.query.year;
+    if (req.query.modalidad)    filtros.modalidad    = req.query.modalidad;
+    if (req.query.companyId)    filtros.companyId    = req.query.companyId;
+    if (req.query.instructorId) filtros.instructorId = req.query.instructorId;
+    if (req.query.minHoras)     filtros.minHoras     = req.query.minHoras;
+    if (req.query.maxHoras)     filtros.maxHoras     = req.query.maxHoras;
+
+    const resultado = await service.getReportStats(filtros);
+
+    res.json({
+      success: true,
+      data: resultado,
+    });
+  } catch (error) {
+    console.error('🔥 ERROR en getReportStats:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   registrar,
   getAll,
@@ -351,4 +381,5 @@ module.exports = {
   getSemaforo,
   certificarEP,
   getEstadoCertificacion,
+  getReportStats,
 };

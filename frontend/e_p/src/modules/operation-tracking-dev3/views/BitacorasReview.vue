@@ -310,6 +310,25 @@
     </div>
   </div>
 
+  <!-- ═══════ MODAL: Confirmación de Acción (Premium) ═══════ -->
+  <div class="modal-overlay" v-if="showConfirmModal" @click.self="showConfirmModal = false" style="z-index: 2000;">
+    <div class="modal-card modal-sm" style="max-width: 400px;">
+      <div class="modal-head head-premium" style="padding: 16px 20px;">
+        <div class="head-info">
+          <h2 style="font-size: 1rem; font-weight: 800; margin: 0; color: var(--text-primary);">{{ confirmTitle }}</h2>
+        </div>
+        <button class="modal-close" @click="showConfirmModal = false">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">{{ confirmMessage }}</p>
+      </div>
+      <div class="modal-footer footer-premium" style="padding: 12px 20px; gap: 8px; justify-content: flex-end;">
+        <button class="btn-cancel-premium" @click="showConfirmModal = false" style="padding: 6px 12px; font-size: 0.75rem;">Descartar</button>
+        <button class="btn-confirm-premium" @click="handleConfirmResult(true)" style="padding: 6px 16px; font-size: 0.75rem; background: var(--color_button, #2e7d32);">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 </div>
 </template>
@@ -347,6 +366,26 @@ const selectedDocumento = ref(null)
 const isLoadingDocs = ref(true)
 const isSavingDoc = ref(false)
 const observacionesDoc = ref('')
+
+// Estado del Modal de Confirmación
+const showConfirmModal = ref(false)
+const confirmTitle = ref('')
+const confirmMessage = ref('')
+const confirmCallback = ref(null)
+
+const triggerConfirm = (title, message, callback) => {
+  confirmTitle.value = title
+  confirmMessage.value = message
+  confirmCallback.value = callback
+  showConfirmModal.value = true
+}
+
+const handleConfirmResult = (confirmed) => {
+  showConfirmModal.value = false
+  if (confirmed && confirmCallback.value) {
+    confirmCallback.value()
+  }
+}
 
 const fetchBitacoras = async () => {
   if (!stageId) return
@@ -399,20 +438,28 @@ const handleReview = async (estado) => {
     return
   }
 
-  isSaving.value = true
-  try {
-    await bitacoraService.revisar(selectedBitacora.value._id, {
-      estado,
-      observaciones: observaciones.value
-    })
-    alert(`Bitácora ${estado} correctamente.`)
-    await fetchBitacoras()
-  } catch (error) {
-    console.error('Error reviewing bitacora:', error)
-    alert('Error al procesar la revisión.')
-  } finally {
-    isSaving.value = false
-  }
+  const actionText = estado === 'APROBADA' ? 'aprobar' : 'rechazar'
+
+  triggerConfirm(
+    'Confirmar Acción',
+    `¿Estás seguro de que deseas ${actionText} la bitácora de la semana ${selectedBitacora.value.semana}?`,
+    async () => {
+      isSaving.value = true
+      try {
+        await bitacoraService.revisar(selectedBitacora.value._id, {
+          estado,
+          observaciones: observaciones.value
+        })
+        alert(`Bitácora ${estado} correctamente.`)
+        await fetchBitacoras()
+      } catch (error) {
+        console.error('Error reviewing bitacora:', error)
+        alert('Error al procesar la revisión.')
+      } finally {
+        isSaving.value = false
+      }
+    }
+  )
 }
 
 const handleReviewDoc = async (estado) => {
@@ -423,20 +470,28 @@ const handleReviewDoc = async (estado) => {
     return
   }
 
-  isSavingDoc.value = true
-  try {
-    await documentService.revisar(selectedDocumento.value._id, {
-      estado,
-      observaciones: observacionesDoc.value
-    })
-    alert(`Documento ${estado} correctamente.`)
-    await fetchDocumentos()
-  } catch (error) {
-    console.error('Error reviewing document:', error)
-    alert(error.response?.data?.message || 'Error al procesar la revisión.')
-  } finally {
-    isSavingDoc.value = false
-  }
+  const actionText = estado === 'APROBADO' ? 'aprobar' : 'rechazar'
+
+  triggerConfirm(
+    'Confirmar Acción',
+    `¿Estás seguro de que deseas ${actionText} el documento "${selectedDocumento.value.nombreArchivo}"?`,
+    async () => {
+      isSavingDoc.value = true
+      try {
+        await documentService.revisar(selectedDocumento.value._id, {
+          estado,
+          observaciones: observacionesDoc.value
+        })
+        alert(`Documento ${estado} correctamente.`)
+        await fetchDocumentos()
+      } catch (error) {
+        console.error('Error reviewing document:', error)
+        alert(error.response?.data?.message || 'Error al procesar la revisión.')
+      } finally {
+        isSavingDoc.value = false
+      }
+    }
+  )
 }
 
 const getInitials = (name) => {

@@ -17,6 +17,7 @@ const menuItems = computed(() => {
       { name: 'Gestión de Empresas', icon: 'domain', path: '/gestion-empresas' },
       { name: 'Gestión de Fichas', icon: 'folder_open', path: '/fichas' },
       { name: 'Parámetros Formativos', icon: 'settings', path: '/configuraciones' },
+      { name: 'Revisión de Documentos', icon: 'folder_shared', path: '/instructor-dashboard' },
     ];
   }
 

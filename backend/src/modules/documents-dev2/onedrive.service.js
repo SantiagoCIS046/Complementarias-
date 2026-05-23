@@ -192,14 +192,27 @@ const subirArchivo = async (fileBuffer, fileName, folderId) => {
 /**
  * Crea la estructura de carpetas en OneDrive
  */
-const crearEstructuraCarpetas = async ({ instructorNombre, fichaNumero, aprendizDocumento, aprendizNombre }) => {
-  // 1. Carpeta del instructor
-  const nombreInstructor = 'INSTRUCTOR_' + instructorNombre.replace(/\s+/g, '_');
-  const carpetaInstructor = await crearCarpeta(nombreInstructor);
+const crearEstructuraCarpetas = async ({ instructorNombre, instructorFolderId, fichaNumero, aprendizDocumento, aprendizNombre }) => {
+  let carpetaInstructor = null;
+  let instructorId = instructorFolderId;
+
+  if (instructorId) {
+    // Si viene la carpeta pre-creada, usamos ese ID
+    carpetaInstructor = {
+      id: instructorId,
+      name: 'INSTRUCTOR_' + instructorNombre.replace(/\s+/g, '_'),
+      webViewLink: 'https://onedrive.live.com/?id=' + instructorId,
+    };
+  } else {
+    // 1. Carpeta del instructor
+    const nombreInstructor = 'INSTRUCTOR_' + instructorNombre.replace(/\s+/g, '_');
+    carpetaInstructor = await crearCarpeta(nombreInstructor);
+    instructorId = carpetaInstructor.id;
+  }
 
   // 2. Carpeta de la ficha
   const nombreFicha = 'FICHA_' + fichaNumero;
-  const carpetaFicha = await crearCarpeta(nombreFicha, carpetaInstructor.id);
+  const carpetaFicha = await crearCarpeta(nombreFicha, instructorId);
 
   // 3. Carpeta del aprendiz
   const nombreAprendiz = aprendizDocumento + '_' + aprendizNombre.replace(/\s+/g, '_');

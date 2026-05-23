@@ -97,6 +97,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+    onedriveFolderId: {
+      type: String,
+      default: null,
+    },
+    driveFolderId: {
+      type: String,
+      default: null,
+    },
     // Recuperación de Contraseña
     resetPasswordToken: {
       type: String,

@@ -204,7 +204,14 @@ const getById = async (id) => {
  */
 const transicionar = async (stageId, nuevoEstado, userId, motivo) => {
   const stage = await ProductiveStage.findById(stageId)
-    .populate('apprenticeId', 'name email documento');
+    .populate({
+      path: 'apprenticeId',
+      select: 'name email documento instructorAsignado',
+      populate: {
+        path: 'instructorAsignado',
+        select: 'name email onedriveFolderId driveFolderId'
+      }
+    });
   if (!stage) {
     throw new Error('Etapa Productiva no encontrada.');
   }
@@ -218,17 +225,39 @@ const transicionar = async (stageId, nuevoEstado, userId, motivo) => {
     await enviarCorreoAprobacion(stageActualizada);
   }
 
-  // --- Hook post-transicion: crear carpetas en Drive al APROBAR ---
+  // --- Hook post-transicion: crear carpetas en Drive/OneDrive al APROBAR ---
   let driveInfo = null;
   if (nuevoEstado === ESTADO_EP.APROBADO) {
     try {
       const aprendiz = stage.apprenticeId;
+      const instructor = aprendiz.instructorAsignado;
+      const provider = await driveService.getActiveProvider();
+
+      let instructorNombre = 'Instructor';
+      let instructorFolderId = null;
+
+      if (instructor) {
+        instructorNombre = instructor.name;
+        instructorFolderId = provider === 'ONEDRIVE' ? instructor.onedriveFolderId : instructor.driveFolderId;
+      }
+
       const carpetas = await driveService.crearEstructuraCarpetas({
-        instructorNombre: 'Instructor', // TODO: obtener del usuario que aprueba
+        instructorNombre,
+        instructorFolderId,
         fichaNumero: stage.radicado || stageId,
         aprendizDocumento: aprendiz.documento || aprendiz._id.toString(),
         aprendizNombre: aprendiz.name || 'Aprendiz',
       });
+
+      // Si el instructor existe pero no tenía ID de carpeta guardado, lo actualizamos ahora
+      if (instructor && !instructorFolderId && carpetas.instructor && carpetas.instructor.id) {
+        const User = require('../users-dev1/user.model');
+        if (provider === 'ONEDRIVE') {
+          await User.findByIdAndUpdate(instructor._id, { onedriveFolderId: carpetas.instructor.id });
+        } else {
+          await User.findByIdAndUpdate(instructor._id, { driveFolderId: carpetas.instructor.id });
+        }
+      }
 
       // Guardar IDs de carpetas en la EP
       stageActualizada.driveFolders = {
@@ -239,7 +268,7 @@ const transicionar = async (stageId, nuevoEstado, userId, motivo) => {
       await stageActualizada.save();
 
       driveInfo = {
-        mensaje: 'Carpetas de Google Drive creadas exitosamente.',
+        mensaje: `Carpetas de ${provider === 'ONEDRIVE' ? 'OneDrive' : 'Google Drive'} creadas exitosamente.`,
         carpetas: {
           aprendiz:   carpetas.aprendiz.webViewLink,
           bitacoras:  carpetas.bitacoras.webViewLink,
@@ -250,7 +279,7 @@ const transicionar = async (stageId, nuevoEstado, userId, motivo) => {
       // No bloquear la transicion si Drive falla
       console.error('[DRIVE ERROR] ' + driveError.message);
       driveInfo = {
-        mensaje: 'La EP fue aprobada pero hubo un error al crear carpetas en Drive: ' + driveError.message,
+        mensaje: 'La EP fue aprobada pero hubo un error al crear carpetas en Drive/OneDrive: ' + driveError.message,
       };
     }
   }

@@ -141,6 +141,10 @@ const revisarDocumento = async (documentId, { estado, observaciones, revisadoPor
     throw new Error('Estado de revision debe ser APROBADO o RECHAZADO.');
   }
 
+  if (estado === ESTADO_DOCUMENTO.RECHAZADO && (!observaciones || !observaciones.trim())) {
+    throw new Error('Las observaciones son obligatorias para rechazar un documento.');
+  }
+
   const documento = await Document.findById(documentId);
   if (!documento) {
     throw new Error('Documento no encontrado.');

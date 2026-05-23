@@ -9,6 +9,8 @@ const crypto = require('crypto');
 const User   = require('../users-dev1/user.model');
 const { JWT_SECRET, JWT_EXPIRES_IN } = require('../../core/config/env');
 const { sendEmail } = require('../../core/utils/mailer');
+const onedriveService = require('../documents-dev2/onedrive.service');
+const driveService = require('../documents-dev2/drive.service');
 
 /**
  * Registrar un nuevo usuario.
@@ -31,6 +33,35 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
     programa,
     fechaFinLectiva: fechaFinLectiva || null,
   });
+
+  // Si es un instructor, crear su carpeta de almacenamiento en OneDrive y Google Drive
+  if (usuario.role === 'INSTRUCTOR') {
+    try {
+      const nombreInstructor = 'INSTRUCTOR_' + usuario.name.replace(/\s+/g, '_');
+      
+      // Crear en OneDrive
+      try {
+        const onedriveCarpeta = await onedriveService.crearCarpeta(nombreInstructor);
+        usuario.onedriveFolderId = onedriveCarpeta.id;
+      } catch (odErr) {
+        console.error('[ONEDRIVE REGISTRATION ERROR]', odErr.message || odErr);
+      }
+
+      // Crear en Google Drive
+      try {
+        const driveCarpeta = await driveService.crearCarpeta(nombreInstructor);
+        usuario.driveFolderId = driveCarpeta.id;
+      } catch (drErr) {
+        console.error('[DRIVE REGISTRATION ERROR]', drErr.message || drErr);
+      }
+
+      if (usuario.onedriveFolderId || usuario.driveFolderId) {
+        await usuario.save();
+      }
+    } catch (err) {
+      console.error('[STORAGE FOLDER CREATION ERROR]', err.message || err);
+    }
+  }
 
   // Generar token
   const token = generarToken(usuario);

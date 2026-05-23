@@ -172,16 +172,28 @@ const subirArchivo = async (fileContent, fileName, mimeType, folderId) => {
  * @param {string} datos.aprendizNombre    - Nombre del aprendiz
  * @returns {Object} IDs de todas las carpetas creadas
  */
-const crearEstructuraCarpetas = async ({ instructorNombre, fichaNumero, aprendizDocumento, aprendizNombre }) => {
+const crearEstructuraCarpetas = async ({ instructorNombre, instructorFolderId, fichaNumero, aprendizDocumento, aprendizNombre }) => {
   const rootId = ROOT_FOLDER_ID;
+  let carpetaInstructor = null;
+  let instructorId = instructorFolderId;
 
-  // 1. Carpeta del instructor: INSTRUCTOR_NombreInstructor
-  const nombreInstructor = 'INSTRUCTOR_' + instructorNombre.replace(/\s+/g, '_');
-  const carpetaInstructor = await crearCarpeta(nombreInstructor, rootId);
+  if (instructorId) {
+    // Si viene la carpeta pre-creada, usamos ese ID
+    carpetaInstructor = {
+      id: instructorId,
+      name: 'INSTRUCTOR_' + instructorNombre.replace(/\s+/g, '_'),
+      webViewLink: 'https://drive.google.com/drive/folders/' + instructorId,
+    };
+  } else {
+    // 1. Carpeta del instructor: INSTRUCTOR_NombreInstructor
+    const nombreInstructor = 'INSTRUCTOR_' + instructorNombre.replace(/\s+/g, '_');
+    carpetaInstructor = await crearCarpeta(nombreInstructor, rootId);
+    instructorId = carpetaInstructor.id;
+  }
 
   // 2. Carpeta de la ficha: FICHA_123456
   const nombreFicha = 'FICHA_' + fichaNumero;
-  const carpetaFicha = await crearCarpeta(nombreFicha, carpetaInstructor.id);
+  const carpetaFicha = await crearCarpeta(nombreFicha, instructorId);
 
   // 3. Carpeta del aprendiz: DocAprendiz_NombreAprendiz
   const nombreAprendiz = aprendizDocumento + '_' + aprendizNombre.replace(/\s+/g, '_');

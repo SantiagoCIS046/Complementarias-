@@ -3,13 +3,13 @@
     <Sidebar />
 
     <div class="main-wrapper">
-      <Header title="Gestión de Bitácoras" />
+      <Header title="Gestión de Seguimiento" />
 
       <main class="content">
         <div class="w-full space-y-2">
 
       <div class="content-columns">
-        <!-- Columna 1: Fichas (Simplificada en esta vista de detalle) -->
+        <!-- Columna 1: Fichas y Tabs -->
         <aside class="column-fichas">
           <button class="btn-new-bitacora" @click="showNewBitacoraModal = true">
             <span class="material-symbols-outlined">add</span> Nueva Bitácora
@@ -27,39 +27,89 @@
               <p class="ficha-name">{{ apprenticeName }}</p>
             </div>
           </div>
+
+          <div class="tabs-section">
+            <h3 class="section-title">
+              <span class="material-symbols-outlined">menu_open</span> SECCIONES
+            </h3>
+            <button 
+              class="tab-button" 
+              :class="{ active: activeTab === 'bitacoras' }" 
+              @click="activeTab = 'bitacoras'">
+              <span class="material-symbols-outlined">assignment</span> Bitácoras
+            </button>
+            <button 
+              class="tab-button" 
+              :class="{ active: activeTab === 'documentos' }" 
+              @click="activeTab = 'documentos'">
+              <span class="material-symbols-outlined">folder_open</span> Documentos Soporte
+            </button>
+          </div>
         </aside>
 
-        <!-- Columna 2: Entregas -->
+        <!-- Columna 2: Entregas (Bitácoras o Documentos) -->
         <section class="column-entregas">
-          <div class="entregas-header">
-            <h2>Bitácoras Entregadas</h2>
-            <div v-if="isLoading" class="p-4 text-center">
-              <div class="spin-sm !border-green-600 mx-auto"></div>
-            </div>
-          </div>
-
-          <div class="entregas-list">
-            <div v-for="bit in bitacoras" :key="bit._id" 
-                 class="entrega-item" 
-                 :class="{ selected: selectedBitacora?._id === bit._id }"
-                 @click="selectBitacora(bit)">
-              <div class="entrega-info">
-                <strong>{{ apprenticeName }}</strong>
-                <span class="time">{{ formatDate(bit.createdAt) }}</span>
+          <!-- Pestaña Bitácoras -->
+          <template v-if="activeTab === 'bitacoras'">
+            <div class="entregas-header">
+              <h2>Bitácoras Entregadas</h2>
+              <div v-if="isLoading" class="p-4 text-center">
+                <div class="spin-sm !border-green-600 mx-auto"></div>
               </div>
-              <p class="entrega-subject">Bitácora Semana {{ bit.semana }}</p>
-              <p class="entrega-preview" :class="bit.estado.toLowerCase()">Estado: {{ bit.estado }}</p>
             </div>
-            
-            <div v-if="bitacoras.length === 0 && !isLoading" class="p-8 text-center text-gray-400 italic text-xs">
-              No hay bitácoras registradas para esta etapa.
+
+            <div class="entregas-list">
+              <div v-for="bit in bitacoras" :key="bit._id" 
+                   class="entrega-item" 
+                   :class="{ selected: selectedBitacora?._id === bit._id }"
+                   @click="selectBitacora(bit)">
+                <div class="entrega-info">
+                  <strong>{{ apprenticeName }}</strong>
+                  <span class="time">{{ formatDate(bit.createdAt) }}</span>
+                </div>
+                <p class="entrega-subject">Bitácora Semana {{ bit.semana }}</p>
+                <p class="entrega-preview" :class="bit.estado.toLowerCase()">Estado: {{ bit.estado }}</p>
+              </div>
+              
+              <div v-if="bitacoras.length === 0 && !isLoading" class="p-8 text-center text-gray-400 italic text-xs">
+                No hay bitácoras registradas para esta etapa.
+              </div>
             </div>
-          </div>
+          </template>
+
+          <!-- Pestaña Documentos de Soporte -->
+          <template v-else-if="activeTab === 'documentos'">
+            <div class="entregas-header">
+              <h2>Documentos de Soporte</h2>
+              <div v-if="isLoadingDocs" class="p-4 text-center">
+                <div class="spin-sm !border-green-600 mx-auto"></div>
+              </div>
+            </div>
+
+            <div class="entregas-list">
+              <div v-for="doc in documentos" :key="doc._id" 
+                   class="entrega-item" 
+                   :class="{ selected: selectedDocumento?._id === doc._id }"
+                   @click="selectDocumento(doc)">
+                <div class="entrega-info">
+                  <strong>{{ doc.tipoDocumento }}</strong>
+                  <span class="time">{{ formatDate(doc.createdAt) }}</span>
+                </div>
+                <p class="entrega-subject" style="text-transform: capitalize;">{{ doc.nombreArchivo.toLowerCase() }}</p>
+                <p class="entrega-preview" :class="doc.estado.toLowerCase()">Estado: {{ doc.estado }}</p>
+              </div>
+              
+              <div v-if="documentos.length === 0 && !isLoadingDocs" class="p-8 text-center text-gray-400 italic text-xs">
+                No hay documentos subidos para esta etapa.
+              </div>
+            </div>
+          </template>
         </section>
 
-        <!-- Columna 3: Detalle / Revisión -->
+        <!-- Columna 3: Detalle / Revisión (Bitácoras o Documentos) -->
         <section class="column-revision">
-          <div v-if="selectedBitacora" class="revision-scroll">
+          <!-- Detalle de Bitácora -->
+          <div v-if="activeTab === 'bitacoras' && selectedBitacora" class="revision-scroll">
             <header class="revision-header">
               <div class="user-profile">
                 <div class="avatar-large">{{ getInitials(apprenticeName) }}</div>
@@ -116,7 +166,7 @@
                <p v-else class="text-xs text-gray-400 italic">No se adjuntaron archivos.</p>
             </div>
 
-            <!-- Acciones Finales -->
+            <!-- Acciones Finales Bitácora -->
             <footer v-if="selectedBitacora.estado === 'PENDIENTE'" class="revision-actions">
               <button class="btn-reject" @click="handleReview('RECHAZADA')" :disabled="isSaving">
                 <span class="material-symbols-outlined">close</span> Rechazar
@@ -134,9 +184,91 @@
                </p>
             </div>
           </div>
-          <div v-else class="h-full flex flex-col items-center justify-center text-gray-400 p-12">
+
+          <!-- Detalle de Documento -->
+          <div v-else-if="activeTab === 'documentos' && selectedDocumento" class="revision-scroll">
+            <header class="revision-header">
+              <div class="user-profile">
+                <div class="avatar-large">{{ getInitials(apprenticeName) }}</div>
+                <div class="profile-info">
+                  <h2>{{ apprenticeName }}</h2>
+                  <p>Ficha {{ ficha }}</p>
+                  <div class="pills">
+                    <span class="pill gray">ETAPA PRODUCTIVA</span>
+                    <span class="pill green">{{ selectedDocumento.tipoDocumento }}</span>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <div class="revision-widgets">
+              <div class="widget">
+                <div class="widget-header">INFORMACIÓN DEL DOCUMENTO</div>
+                <div class="space-y-2">
+                  <p class="text-xs"><strong>Nombre Archivo:</strong> {{ selectedDocumento.nombreArchivo }}</p>
+                  <p class="text-xs"><strong>Tipo de Documento:</strong> {{ selectedDocumento.tipoDocumento }}</p>
+                  <p class="text-xs"><strong>Subido Por:</strong> {{ selectedDocumento.subidoPor?.name || apprenticeName }}</p>
+                  <p class="text-xs"><strong>Fecha de Carga:</strong> {{ formatDate(selectedDocumento.createdAt) }}</p>
+                </div>
+              </div>
+
+              <div class="widget">
+                <div class="widget-header">OBSERVACIONES DE REVISIÓN</div>
+                <textarea v-model="observacionesDoc" 
+                          class="w-full text-xs p-2 rounded border focus:border-green-600 outline-none" 
+                          rows="4" 
+                          placeholder="Escriba aquí observaciones (obligatorias si rechaza)..."></textarea>
+              </div>
+            </div>
+
+            <!-- Visor PDF / Evidencias del Documento -->
+            <div class="evidencias-container mb-6">
+               <h3 class="text-xs font-bold mb-2">Documento Digital</h3>
+               <div class="pdf-access-box">
+                  <div class="pdf-info-group">
+                    <div class="pdf-icon-wrapper">
+                      <span class="material-symbols-outlined icon-pdf">picture_as_pdf</span>
+                    </div>
+                    <div class="pdf-info">
+                      <h4>{{ selectedDocumento.nombreArchivo }}</h4>
+                      <p>Haga clic para ver o descargar el PDF cargado</p>
+                    </div>
+                  </div>
+                  <a :href="selectedDocumento.url" target="_blank" class="btn-view-pdf">
+                    Ver PDF
+                  </a>
+               </div>
+            </div>
+
+            <!-- Acciones Finales Documento -->
+            <footer v-if="selectedDocumento.estado === 'PENDIENTE'" class="revision-actions">
+              <button class="btn-reject" @click="handleReviewDoc('RECHAZADO')" :disabled="isSavingDoc">
+                <span class="material-symbols-outlined">close</span> Rechazar
+              </button>
+              <button class="btn-approve" @click="handleReviewDoc('APROBADO')" :disabled="isSavingDoc">
+                <span class="material-symbols-outlined">check_circle</span> Aprobar
+              </button>
+            </footer>
+            <div v-else class="p-4 bg-gray-50 rounded-xl border text-center">
+               <p class="text-xs font-bold" :class="selectedDocumento.estado === 'APROBADO' ? 'text-green-600' : 'text-red-600'">
+                 ESTE DOCUMENTO YA FUE {{ selectedDocumento.estado }}
+               </p>
+               <p v-if="selectedDocumento.observaciones" class="text-[10px] text-gray-500 mt-1 italic">
+                 "{{ selectedDocumento.observaciones }}"
+               </p>
+            </div>
+          </div>
+
+          <!-- Si no hay bitácora seleccionada -->
+          <div v-else-if="activeTab === 'bitacoras' && !selectedBitacora" class="h-full flex flex-col items-center justify-center text-gray-400 p-12">
              <span class="material-symbols-outlined text-6xl mb-4">description</span>
              <p class="font-bold">Seleccione una bitácora para revisar</p>
+          </div>
+
+          <!-- Si no hay documento seleccionado -->
+          <div v-else class="h-full flex flex-col items-center justify-center text-gray-400 p-12">
+             <span class="material-symbols-outlined text-6xl mb-4">folder</span>
+             <p class="font-bold">Seleccione un documento para revisar</p>
           </div>
         </section>
       </div>
@@ -188,6 +320,7 @@ import { useRoute } from 'vue-router'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
 import { bitacoraService } from '../services/bitacora.service'
+import { documentService } from '../services/document.service'
 import { useAuthStore } from '../../../core/store/auth.store'
 
 const route = useRoute()
@@ -197,12 +330,23 @@ const stageId = route.query.id
 const apprenticeName = route.query.name || 'Aprendiz'
 const ficha = route.query.ficha || 'S/N'
 
+// Estado global de pestañas
+const activeTab = ref('bitacoras')
+
+// Estado de Bitácoras
 const bitacoras = ref([])
 const selectedBitacora = ref(null)
 const isLoading = ref(true)
 const isSaving = ref(false)
 const observaciones = ref('')
 const showNewBitacoraModal = ref(false)
+
+// Estado de Documentos
+const documentos = ref([])
+const selectedDocumento = ref(null)
+const isLoadingDocs = ref(true)
+const isSavingDoc = ref(false)
+const observacionesDoc = ref('')
 
 const fetchBitacoras = async () => {
   if (!stageId) return
@@ -220,9 +364,31 @@ const fetchBitacoras = async () => {
   }
 }
 
+const fetchDocumentos = async () => {
+  if (!stageId) return
+  isLoadingDocs.value = true
+  try {
+    const res = await documentService.getByStage(stageId)
+    documentos.value = res.data?.data || res.data || []
+    if (documentos.value.length > 0) {
+      selectedDocumento.value = documentos.value[0]
+      observacionesDoc.value = selectedDocumento.value.observaciones || ''
+    }
+  } catch (error) {
+    console.error('Error fetching documentos:', error)
+  } finally {
+    isLoadingDocs.value = false
+  }
+}
+
 const selectBitacora = (bit) => {
   selectedBitacora.value = bit
   observaciones.value = bit.observacionesInstructor || ''
+}
+
+const selectDocumento = (doc) => {
+  selectedDocumento.value = doc
+  observacionesDoc.value = doc.observaciones || ''
 }
 
 const handleReview = async (estado) => {
@@ -249,6 +415,30 @@ const handleReview = async (estado) => {
   }
 }
 
+const handleReviewDoc = async (estado) => {
+  if (!selectedDocumento.value) return
+  
+  if (estado === 'RECHAZADO' && (!observacionesDoc.value || !observacionesDoc.value.trim())) {
+    alert('Por favor ingrese observaciones para el rechazo. Son de carácter obligatorio.')
+    return
+  }
+
+  isSavingDoc.value = true
+  try {
+    await documentService.revisar(selectedDocumento.value._id, {
+      estado,
+      observaciones: observacionesDoc.value
+    })
+    alert(`Documento ${estado} correctamente.`)
+    await fetchDocumentos()
+  } catch (error) {
+    console.error('Error reviewing document:', error)
+    alert(error.response?.data?.message || 'Error al procesar la revisión.')
+  } finally {
+    isSavingDoc.value = false
+  }
+}
+
 const getInitials = (name) => {
   return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
 }
@@ -258,7 +448,12 @@ const formatDate = (date) => {
   return new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-onMounted(fetchBitacoras)
+onMounted(async () => {
+  await Promise.all([
+    fetchBitacoras(),
+    fetchDocumentos()
+  ])
+})
 </script>
 
 <style scoped>
@@ -352,9 +547,46 @@ onMounted(fetchBitacoras)
 .spin-sm { width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-top-color: #2e7d32; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.entrega-preview.aprobada { color: #16a34a; font-weight: 800; }
-.entrega-preview.rechazada { color: #ef4444; font-weight: 800; }
+.entrega-preview.aprobada, .entrega-preview.aprobado { color: #16a34a; font-weight: 800; }
+.entrega-preview.rechazada, .entrega-preview.rechazado { color: #ef4444; font-weight: 800; }
 .entrega-preview.pendiente { color: #d97706; font-weight: 800; }
+
+/* Tabs Estilos */
+.tabs-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-primary);
+}
+.tab-button {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+}
+.tab-button:hover {
+  background: var(--bg-hover);
+  border-color: var(--color_button);
+  color: var(--color_button);
+}
+.tab-button.active {
+  background: var(--bg-active);
+  border-color: var(--color_button);
+  color: var(--color_button);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.1);
+}
 
 /* History Widget */
 .timeline { display: flex; flex-direction: column; gap: 0.75rem; }

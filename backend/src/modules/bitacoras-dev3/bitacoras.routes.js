@@ -8,11 +8,6 @@ const multer = require('multer');
 const { verifyToken } = require('../../core/middlewares/auth.middleware');
 const { checkRole }   = require('../../core/middlewares/roles.middleware');
 const controller      = require('./bitacoras.controller');
-const multer = require('multer');
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
 
 const upload = multer({
   storage: multer.memoryStorage(),

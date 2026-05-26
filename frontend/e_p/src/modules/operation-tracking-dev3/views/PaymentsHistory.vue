@@ -76,6 +76,7 @@ const marcarCobrado = async (hourId) => {
   isUpdating.value = hourId
   try {
     await http.patch(`/hours/${hourId}/estado`, {
+      ejecutado: true,
       cobrado: true,
       pendiente: false
     })

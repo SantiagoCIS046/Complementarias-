@@ -101,9 +101,35 @@ const actualizarEstado = async (id, { ejecutado, cobrado, pendiente }) => {
     throw new Error('Este registro de horas ya está cerrado (Ejecutada/Cobrada) y no puede modificarse.');
   }
 
-  if (ejecutado !== undefined) hour.ejecutado = ejecutado;
-  if (cobrado !== undefined) hour.cobrado = cobrado;
-  if (pendiente !== undefined) hour.pendiente = pendiente;
+  // RF-INS-19: Validaciones de estado para prevenir doble cobro y calcular horas automáticamente
+  if (cobrado === true) {
+    // Validar que esté ejecutado antes de poder ser cobrado
+    const isEjecutado = ejecutado !== undefined ? ejecutado : hour.ejecutado;
+    if (!isEjecutado) {
+      throw new Error('No se puede cobrar un registro de horas que no ha sido ejecutado.');
+    }
+
+    // Validar si ya está cobrado para evitar cobro duplicado (doble cobro)
+    if (hour.cobrado) {
+      throw new Error('Este registro de horas ya ha sido cobrado.');
+    }
+
+    hour.cobrado = true;
+    hour.pendiente = false; // Se cierra automáticamente al cobrarse
+    hour.horasTrabajadas = 2.0; // Se calcula automáticamente
+  } else if (cobrado === false) {
+    hour.cobrado = false;
+  }
+
+  if (ejecutado !== undefined) {
+    hour.ejecutado = ejecutado;
+    // Cálculo automático de horas al marcar check de tarea hecha
+    hour.horasTrabajadas = ejecutado ? 2.0 : 0.0;
+  }
+
+  if (pendiente !== undefined) {
+    hour.pendiente = pendiente;
+  }
 
   await hour.save();
   return hour;

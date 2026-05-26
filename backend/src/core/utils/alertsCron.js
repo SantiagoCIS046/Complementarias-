@@ -11,8 +11,10 @@ const Notification = require('../../modules/system-config-dev1/Notification.mode
 const User = require('../../modules/users-dev1/user.model');
 const ProductiveStage = require('../../modules/productive-stages-dev2/productive-stage.model');
 const Bitacora = require('../../modules/bitacoras-dev3/bitacora.model');
-const { sendEmail } = require('./mailer');
+const mailer = require('./mailer');
+const sendEmail = (options) => mailer.sendEmail(options);
 const { ROLES } = require('./enums');
+const hoursService = require('../../modules/hours-dev3/hours.service');
 
 /**
  * Escanea Trackings PROGRAMADOS cuya fecha sea exactamente dentro de 5 días
@@ -802,6 +804,87 @@ const enviarAdvertenciasCertificacionDosMeses = async () => {
   }
 };
 
+/**
+ * 6. Compilación mensual automática de reporte PDF (RF-INS-24)
+ * Se ejecuta el primer día de cada mes a las 12:00 AM y envía el PDF adjunto
+ * a todos los coordinadores (ADMIN) por correo electrónico.
+ */
+const compilarYEnviarReporteMensual = async () => {
+  console.log('🔔 [CRON] Iniciando compilación mensual de reporte de horas por red de conocimiento...');
+  try {
+    const hoy = new Date();
+    let mes = hoy.getMonth(); // Si es Junio (index 5), representa Mayo (1-indexed 5)
+    let anio = hoy.getFullYear();
+    if (mes === 0) {
+      mes = 12;
+      anio -= 1;
+    }
+
+    const pdfBuffer = await hoursService.generarPdfReporteMensual(mes, anio);
+
+    const nombreMeses = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    const nombreMes = nombreMeses[mes - 1];
+
+    const coordinadores = await User.find({ role: ROLES.ADMIN, activo: true });
+    if (coordinadores.length === 0) {
+      console.log('🔔 [CRON] No hay coordinadores activos para recibir el reporte.');
+      return { reportesEnviados: 0 };
+    }
+
+    let reportesEnviados = 0;
+    const subject = `📊 Compilación Mensual de Horas — ${nombreMes} ${anio}`;
+
+    for (const admin of coordinadores) {
+      const html = `
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+          <div style="background: #1b5e20; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 1.2rem;">📊 Compilación Mensual de Horas</h1>
+            <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Plataforma REPFORA — SENA</p>
+          </div>
+          <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              Estimado(a) Coordinador(a) <strong>${admin.name}</strong>,
+            </p>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              Adjunto a este correo electrónico encontrará el **reporte mensual de horas ejecutadas y cobradas** de los aprendices en etapa productiva para el mes de **${nombreMes} de ${anio}**, consolidado y organizado por **Red de Conocimiento**.
+            </p>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 24px;">
+              Este reporte ha sido generado automáticamente por el motor REPFORA al finalizar el mes.
+            </p>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+            <p style="color: #94a3b8; font-size: 0.75rem; text-align: center;">
+              Este correo fue generado automáticamente por el sistema REPFORA.<br>No responda a este mensaje.
+            </p>
+          </div>
+        </div>
+      `;
+
+      await sendEmail({
+        to: admin.email,
+        subject,
+        html,
+        attachments: [
+          {
+            filename: `Reporte_Mensual_Horas_${anio}_${mes}.pdf`,
+            content: pdfBuffer
+          }
+        ]
+      });
+
+      reportesEnviados++;
+    }
+
+    console.log(`🔔 [CRON] Compilación mensual completada y enviada a ${reportesEnviados} coordinadores.`);
+    return { reportesEnviados };
+  } catch (error) {
+    console.error('❌ [CRON] Error compilando y enviando reporte mensual:', error);
+    return { error: error.message };
+  }
+};
+
 // ── Programar el cron: todos los días a las 7:00 AM ──
 cron.schedule('0 7 * * *', () => {
   ejecutarEscaneoAlertas();
@@ -811,7 +894,13 @@ cron.schedule('0 7 * * *', () => {
   enviarAdvertenciasCertificacionDosMeses();
 });
 
+// ── Programar el cron: el primer día de cada mes a las 12:00 AM ──
+cron.schedule('0 0 1 * *', () => {
+  compilarYEnviarReporteMensual();
+});
+
 console.log('🕐 [CRON] Job de alertas global registrado (diario a las 7:00 AM).');
+console.log('🕐 [CRON] Job de reporte mensual de horas registrado (mensual el día 1 a las 12:00 AM).');
 
 module.exports = {
   ejecutarEscaneoAlertas,
@@ -821,4 +910,5 @@ module.exports = {
   enviarRecordatoriosBitacoras,
   escanearBitacorasRechazadasSinCorregir,
   enviarAdvertenciasCertificacionDosMeses,
+  compilarYEnviarReporteMensual,
 };

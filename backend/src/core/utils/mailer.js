@@ -15,13 +15,14 @@ const transporter = nodemailer.createTransport({
 /**
  * Función global para enviar correos
  */
-const sendEmail = async ({ to, subject, html }) => {
+const sendEmail = async ({ to, subject, html, attachments }) => {
   try {
     const info = await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to,
       subject,
       html,
+      attachments,
     });
     console.log('✅ Correo enviado:', info.messageId);
     return info;

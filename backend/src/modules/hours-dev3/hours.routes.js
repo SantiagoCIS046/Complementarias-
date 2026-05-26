@@ -14,6 +14,7 @@ router.post('/', checkRole(['APRENDIZ']), controller.registrar);
 router.get('/',  checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), controller.getAll);
 router.get('/resumen/:stageId', checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), controller.getResumen);
 router.get('/historico-pagos', checkRole(['ADMIN', 'INSTRUCTOR']), controller.getHistoricoPagos);
+router.get('/reporte-mensual', checkRole(['ADMIN']), controller.descargarReporteMensual);
 router.patch('/:id/estado', checkRole(['ADMIN', 'INSTRUCTOR']), controller.actualizarEstado);
 
 module.exports = router;

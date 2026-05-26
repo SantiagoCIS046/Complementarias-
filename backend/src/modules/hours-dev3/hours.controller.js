@@ -110,10 +110,33 @@ const getHistoricoPagos = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/hours/reporte-mensual (RF-INS-24)
+ */
+const descargarReporteMensual = async (req, res) => {
+  try {
+    const hoy = new Date();
+    const mes = req.query.mes ? parseInt(req.query.mes, 10) : (hoy.getMonth() + 1);
+    const anio = req.query.anio ? parseInt(req.query.anio, 10) : hoy.getFullYear();
+
+    const pdfBuffer = await service.generarPdfReporteMensual(mes, anio);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Reporte_Horas_${anio}_${mes}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   registrar,
   getAll,
   getResumen,
   actualizarEstado,
   getHistoricoPagos,
+  descargarReporteMensual,
 };

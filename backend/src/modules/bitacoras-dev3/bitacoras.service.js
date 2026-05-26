@@ -10,7 +10,7 @@ const ProductiveStage = require('../productive-stages-dev2/productive-stage.mode
 /**
  * Crear una nueva bitacora semanal.
  */
-const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportadas, evidencias, file }) => {
+const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportadas, evidencias, file, esAdicional, motivo, fechaEspecial, responsable }) => {
   // Verificar que la EP existe y esta EN_CURSO
   const stage = await ProductiveStage.findById(stageId);
   if (!stage) {
@@ -31,9 +31,11 @@ const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportad
     console.error('Error fetching MAX_BITACORAS config:', err);
   }
 
-  const count = await Bitacora.countDocuments({ stageId });
-  if (count >= maxBitacoras) {
-    throw new Error(`Se ha alcanzado el número máximo permitido de bitácoras (${maxBitacoras}).`);
+  if (!esAdicional) {
+    const count = await Bitacora.countDocuments({ stageId, esAdicional: { $ne: true } });
+    if (count >= maxBitacoras) {
+      throw new Error(`Se ha alcanzado el número máximo permitido de bitácoras (${maxBitacoras}).`);
+    }
   }
 
   let finalEvidencias = evidencias || [];
@@ -55,13 +57,22 @@ const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportad
     descripcion,
     horasReportadas,
     evidencias: finalEvidencias,
+    esAdicional: esAdicional || false,
+    motivo: esAdicional ? motivo : null,
+    fechaEspecial: esAdicional ? fechaEspecial : null,
+    responsable: responsable || null,
   });
 
   // Actualizar horas completadas en la EP
   stage.horasCompletadas = (stage.horasCompletadas || 0) + horasReportadas;
   await stage.save();
 
-  return bitacora;
+  const populatedBitacora = await Bitacora.findById(bitacora._id)
+    .populate('apprenticeId', 'name email documento')
+    .populate('stageId', 'radicado estado')
+    .populate('responsable', 'name email role');
+
+  return populatedBitacora;
 };
 
 /**
@@ -77,6 +88,7 @@ const getAll = async (filtros = {}) => {
     .populate('apprenticeId', 'name email documento')
     .populate('stageId', 'radicado estado')
     .populate('revisadoPor', 'name email')
+    .populate('responsable', 'name email role')
     .sort({ semana: 1 });
 
   return bitacoras;
@@ -89,6 +101,7 @@ const getByStage = async (stageId) => {
   const bitacoras = await Bitacora.find({ stageId })
     .populate('apprenticeId', 'name email')
     .populate('revisadoPor', 'name email')
+    .populate('responsable', 'name email role')
     .sort({ semana: 1 });
 
   return bitacoras;
@@ -156,9 +169,19 @@ const actualizar = async (bitacoraId, data) => {
 
   if (data.semana !== undefined && !isNaN(data.semana)) bitacora.semana = data.semana;
   if (data.descripcion !== undefined) bitacora.descripcion = data.descripcion;
+  if (data.esAdicional !== undefined) bitacora.esAdicional = data.esAdicional;
+  if (data.motivo !== undefined) bitacora.motivo = data.motivo;
+  if (data.fechaEspecial !== undefined) bitacora.fechaEspecial = data.fechaEspecial;
+  if (data.responsable !== undefined) bitacora.responsable = data.responsable;
 
   await bitacora.save();
-  return bitacora;
+  
+  const populated = await Bitacora.findById(bitacora._id)
+    .populate('apprenticeId', 'name email')
+    .populate('revisadoPor', 'name email')
+    .populate('responsable', 'name email role');
+  
+  return populated;
 };
 
 module.exports = {

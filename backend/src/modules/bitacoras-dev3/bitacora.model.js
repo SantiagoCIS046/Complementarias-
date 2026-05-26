@@ -19,7 +19,7 @@ const bitacoraSchema = new mongoose.Schema(
     },
     semana: {
       type: Number,
-      required: [true, 'El número de semana es obligatorio'],
+      required: function() { return !this.esAdicional; },
       min: 1,
     },
     descripcion: {
@@ -57,6 +57,24 @@ const bitacoraSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    esAdicional: {
+      type: Boolean,
+      default: false,
+    },
+    motivo: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    fechaEspecial: {
+      type: Date,
+      default: null,
+    },
+    responsable: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -64,7 +82,13 @@ const bitacoraSchema = new mongoose.Schema(
   }
 );
 
-// Un aprendiz no puede tener dos bitácoras de la misma semana para la misma EP
-bitacoraSchema.index({ stageId: 1, semana: 1 }, { unique: true });
+// Un aprendiz no puede tener dos bitácoras de la misma semana para la misma EP (solo si no es adicional)
+bitacoraSchema.index(
+  { stageId: 1, semana: 1 },
+  { 
+    unique: true, 
+    partialFilterExpression: { esAdicional: { $eq: false } } 
+  }
+);
 
 module.exports = mongoose.model('Bitacora', bitacoraSchema);

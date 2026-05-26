@@ -65,12 +65,20 @@
             <div v-for="bit in bitacoras" :key="bit._id" 
                  class="entrega-item" 
                  :class="{ selected: selectedBitacora?._id === bit._id }"
-                 @click="selectBitacora(bit)">
+                 @click="selectBitacora(bit)"
+                 :style="bit.esAdicional ? 'border-left-color: #d97706 !important;' : ''">
               <div class="entrega-info">
                 <strong>{{ apprenticeName }}</strong>
                 <span class="time">{{ formatDate(bit.createdAt) }}</span>
               </div>
-              <p class="entrega-subject">Bitácora Semana {{ bit.semana }}</p>
+              <p class="entrega-subject" v-if="bit.esAdicional" style="color: #d97706; display: flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 0.95rem;">star</span>
+                Bitácora Adicional (Especial)
+              </p>
+              <p class="entrega-subject" v-else>Bitácora Semana {{ bit.semana }}</p>
+              <p class="entrega-preview" v-if="bit.esAdicional" style="font-size: 0.62rem; color: var(--text-secondary); margin-bottom: 2px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                Motivo: {{ bit.motivo }}
+              </p>
               <p class="entrega-preview" :class="bit.estado.toLowerCase()">Estado: {{ bit.estado }}</p>
             </div>
             
@@ -196,26 +204,41 @@
               <div v-if="selectedBitacora" class="mt-4">
                 <header class="revision-header">
                   <div class="user-profile">
-                    <div class="avatar-large">{{ getInitials(apprenticeName) }}</div>
+                    <div class="avatar-large" :style="selectedBitacora.esAdicional ? 'color: #d97706; background: #fffbeb; border: 1px solid #fde68a;' : ''">
+                      {{ selectedBitacora.esAdicional ? '⭐' : getInitials(apprenticeName) }}
+                    </div>
                     <div class="profile-info">
                       <h2>{{ apprenticeName }}</h2>
                       <p>Ficha {{ ficha }}</p>
                       <div class="pills">
                         <span class="pill gray">ETAPA PRODUCTIVA</span>
-                        <span class="pill green">SEMANA {{ selectedBitacora.semana }}</span>
+                        <span v-if="selectedBitacora.esAdicional" class="pill" style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a;">CASO ESPECIAL</span>
+                        <span v-else class="pill green">SEMANA {{ selectedBitacora.semana }}</span>
                       </div>
                     </div>
                   </div>
                 </header>
 
                 <div class="revision-widgets">
-                  <div class="widget">
-                    <div class="widget-header">INFORMACIÓN DE ENTREGA</div>
+                  <div class="widget" :style="selectedBitacora.esAdicional ? 'border-color: #fde68a; background: rgba(254, 243, 199, 0.05);' : ''">
+                    <div class="widget-header" :style="selectedBitacora.esAdicional ? 'color: #b45309;' : ''">INFORMACIÓN DE ENTREGA</div>
                     <div class="space-y-2">
+                      <p class="text-xs" v-if="selectedBitacora.esAdicional"><strong>Fecha del Caso:</strong> {{ selectedBitacora.fechaEspecial ? new Date(selectedBitacora.fechaEspecial).toLocaleDateString('es-CO') : 'No especificada' }}</p>
+                      <p class="text-xs" v-if="selectedBitacora.esAdicional"><strong>Responsable del Registro:</strong> {{ selectedBitacora.responsable?.name || 'Administrador / Instructor' }}</p>
                       <p class="text-xs"><strong>Horas Reportadas:</strong> {{ selectedBitacora.horasReportadas }}h</p>
                       <p class="text-xs"><strong>Descripción:</strong></p>
                       <p class="text-[11px] text-gray-600 bg-white p-2 rounded border">{{ selectedBitacora.descripcion }}</p>
                     </div>
+                  </div>
+
+                  <!-- Caso Especial Motivo (Solo si es adicional) -->
+                  <div v-if="selectedBitacora.esAdicional" class="widget" style="border-color: #fde68a; background: rgba(254, 243, 199, 0.15);">
+                    <div class="widget-header" style="color: #b45309; display: flex; align-items: center; gap: 4px;">
+                      <span class="material-symbols-outlined" style="font-size: 16px;">gavel</span> MOTIVO / JUSTIFICACIÓN
+                    </div>
+                    <p class="text-[11px] text-amber-800 font-medium" style="margin: 0; line-height: 1.4;">
+                      {{ selectedBitacora.motivo }}
+                    </p>
                   </div>
 
                   <!-- Chat de Comentarios (RUI-13) -->
@@ -495,12 +518,34 @@
 
         <!-- Paso 1: Detalles -->
         <div v-if="currentStep === 1" class="space-y-4" style="display: flex; flex-direction: column; gap: 14px;">
-          <div class="form-group-premium">
+          <!-- Interruptor de Caso Especial -->
+          <div class="form-group-premium" style="margin-bottom: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px; background: var(--bg-hover); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-primary);">
+              <input type="checkbox" id="es-adicional-checkbox" v-model="newBitacoraForm.esAdicional" style="width: 15px; height: 15px; cursor: pointer;" />
+              <label for="es-adicional-checkbox" class="label-premium" style="margin-bottom: 0; cursor: pointer; font-size: 0.72rem; font-weight: 800; color: var(--text-primary);">¿Es una Bitácora Adicional para Casos Especiales?</label>
+            </div>
+          </div>
+
+          <!-- Semana (oculta si es adicional) -->
+          <div v-if="!newBitacoraForm.esAdicional" class="form-group-premium">
             <label class="label-premium">Semana de Formación</label>
             <input type="number" v-model="newBitacoraForm.semana" class="input-premium" min="1" max="24" />
           </div>
+
+          <!-- Campos especiales si es adicional -->
+          <template v-else>
+            <div class="form-group-premium">
+              <label class="label-premium">Fecha del Caso Especial</label>
+              <input type="date" v-model="newBitacoraForm.fechaEspecial" class="input-premium" />
+            </div>
+            <div class="form-group-premium">
+              <label class="label-premium">Motivo / Justificación Especial</label>
+              <textarea v-model="newBitacoraForm.motivo" class="input-premium" rows="2" placeholder="Describa el motivo del registro especial (ej: Soporte extraordinario por calamidad médica)..." style="resize: none; width: 100%; box-sizing: border-box;"></textarea>
+            </div>
+          </template>
+
           <div class="form-group-premium">
-            <label class="label-premium">Horas a Reportar en la Semana</label>
+            <label class="label-premium">Horas a Reportar</label>
             <input type="number" v-model="newBitacoraForm.horasReportadas" class="input-premium" min="1" max="120" />
           </div>
           <div class="form-group-premium">
@@ -621,7 +666,7 @@
         <!-- Paso 1 botones -->
         <template v-if="currentStep === 1">
           <button class="btn-cancel-premium" @click="showNewBitacoraModal = false">Cancelar</button>
-          <button class="btn-confirm-premium" :disabled="!newBitacoraForm.semana || !newBitacoraForm.horasReportadas" @click="currentStep = 2">Siguiente</button>
+          <button class="btn-confirm-premium" :disabled="(!newBitacoraForm.esAdicional && !newBitacoraForm.semana) || !newBitacoraForm.horasReportadas || (newBitacoraForm.esAdicional && !newBitacoraForm.motivo)" @click="currentStep = 2">Siguiente</button>
         </template>
         <!-- Paso 2 botones -->
         <template v-else-if="currentStep === 2">
@@ -974,7 +1019,10 @@ const newBitacoraForm = ref({
   semana: 1,
   horasReportadas: 40,
   asunto: '',
-  descripcion: ''
+  descripcion: '',
+  esAdicional: false,
+  motivo: '',
+  fechaEspecial: new Date().toISOString().substring(0, 10)
 })
 
 // --- MÉTODOS BITÁCORAS ---
@@ -1034,9 +1082,13 @@ const submitNewBitacora = async () => {
   try {
     const newBitacoraData = {
       stageId: stageId,
-      semana: newBitacoraForm.value.semana,
+      apprenticeId: stageDetails.value?.apprenticeId?._id || stageDetails.value?.apprenticeId,
+      semana: newBitacoraForm.value.esAdicional ? undefined : newBitacoraForm.value.semana,
       descripcion: newBitacoraForm.value.descripcion || 'Registro semanal de actividades',
       horasReportadas: newBitacoraForm.value.horasReportadas,
+      esAdicional: newBitacoraForm.value.esAdicional,
+      motivo: newBitacoraForm.value.esAdicional ? newBitacoraForm.value.motivo : undefined,
+      fechaEspecial: newBitacoraForm.value.esAdicional ? newBitacoraForm.value.fechaEspecial : undefined,
       evidencias: [{
         nombre: selectedFile.value.name,
         url: 'https://docs.google.com/viewer?url=simulado_' + selectedFile.value.name
@@ -1065,7 +1117,10 @@ const resetWizard = () => {
     semana: bitacoras.value.length + 1,
     horasReportadas: 40,
     asunto: '',
-    descripcion: ''
+    descripcion: '',
+    esAdicional: false,
+    motivo: '',
+    fechaEspecial: new Date().toISOString().substring(0, 10)
   }
 }
 

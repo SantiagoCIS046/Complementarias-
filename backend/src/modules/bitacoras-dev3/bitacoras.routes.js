@@ -33,9 +33,9 @@ router.post('/validate-signatures', checkRole(['APRENDIZ', 'INSTRUCTOR', 'ADMIN'
 
 /**
  * @route   POST /api/bitacoras
- * @access  Private (APRENDIZ)
+ * @access  Private (APRENDIZ, INSTRUCTOR, ADMIN)
  */
-router.post('/', checkRole(['APRENDIZ']), upload.single('archivo'), controller.crear);
+router.post('/', checkRole(['APRENDIZ', 'INSTRUCTOR', 'ADMIN']), upload.single('archivo'), controller.crear);
 
 /**
  * @route   GET /api/bitacoras
@@ -57,8 +57,8 @@ router.patch('/:id/review', checkRole(['ADMIN', 'INSTRUCTOR']), controller.revis
 
 /**
  * @route   PUT /api/bitacoras/:id
- * @access  Private (APRENDIZ)
+ * @access  Private (APRENDIZ, INSTRUCTOR, ADMIN)
  */
-router.put('/:id', checkRole(['APRENDIZ']), upload.single('archivo'), controller.actualizar);
+router.put('/:id', checkRole(['APRENDIZ', 'INSTRUCTOR', 'ADMIN']), upload.single('archivo'), controller.actualizar);
 
 module.exports = router;

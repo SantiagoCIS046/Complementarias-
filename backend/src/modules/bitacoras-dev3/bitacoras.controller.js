@@ -10,11 +10,23 @@ const service = require('./bitacoras.service');
  */
 const crear = async (req, res) => {
   try {
+    const apprenticeId = req.user.role === 'APRENDIZ' ? req.user._id : req.body.apprenticeId;
+    if (!apprenticeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'El ID del aprendiz es obligatorio.'
+      });
+    }
+
     const data = await service.crear({
       ...req.body,
       semana: req.body.semana ? Number(req.body.semana) : undefined,
       horasReportadas: req.body.horasReportadas ? Number(req.body.horasReportadas) : undefined,
-      apprenticeId: req.user._id,
+      apprenticeId,
+      responsable: req.user._id,
+      esAdicional: req.body.esAdicional === true || req.body.esAdicional === 'true',
+      motivo: req.body.motivo || null,
+      fechaEspecial: req.body.fechaEspecial || null,
       file: req.file,
     });
     res.status(201).json({
@@ -108,6 +120,10 @@ const actualizar = async (req, res) => {
       ...req.body,
       semana: req.body.semana ? Number(req.body.semana) : undefined,
       horasReportadas: req.body.horasReportadas ? Number(req.body.horasReportadas) : undefined,
+      esAdicional: req.body.esAdicional !== undefined ? (req.body.esAdicional === true || req.body.esAdicional === 'true') : undefined,
+      motivo: req.body.motivo,
+      fechaEspecial: req.body.fechaEspecial,
+      responsable: req.user._id,
       file: req.file,
     });
     res.json({

@@ -538,9 +538,277 @@ const ejecutarEscaneoAlertas = async () => {
   };
 };
 
+/**
+ * 2. Recordatorios de registro de EP mensuales / alertas prioritarias (RF-APR-02)
+ */
+const enviarRecordatoriosRegistro = async () => {
+  console.log('🔔 [CRON] Buscando aprendices sin registro de EP para enviar recordatorios...');
+  try {
+    const hoy = new Date();
+    const aprendices = await User.find({
+      role: 'APRENDIZ',
+      activo: true,
+      status: 'ACTIVO',
+      $or: [
+        { lastRegistrationReminderSent: null },
+        { lastRegistrationReminderSent: { $lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }
+      ]
+    });
+
+    const ProductiveStage = require('../../modules/productive-stages-dev2/productive-stage.model');
+    let recordatoriosEnviados = 0;
+
+    for (const aprendiz of aprendices) {
+      const tieneEP = await ProductiveStage.findOne({ apprenticeId: aprendiz._id });
+      if (tieneEP) continue;
+
+      let esPrioritario = false;
+      let diasRestantes = null;
+
+      if (aprendiz.fechaFinLectiva) {
+        const fechaFin = new Date(aprendiz.fechaFinLectiva);
+        const diffMs = hoy - fechaFin;
+        const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        const fechaLimiteNuevaNorma = new Date('2024-11-05T00:00:00');
+        const esPostNov2024 = fechaFin >= fechaLimiteNuevaNorma;
+        const plazoMaximo = esPostNov2024 ? 30 : 730;
+
+        diasRestantes = plazoMaximo - diffDias;
+        if (diasRestantes <= 30) {
+          esPrioritario = true;
+        }
+      }
+
+      const subject = esPrioritario 
+        ? '⚠️ ¡ALERTA PRIORITARIA! Plazo próximo a vencer para registro de Etapa Productiva' 
+        : '📋 Recordatorio mensual: Registra tu Etapa Productiva';
+
+      const mensaje = esPrioritario
+        ? `Te queda poco tiempo de plazo reglamentario (${diasRestantes} días) para registrar tu etapa práctica.`
+        : `Recuerda realizar el registro de tu etapa práctica en la plataforma para formalizar tu proceso SENA.`;
+
+      await sendEmail({
+        to: aprendiz.email,
+        subject,
+        html: `
+          <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+            <div style="background: ${esPrioritario ? '#b91c1c' : '#1b5e20'}; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 1.2rem;">${esPrioritario ? '⚠️ ALERTA PRIORITARIA' : '📋 Recordatorio de Registro'}</h1>
+              <p style="color: #f3f4f6; margin: 4px 0 0; font-size: 0.85rem;">Plataforma REPFORA — SENA</p>
+            </div>
+            <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+              <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                Hola <strong>${aprendiz.name}</strong>,
+              </p>
+              <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                ${mensaje}
+              </p>
+              ${diasRestantes !== null ? `
+              <div style="background: #f8fafc; border-left: 4px solid ${esPrioritario ? '#b91c1c' : '#1b5e20'}; padding: 16px; margin: 20px 0; font-size: 0.9rem;">
+                <strong>Días restantes de plazo reglamentario:</strong> ${diasRestantes} días.
+              </div>` : ''}
+            </div>
+          </div>
+        `
+      });
+
+      aprendiz.lastRegistrationReminderSent = hoy;
+      await aprendiz.save();
+      recordatoriosEnviados++;
+    }
+
+    return { recordatoriosEnviados };
+  } catch (err) {
+    console.error('Error en enviarRecordatoriosRegistro:', err);
+    return { error: err.message };
+  }
+};
+
+/**
+ * 3. Recordatorios de bitácoras quincenales (Días 15 y 30) (RF-APR-07)
+ */
+const enviarRecordatoriosBitacoras = async () => {
+  const hoy = new Date();
+  const dia = hoy.getDate();
+  if (dia !== 15 && dia !== 30) {
+    console.log('🔔 [CRON] Hoy no es día 15 ni 30, se omite recordatorio de bitácoras.');
+    return { recordatoriosEnviados: 0 };
+  }
+
+  console.log('🔔 [CRON] Ejecutando recordatorios de bitácoras (Día 15/30)...');
+  try {
+    const ProductiveStage = require('../../modules/productive-stages-dev2/productive-stage.model');
+    const activeStages = await ProductiveStage.find({ estado: 'EN_CURSO' })
+      .populate('apprenticeId', 'name email');
+
+    let recordatoriosEnviados = 0;
+
+    for (const stage of activeStages) {
+      const apprentice = stage.apprenticeId;
+      if (!apprentice) continue;
+
+      await sendEmail({
+        to: apprentice.email,
+        subject: '⏰ Recordatorio: Fecha límite de entrega de Bitácora Quincenal',
+        html: `
+          <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+            <div style="background: #1a4d2e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 1.2rem;">⏰ Entrega de Bitácora</h1>
+              <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Plataforma REPFORA — SENA</p>
+            </div>
+            <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+              <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                Hola <strong>${apprentice.name}</strong>,
+              </p>
+              <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                Te recordamos que hoy es <strong>fecha de corte quincenal</strong> (día ${dia} del mes) y debes subir tu bitácora de seguimiento quincenal firmada por tu jefe inmediato en la plataforma.
+              </p>
+            </div>
+          </div>
+        `
+      });
+      recordatoriosEnviados++;
+    }
+
+    return { recordatoriosEnviados };
+  } catch (err) {
+    console.error('Error en enviarRecordatoriosBitacoras:', err);
+    return { error: err.message };
+  }
+};
+
+/**
+ * 4. Escáner de bitácoras rechazadas sin corregir en 4 días (RF-APR-08)
+ */
+const escanearBitacorasRechazadasSinCorregir = async () => {
+  console.log('🔔 [CRON] Escaneando bitácoras rechazadas sin corregir en los últimos 4 días...');
+  try {
+    const hace4Dias = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
+    const Bitacora = require('../../modules/bitacoras-dev3/bitacora.model');
+    
+    const bitacorasRechazadas = await Bitacora.find({
+      estado: 'RECHAZADA',
+      fechaRevision: { $lt: hace4Dias }
+    }).populate('apprenticeId', 'name email documento')
+      .populate('revisadoPor', 'name email');
+
+    let alertasCoordinador = 0;
+
+    for (const bitacora of bitacorasRechazadas) {
+      const apprentice = bitacora.apprenticeId;
+      const instructor = bitacora.revisadoPor;
+      if (!apprentice) continue;
+
+      const toEmail = instructor ? instructor.email : 'coordinacion@sena.edu.co';
+      await sendEmail({
+        to: toEmail,
+        subject: '⚠️ Alerta: Plazo de corrección de Bitácora Vencido',
+        html: `
+          <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+            <div style="background: #ea580c; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 1.2rem;">⚠️ Alerta de Corrección Expirada</h1>
+              <p style="color: #ffedd5; margin: 4px 0 0; font-size: 0.85rem;">Plataforma REPFORA — SENA</p>
+            </div>
+            <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+              <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                El aprendiz <strong>${apprentice.name}</strong> (Documento: ${apprentice.documento}) no ha corregido la <strong>Bitácora de la Semana ${bitacora.semana}</strong>, la cual fue rechazada hace más de 4 días.
+              </p>
+              <div style="background: #fff7ed; border-left: 4px solid #ea580c; padding: 16px; margin: 20px 0; font-size: 0.9rem;">
+                <p style="margin: 0;"><strong>Fecha de rechazo:</strong> ${new Date(bitacora.fechaRevision).toLocaleDateString()}</p>
+                <p style="margin: 4px 0 0 0;"><strong>Comentarios del rechazo:</strong> ${bitacora.observacionesInstructor || 'Ninguno'}</p>
+              </div>
+            </div>
+          </div>
+        `
+      });
+      alertasCoordinador++;
+    }
+
+    return { alertasCoordinador };
+  } catch (err) {
+    console.error('Error en escanearBitacorasRechazadasSinCorregir:', err);
+    return { error: err.message };
+  }
+};
+
+/**
+ * 5. Escáner de 2 meses previos a la finalización para listado de requisitos (RF-APR-11)
+ */
+const enviarAdvertenciasCertificacionDosMeses = async () => {
+  console.log('🔔 [CRON] Buscando aprendices a 2 meses de finalizar para enviar lista de requisitos...');
+  try {
+    const ProductiveStage = require('../../modules/productive-stages-dev2/productive-stage.model');
+    const User = require('../../modules/users-dev1/user.model');
+    
+    const stages = await ProductiveStage.find({ estado: 'EN_CURSO' })
+      .populate('apprenticeId');
+
+    const hoy = new Date();
+    const dosMesesMs = 60 * 24 * 60 * 60 * 1000;
+    let advertenciasEnviadas = 0;
+
+    for (const st of stages) {
+      const apprentice = st.apprenticeId;
+      if (!apprentice) continue;
+
+      if (st.fechaProyectadaFin) {
+        const diffMs = new Date(st.fechaProyectadaFin) - hoy;
+        
+        if (diffMs > 0 && diffMs <= dosMesesMs && !apprentice.lastCronVisitReminderSent) {
+          await sendEmail({
+            to: apprentice.email,
+            subject: '📋 Requisitos obligatorios para la Certificación Final',
+            html: `
+              <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+                <div style="background: #1b5e20; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+                  <h1 style="color: white; margin: 0; font-size: 1.2rem;">📋 Lista de Chequeo de Certificación</h1>
+                  <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Plataforma REPFORA — SENA</p>
+                </div>
+                <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+                  <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                    Hola <strong>${apprentice.name}</strong>,
+                  </p>
+                  <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                    Estás a aproximadamente <strong>2 meses de finalizar</strong> tu Etapa Productiva (Fecha proyectada: ${new Date(st.fechaProyectadaFin).toLocaleDateString()}).
+                  </p>
+                  <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                    Para obtener tu certificación sin demoras, asegúrate de tener preparados los siguientes documentos finales:
+                  </p>
+                  <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 20px 0;">
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem; color: #334155; line-height: 1.6;">
+                      <li><strong>Acta de Inicio:</strong> Firmada y cargada en el sistema.</li>
+                      <li><strong>Evaluación de Desempeño (Final):</strong> Firmada por tu jefe/co-formador y cargada.</li>
+                      <li><strong>Certificación de la Empresa:</strong> Emitida y cargada.</li>
+                      <li><strong>Soportes Finales:</strong> PDF compilado que incluye Cédula de Ciudadanía al 150%, pruebas TyT presentadas y Paz y Salvo académico.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            `
+          });
+
+          apprentice.lastCronVisitReminderSent = hoy;
+          await apprentice.save();
+          advertenciasEnviadas++;
+        }
+      }
+    }
+
+    return { advertenciasEnviadas };
+  } catch (err) {
+    console.error('Error en enviarAdvertenciasCertificacionDosMeses:', err);
+    return { error: err.message };
+  }
+};
+
 // ── Programar el cron: todos los días a las 7:00 AM ──
 cron.schedule('0 7 * * *', () => {
   ejecutarEscaneoAlertas();
+  enviarRecordatoriosRegistro();
+  enviarRecordatoriosBitacoras();
+  escanearBitacorasRechazadasSinCorregir();
+  enviarAdvertenciasCertificacionDosMeses();
 });
 
 console.log('🕐 [CRON] Job de alertas global registrado (diario a las 7:00 AM).');
@@ -549,4 +817,8 @@ module.exports = {
   ejecutarEscaneoAlertas,
   ejecutarEscaneoBitacoras,
   ejecutarEscaneoRetrasoTrackings,
+  enviarRecordatoriosRegistro,
+  enviarRecordatoriosBitacoras,
+  escanearBitacorasRechazadasSinCorregir,
+  enviarAdvertenciasCertificacionDosMeses,
 };

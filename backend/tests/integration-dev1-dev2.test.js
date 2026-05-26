@@ -9,6 +9,7 @@ const User            = require('../src/modules/users-dev1/user.model');
 const Company         = require('../src/modules/companies-dev2/company.model');
 const ProductiveStage = require('../src/modules/productive-stages-dev2/productive-stage.model');
 const Document        = require('../src/modules/documents-dev2/document.model');
+const Batch           = require('../src/modules/batches-dev1/batch.model');
 
 // Mockear los métodos de Mongoose
 vi.mock('../src/modules/users-dev1/user.model', () => ({
@@ -32,6 +33,12 @@ vi.mock('../src/modules/productive-stages-dev2/productive-stage.model', () => ({
 vi.mock('../src/modules/documents-dev2/document.model', () => ({
   create: vi.fn(),
   findOne: vi.fn(),
+}));
+
+vi.mock('../src/modules/batches-dev1/batch.model', () => ({
+  findOne: vi.fn(),
+  findById: vi.fn(),
+  create: vi.fn(),
 }));
 
 // Mock de Drive
@@ -63,6 +70,7 @@ describe('Integración DEV 1 (Usuarios) + DEV 2 (Etapas Productivas)', () => {
       email: 'santiago@sena.edu.co',
       role: 'APRENDIZ',
       documento: '102030',
+      ficha: '123456',
       fechaFinLectiva: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
     };
     
@@ -71,6 +79,14 @@ describe('Integración DEV 1 (Usuarios) + DEV 2 (Etapas Productivas)', () => {
       nit: '900-1',
       razonSocial: 'Tech Solutions SAS',
       activa: true,
+    };
+
+    const mockBatch = {
+      _id: new mongoose.Types.ObjectId(),
+      codigo_ficha: '123456',
+      estado: 'ACTIVA',
+      fecha_inicio_ep: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      fecha_fin_ep: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
     };
 
     // Mock de prototipos para evitar conexión real a base de datos
@@ -87,6 +103,7 @@ describe('Integración DEV 1 (Usuarios) + DEV 2 (Etapas Productivas)', () => {
     // Configurar retornos con vi.spyOn para que funcione con los modelos compilados de Mongoose
     vi.spyOn(Company, 'findById').mockResolvedValue(mockCompany);
     vi.spyOn(User, 'findById').mockResolvedValue(mockUser);
+    vi.spyOn(Batch, 'findOne').mockResolvedValue(mockBatch);
     
     const mockQuery = {
       sort: vi.fn().mockReturnThis(),

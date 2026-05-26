@@ -15,7 +15,7 @@ const driveService = require('../documents-dev2/drive.service');
 /**
  * Registrar un nuevo usuario.
  */
-const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa, fechaFinLectiva, instructorAsignado, instructorTecnico, instructorProyecto, tipoProyecto, modalidades }) => {
+const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa, fechaFinLectiva, instructorAsignado, instructorTecnico, instructorProyecto, tipoProyecto, modalidades, tipoInstructor }) => {
   // Verificar que no exista el email
   const existe = await User.findOne({ email });
   if (existe) {
@@ -54,6 +54,7 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
     instructorProyecto: instructorProyecto || null,
     tipoProyecto: tipoProyecto || null,
     modalidades: modalidades || [],
+    tipoInstructor: (role === 'INSTRUCTOR') ? (tipoInstructor || null) : null,
   });
 
   // Si es un instructor, crear su carpeta de almacenamiento en OneDrive y Google Drive
@@ -94,6 +95,7 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
       name:  usuario.name,
       email: usuario.email,
       role:  usuario.role,
+      tipoInstructor: usuario.tipoInstructor || null,
     },
     token,
   };
@@ -148,6 +150,7 @@ const login = async ({ email, password }) => {
       name:         usuario.name,
       email:        usuario.email,
       role:         usuario.role,
+      tipoInstructor: usuario.tipoInstructor || null,
       isFirstLogin: usuario.isFirstLogin,
     },
     token,
@@ -171,10 +174,11 @@ const getPerfil = async (userId) => {
 const generarToken = (usuario) => {
   return jwt.sign(
     {
-      _id:   usuario._id,
-      name:  usuario.name,
-      email: usuario.email,
-      role:  usuario.role,
+      _id:            usuario._id,
+      name:           usuario.name,
+      email:          usuario.email,
+      role:           usuario.role,
+      tipoInstructor: usuario.tipoInstructor || null,
     },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }

@@ -9,6 +9,17 @@ const ROLES = Object.freeze({
   EMPRESA: 'EMPRESA',
 });
 
+// --- Tipos de Instructor (RF-INS-26) ---
+// Diferencia las funciones de cada instructor dentro del sistema.
+// SEGUIMIENTO: realiza visitas y revisa bitácoras del aprendiz.
+// TECNICO:     valida conocimientos técnicos y evaluaciones.
+// PROYECTO:    supervisa el proyecto productivo final del aprendiz.
+const TIPOS_INSTRUCTOR = Object.freeze({
+  SEGUIMIENTO: 'SEGUIMIENTO',
+  TECNICO:     'TECNICO',
+  PROYECTO:    'PROYECTO',
+});
+
 // --- Máquina de estados de la EP (7 estados) ---
 // Flujo: SOLICITUD → REGISTRO → VALIDACION → APROBADO → EN_CURSO → FINALIZADO → CERTIFICADO
 //                                           ↘ RECHAZADO (puede volver a REGISTRO)
@@ -107,6 +118,7 @@ const ESTADO_ETAPA = ESTADO_EP;
 
 module.exports = {
   ROLES,
+  TIPOS_INSTRUCTOR,
   ESTADO_EP,
   ESTADO_ETAPA,
   TRANSICIONES_EP,

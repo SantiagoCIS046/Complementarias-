@@ -7,6 +7,7 @@ const router = express.Router();
 const multer = require('multer');
 const { verifyToken } = require('../../core/middlewares/auth.middleware');
 const { checkRole }   = require('../../core/middlewares/roles.middleware');
+const { checkTipoInstructor } = require('../../core/middlewares/checkTipoInstructor');
 const controller      = require('./bitacoras.controller');
 
 const upload = multer({
@@ -49,11 +50,8 @@ router.get('/', checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), controller.getAl
  */
 router.get('/stage/:stageId', checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), controller.getByStage);
 
-/**
- * @route   PATCH /api/bitacoras/:id/review
- * @access  Private (ADMIN, INSTRUCTOR)
- */
-router.patch('/:id/review', checkRole(['ADMIN', 'INSTRUCTOR']), controller.revisar);
+// RF-INS-26: Solo instructores de SEGUIMIENTO pueden revisar bitácoras
+router.patch('/:id/review', checkRole(['ADMIN', 'INSTRUCTOR']), checkTipoInstructor(['SEGUIMIENTO']), controller.revisar);
 
 /**
  * @route   PUT /api/bitacoras/:id

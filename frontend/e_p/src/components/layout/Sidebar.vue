@@ -6,10 +6,12 @@ import { useAuthStore } from '../../core/store/auth.store';
 const authStore = useAuthStore();
 const router = useRouter();
 
-const userRole = computed(() => authStore.user?.role || 'APRENDIZ');
+const userRole        = computed(() => authStore.user?.role || 'APRENDIZ');
+const tipoInstructor  = computed(() => authStore.tipoInstructor);
 
 const menuItems = computed(() => {
   const role = userRole.value;
+  const tipo = tipoInstructor.value;
 
   if (role === 'ADMIN') {
     return [
@@ -23,6 +25,29 @@ const menuItems = computed(() => {
   }
 
   if (role === 'INSTRUCTOR') {
+    // --- RF-INS-26: Menú diferenciado por tipo de instructor ---
+
+    if (tipo === 'TECNICO') {
+      // Instructor Técnico: acceso de lectura al dashboard y a sus aprendices
+      return [
+        { name: 'Mis Aprendices', icon: 'people', path: '/instructor-dashboard' },
+        { name: 'Seguimientos Técnicos', icon: 'engineering', path: '/seguimiento' },
+        { name: 'Informe de Horas', icon: 'schedule', path: '/informe-horas' },
+        { name: 'Histórico de Pagos', icon: 'payments', path: '/historico-pagos' },
+      ];
+    }
+
+    if (tipo === 'PROYECTO') {
+      // Instructor de Proyecto: supervisa el proyecto productivo
+      return [
+        { name: 'Mis Aprendices', icon: 'people', path: '/instructor-dashboard' },
+        { name: 'Certificación', icon: 'workspace_premium', path: '/certificacion' },
+        { name: 'Informe de Horas', icon: 'schedule', path: '/informe-horas' },
+        { name: 'Histórico de Pagos', icon: 'payments', path: '/historico-pagos' },
+      ];
+    }
+
+    // Por defecto (SEGUIMIENTO o sin tipo): menú completo del instructor
     return [
       { name: 'Dashboard', icon: 'dashboard', path: '/instructor-dashboard' },
       { name: 'Seguimientos', icon: 'assessment', path: '/seguimiento' },

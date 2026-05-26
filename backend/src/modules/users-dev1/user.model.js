@@ -5,7 +5,7 @@
 // =============================================
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { ROLES } = require('../../core/utils/enums');
+const { ROLES, TIPOS_INSTRUCTOR } = require('../../core/utils/enums');
 
 const userSchema = new mongoose.Schema(
   {
@@ -31,6 +31,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: Object.values(ROLES),
       default: ROLES.APRENDIZ,
+    },
+    // --- RF-INS-26: Tipo de Instructor ---
+    // Solo aplica cuando role === 'INSTRUCTOR'.
+    // SEGUIMIENTO: visitas presenciales + revisión de bitácoras.
+    // TECNICO:     evaluación técnica del aprendiz.
+    // PROYECTO:    supervisión del proyecto productivo final.
+    tipoInstructor: {
+      type: String,
+      enum: [...Object.values(TIPOS_INSTRUCTOR), null],
+      default: null,
     },
     documento: {
       type: String,

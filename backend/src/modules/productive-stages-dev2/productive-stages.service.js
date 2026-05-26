@@ -131,13 +131,22 @@ const getAll = async (filtros = {}) => {
   if (filtros.estado)       query.estado = filtros.estado;
   if (filtros.companyId)    query.companyId = filtros.companyId;
 
-  // Filtro por Instructor (Dev 2)
+  // Filtro por Instructor (RF-INS-26: diferenciación de tipos de instructor)
   if (filtros.instructorId) {
     const User = require('../users-dev1/user.model');
-    const apprentices = await User.find({ 
-      instructorAsignado: filtros.instructorId,
-      role: 'APRENDIZ' 
-    }).select('_id');
+
+    // Determinar qué campo del aprendiz corresponde al tipo de instructor
+    let instructorFieldQuery = null;
+    if (filtros.tipoInstructor === 'TECNICO') {
+      instructorFieldQuery = { instructorTecnico: filtros.instructorId, role: 'APRENDIZ' };
+    } else if (filtros.tipoInstructor === 'PROYECTO') {
+      instructorFieldQuery = { instructorProyecto: filtros.instructorId, role: 'APRENDIZ' };
+    } else {
+      // Por defecto (SEGUIMIENTO o sin tipo definido) usar instructorAsignado
+      instructorFieldQuery = { instructorAsignado: filtros.instructorId, role: 'APRENDIZ' };
+    }
+
+    const apprentices = await User.find(instructorFieldQuery).select('_id');
     
     if (apprentices.length > 0) {
       const apprenticeIds = apprentices.map(a => a._id);

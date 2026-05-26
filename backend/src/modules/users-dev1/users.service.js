@@ -83,6 +83,14 @@ const actualizar = async (id, data) => {
 
   // RF-ADM-15 Verificación de estado activo para instructores asignados
   const instructorFields = ['instructorAsignado', 'instructorTecnico', 'instructorProyecto'];
+
+  // Mapeo de campo → tipoInstructor esperado (RF-INS-26)
+  const tipoEsperadoPorCampo = {
+    instructorAsignado: 'SEGUIMIENTO',
+    instructorTecnico:  'TECNICO',
+    instructorProyecto: 'PROYECTO',
+  };
+
   for (const field of instructorFields) {
     if (data[field]) {
       const inst = await User.findById(data[field]);
@@ -95,8 +103,15 @@ const actualizar = async (id, data) => {
       if (inst.activo === false || inst.status === 'INACTIVO') {
         throw new Error(`El instructor asignado en ${field} (${inst.name}) debe estar en estado activo.`);
       }
+      // RF-INS-26: validar consistencia del tipo de instructor con el campo
+      if (inst.tipoInstructor && inst.tipoInstructor !== tipoEsperadoPorCampo[field]) {
+        throw new Error(
+          `El instructor ${inst.name} es de tipo ${inst.tipoInstructor} y no puede ser asignado como ${tipoEsperadoPorCampo[field]} en ${field}.`
+        );
+      }
     }
   }
+
 
   const oldUser = await User.findById(id);
   if (!oldUser) {

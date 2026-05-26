@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../../core/middlewares/auth.middleware');
 const { checkRole }   = require('../../core/middlewares/roles.middleware');
+const { checkTipoInstructor } = require('../../core/middlewares/checkTipoInstructor');
 const controller      = require('./trackings.controller');
 
 const multer = require('multer');
@@ -32,10 +33,11 @@ router.post('/validate-pdf', checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), upl
   next();
 }, controller.validarPdfIA);
 
-router.post('/',    checkRole(['ADMIN', 'INSTRUCTOR']), controller.crear);
+// RF-INS-26: Solo instructores de SEGUIMIENTO pueden crear/actualizar visitas
+router.post('/',    checkRole(['ADMIN', 'INSTRUCTOR']), checkTipoInstructor(['SEGUIMIENTO']), controller.crear);
 router.get('/',     checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), controller.getAll);
 router.get('/:id',  checkRole(['ADMIN', 'INSTRUCTOR', 'APRENDIZ']), controller.getById);
-router.put('/:id',  checkRole(['ADMIN', 'INSTRUCTOR']), controller.actualizar);
+router.put('/:id',  checkRole(['ADMIN', 'INSTRUCTOR']), checkTipoInstructor(['SEGUIMIENTO']), controller.actualizar);
 router.patch('/:id/approve-extraordinary', checkRole(['ADMIN']), controller.approveExtraordinary);
 
-module.exports = router;
+module.exports = router;

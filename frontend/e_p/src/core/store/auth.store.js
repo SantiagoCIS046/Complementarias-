@@ -15,9 +15,11 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('repfora_token') || null)
 
   // ── Getters ────────────────────────────────────────
-  const isLoggedIn = computed(() => !!token.value)
-  const userRole   = computed(() => user.value?.role || null)
-  const userName   = computed(() => user.value?.name || '')
+  const isLoggedIn       = computed(() => !!token.value)
+  const userRole         = computed(() => user.value?.role || null)
+  const userName         = computed(() => user.value?.name || '')
+  // RF-INS-26: Sub-tipo de instructor (SEGUIMIENTO, TECNICO, PROYECTO o null)
+  const tipoInstructor   = computed(() => user.value?.tipoInstructor || null)
 
   // ── Actions ────────────────────────────────────────
 
@@ -77,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    user, token, isLoggedIn, userRole, userName,
+    user, token, isLoggedIn, userRole, userName, tipoInstructor,
     login, logout, refreshActivity, isSessionExpired, updateUser,
   }
 })

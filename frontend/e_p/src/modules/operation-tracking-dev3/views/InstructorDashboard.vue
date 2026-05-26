@@ -10,6 +10,28 @@ import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 const instructorName = computed(() => authStore.user?.name || 'Instructor')
+
+// RF-INS-26: Tipo de Instructor
+const tipoInstructor = computed(() => authStore.tipoInstructor)
+
+const TIPO_LABELS = {
+  SEGUIMIENTO: 'Instructor de Seguimiento',
+  TECNICO:     'Instructor Técnico',
+  PROYECTO:    'Instructor de Proyecto',
+}
+const TIPO_COLORS = {
+  SEGUIMIENTO: '#1b5e20',
+  TECNICO:     '#1565c0',
+  PROYECTO:    '#6a1b9a',
+}
+
+const tipoInstructorLabel = computed(() =>
+  tipoInstructor.value ? (TIPO_LABELS[tipoInstructor.value] || 'Instructor') : 'Instructor'
+)
+const tipoInstructorColor = computed(() =>
+  tipoInstructor.value ? (TIPO_COLORS[tipoInstructor.value] || '#475569') : '#475569'
+)
+
 const dashboardTitle = computed(() => {
   if (authStore.user?.role === 'ADMIN') {
     return 'Panel de Administración: Seguimiento de Aprendices'
@@ -284,6 +306,15 @@ const getPhaseStyle = (phase) => {
 
           <div class="flex items-center justify-between gap-4 mb-2">
             <p class="text-gray-500 font-medium text-xs">Visualización en tiempo real de la base de datos oficial.</p>
+            <!-- RF-INS-26: Badge de tipo de instructor -->
+            <span
+              v-if="tipoInstructor"
+              class="tipo-instructor-badge"
+              :style="{ backgroundColor: tipoInstructorColor + '15', color: tipoInstructorColor, borderColor: tipoInstructorColor + '40' }"
+            >
+              <span class="material-symbols-outlined" style="font-size: 14px;">badge</span>
+              {{ tipoInstructorLabel }}
+            </span>
           </div>
 
           <!-- Filtros -->
@@ -750,5 +781,20 @@ const getPhaseStyle = (phase) => {
 }
 .lock-icon { font-size: 1rem !important; color: #94a3b8; }
 .locked-text { white-space: nowrap; }
+
+/* RF-INS-26: Badge de tipo de instructor */
+.tipo-instructor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1.5px solid;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
 </style>
 

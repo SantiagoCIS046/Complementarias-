@@ -62,6 +62,17 @@ const crear = async ({ stageId, instructorId, apprenticeId, numeroVisita, fechaV
     throw new Error('Etapa Productiva no encontrada.');
   }
 
+  // RF-INS-26: Solo el instructor de SEGUIMIENTO puede registrar visitas de seguimiento
+  if (instructorId) {
+    const instructor = await User.findById(instructorId);
+    if (instructor && instructor.tipoInstructor && instructor.tipoInstructor !== 'SEGUIMIENTO') {
+      throw new Error(
+        `Solo el instructor de Seguimiento puede registrar visitas de seguimiento. ` +
+        `Tu tipo de instructor es: ${instructor.tipoInstructor}.`
+      );
+    }
+  }
+
   // Validar cuotas dinámicas y nivel académico
   const cupo = await obtenerCupoSeguimientos(stageId);
 

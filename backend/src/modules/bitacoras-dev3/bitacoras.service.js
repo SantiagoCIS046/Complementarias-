@@ -6,6 +6,7 @@
 
 const Bitacora       = require('./bitacora.model');
 const ProductiveStage = require('../productive-stages-dev2/productive-stage.model');
+const User           = require('../users-dev1/user.model');
 
 /**
  * Crear una nueva bitacora semanal.
@@ -120,6 +121,17 @@ const revisar = async (bitacoraId, { estado, observaciones, revisadoPor }) => {
     throw new Error('Bitacora no encontrada.');
   }
 
+  // RF-INS-26: Solo el instructor de SEGUIMIENTO puede revisar bitácoras
+  if (revisadoPor) {
+    const revisor = await User.findById(revisadoPor).select('tipoInstructor role name');
+    if (revisor && revisor.role === 'INSTRUCTOR' && revisor.tipoInstructor && revisor.tipoInstructor !== 'SEGUIMIENTO') {
+      throw new Error(
+        `Solo el instructor de Seguimiento puede revisar las bitácoras del aprendiz. ` +
+        `Tu tipo de instructor es: ${revisor.tipoInstructor}.`
+      );
+    }
+  }
+
   bitacora.estado = estado;
   bitacora.observacionesInstructor = observaciones || '';
   bitacora.revisadoPor = revisadoPor;
@@ -128,6 +140,7 @@ const revisar = async (bitacoraId, { estado, observaciones, revisadoPor }) => {
   await bitacora.save();
   return bitacora;
 };
+
 
 /**
  * Actualizar una bitacora (solo si no esta aprobada).

@@ -126,6 +126,10 @@ const toggleHourState = async (hour, stateName) => {
     }
   } else {
     hour[stateName] = !hour[stateName]
+    // Inteligencia premium: si se cobra, se marca automáticamente como ejecutada
+    if (stateName === 'cobrado' && hour.cobrado) {
+      hour.ejecutado = true
+    }
     if (hour.ejecutado || hour.cobrado) {
       hour.pendiente = false
     } else {

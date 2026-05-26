@@ -49,7 +49,18 @@ describe('RF-INS-03: Registro de fecha de asignación', () => {
       role: 'APRENDIZ'
     };
 
-    vi.spyOn(User, 'findById').mockResolvedValue(mockUser);
+    vi.spyOn(User, 'findById').mockImplementation(async (id) => {
+      if (id.toString() === mockUser._id.toString()) {
+        return mockUser;
+      }
+      return {
+        _id: id,
+        name: 'Instructor Asignado',
+        role: 'INSTRUCTOR',
+        activo: true,
+        status: 'ACTIVO'
+      };
+    });
     vi.spyOn(User, 'findByIdAndUpdate').mockImplementation(async (id, data, options) => {
       return { _id: id, ...data };
     });

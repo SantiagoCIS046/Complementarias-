@@ -328,8 +328,8 @@
         </section>
       </div>
       </div>
+      </main>
     </div>
-  </main>
 
   <!-- ═══════ MODAL: Nueva Bitácora (Asistente de 3 pasos con validación de firmas por IA) ═══════ -->
   <div class="modal-overlay" v-if="showNewBitacoraModal" @click.self="showNewBitacoraModal = false">
@@ -487,6 +487,19 @@
       <div class="modal-footer footer-premium">
         <!-- Paso 1 botones -->
         <template v-if="currentStep === 1">
+          <button class="btn-cancel-premium" @click="showNewBitacoraModal = false">Cancelar</button>
+          <button class="btn-confirm-premium" :disabled="!newBitacoraForm.semana || !newBitacoraForm.horasReportadas" @click="currentStep = 2">Siguiente</button>
+        </template>
+        <!-- Paso 2 botones -->
+        <template v-else-if="currentStep === 2">
+          <button class="btn-cancel-premium" @click="currentStep = 1">Atrás</button>
+          <button class="btn-confirm-premium" :disabled="!selectedFile" @click="currentStep = 3">Siguiente</button>
+        </template>
+        <!-- Paso 3 botones -->
+        <template v-else-if="currentStep === 3">
+          <button class="btn-cancel-premium" :disabled="isScanning" @click="currentStep = 2">Volver a Cargar</button>
+          <button class="btn-confirm-premium" :disabled="isScanning || !scanResult?.valid" @click="submitNewBitacora">Confirmar y Subir</button>
+        </template>
       </div>
     </div>
   </div>
@@ -724,8 +737,6 @@
       </div>
     </div>
   </div>
-
-</div>
 </div>
 </template>
 

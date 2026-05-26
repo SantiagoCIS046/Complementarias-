@@ -226,6 +226,7 @@ frontend/e_p/
 | 2026-04-28 | ✅ Dashboard Premium | Rediseño de UI administrativa, carga inmediata y estados visuales SENA. |
 | 2026-04-28 | ✅ Seguridad & RBAC | Implementación de Guard de navegación por roles (ADMIN acceso total). |
 | 2026-04-28 | ✅ Integración API | Sincronización real con base de datos y corrección de servicios de usuario. |
+| 2026-05-25 | ✅ Validación & GitHub | Implementación de validaciones reactivas de políticas de contraseña, perfiles de usuario y subida del código completo a GitHub. |
 
 ---
 

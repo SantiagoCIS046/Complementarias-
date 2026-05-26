@@ -137,14 +137,14 @@ const calculoPorcentaje = (mesItem) => {
             <div class="kpi-card kpi-cobradas">
               <div class="kpi-icon-wrap"><span class="material-symbols-outlined">payments</span></div>
               <div class="kpi-content">
-                <span class="kpi-value">{{ resumenGlobal.totalCobrado }}h</span>
+                <span class="kpi-value">{{ resumenGlobal.totalCobrado }}<span class="kpi-unit">h</span></span>
                 <span class="kpi-label">Horas Cobradas</span>
               </div>
             </div>
             <div class="kpi-card kpi-pendientes">
               <div class="kpi-icon-wrap"><span class="material-symbols-outlined">pending</span></div>
               <div class="kpi-content">
-                <span class="kpi-value">{{ resumenGlobal.totalPendiente }}h</span>
+                <span class="kpi-value">{{ resumenGlobal.totalPendiente }}<span class="kpi-unit">h</span></span>
                 <span class="kpi-label">Horas Pendientes</span>
               </div>
             </div>
@@ -325,8 +325,9 @@ const calculoPorcentaje = (mesItem) => {
 .kpi-icon-wrap .material-symbols-outlined { font-size: 1.5rem; }
 
 .kpi-content { display: flex; flex-direction: column; gap: 0.15rem; }
-.kpi-value { font-size: 1.8rem; font-weight: 855; line-height: 1; color: #0f172a; }
-.kpi-label { font-size: 0.76rem; font-weight: 650; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+.kpi-value { font-size: 1.8rem; font-weight: 800; line-height: 1; color: #0f172a; }
+.kpi-label { font-size: 0.76rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+.kpi-unit { font-size: 1.15rem; font-weight: 500; color: #64748b; margin-left: 2px; }
 
 /* ── Historial ── */
 .history-card {
@@ -365,14 +366,14 @@ const calculoPorcentaje = (mesItem) => {
 .progress-percent { font-size: 0.72rem; font-weight: 800; color: #6d28d9; white-space: nowrap; min-width: 65px; }
 
 .mes-totals { display: flex; gap: 0.5rem; }
-.badge { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 6px; font-size: 0.74rem; font-weight: 750; }
+.badge { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 6px; font-size: 0.74rem; font-weight: 700; }
 .badge-cobradas { background: #f5f3ff; color: #6d28d9; }
 .badge-pendientes { background: #fff7ed; color: #c2410c; }
 
 /* Sub-tabla mensual de visitas extraordinarias */
 .mes-body { background: #fafcff; padding: 0.5rem 1.5rem 1.25rem 1.5rem; border-top: 1px solid #f1f5f9; }
 .desglose-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-.desglose-table th { background: #f1f5f9; color: #475569; font-size: 0.74rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.65rem 0.85rem; text-align: left; border-bottom: 1.5px solid #e2e8f0; }
+.desglose-table th { background: #f1f5f9; color: #475569; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.65rem 0.85rem; text-align: left; border-bottom: 1.5px solid #e2e8f0; }
 .desglose-table td { padding: 0.75rem 0.85rem; font-size: 0.84rem; color: #334155; border-bottom: 1px solid #f1f5f9; background: #fff; vertical-align: middle; }
 .desglose-table tbody tr:last-child td { border-bottom: none; }
 
@@ -394,7 +395,7 @@ const calculoPorcentaje = (mesItem) => {
 .btn-cobrar-accion {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
   background: #ede9fe; border: 1.5px solid #ddd6fe; border-radius: 8px;
-  padding: 0.3rem 0.75rem; font-size: 0.74rem; font-weight: 750; color: #7c3aed;
+  padding: 0.3rem 0.75rem; font-size: 0.74rem; font-weight: 700; color: #7c3aed;
   cursor: pointer; transition: all 0.15s;
 }
 .btn-cobrar-accion:hover:not(:disabled) { background: #7c3aed; color: #fff; border-color: #7c3aed; }

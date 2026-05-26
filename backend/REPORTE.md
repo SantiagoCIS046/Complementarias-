@@ -58,6 +58,7 @@
 - [x] **Módulo de Bitácoras**: Conexión de la interfaz de revisión del instructor con el backend, permitiendo la aprobación/rechazo real y la actualización de horas.
 - [x] **Gestión de Archivos**: Estabilización de la subida de actas PDF y evidencias, vinculándolas correctamente a la Etapa Productiva.
 - [x] **Certificaciones**: Implementación de la vista de gestión de certificados con datos dinámicos de la base de datos.
+- [x] **Control de Versiones y GitHub**: Consolidación del repositorio local con la rama remota, adición de scripts de pruebas locales y publicación exitosa del código completo en GitHub.
 
 ---
-*Reporte actualizado por Antigravity AI - Sincronización Total y Conexión de Datos.*
+*Reporte actualizado por Antigravity AI - Sincronización Total y Control de Versiones.*

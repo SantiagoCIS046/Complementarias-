@@ -1732,4 +1732,84 @@ onMounted(async () => {
   margin: 0;
   word-break: break-word;
 }
+
+@media (max-width: 768px) {
+  .bitacoras-layout {
+    height: auto;
+    overflow: visible;
+  }
+  .main-wrapper {
+    height: auto;
+    overflow: visible !important;
+  }
+  .content-columns {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    overflow: visible;
+  }
+  .column-fichas {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-primary);
+    overflow-y: visible;
+  }
+  .btn-new-bitacora {
+    width: auto !important;
+    flex: 1;
+    margin: 0 !important;
+    font-size: 11px;
+    padding: 10px;
+  }
+  .fichas-section {
+    width: 100%;
+    margin: 0 !important;
+  }
+  .column-entregas {
+    max-height: 280px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-primary);
+  }
+  .revision-widgets {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .revision-scroll {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .column-fichas {
+    padding: 8px;
+  }
+  .btn-new-bitacora {
+    font-size: 10px;
+    padding: 8px;
+  }
+  .revision-scroll {
+    padding: 8px;
+  }
+  .pdf-access-box {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+  .btn-view-pdf {
+    width: 100%;
+    text-align: center;
+  }
+  .chat-bubble {
+    max-width: 90%;
+  }
+  .modal-card {
+    width: 100%;
+    margin: 8px;
+  }
+}
 </style>

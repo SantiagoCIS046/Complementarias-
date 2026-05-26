@@ -196,7 +196,7 @@ onMounted(loadData)
             <div class="col-span-12 lg:col-span-8 space-y-6">
               
               <!-- STEPPER GRAFICO DE ESTADOS (RF-APR-12) -->
-              <div class="bg-white rounded-[2rem] p-8 shadow-premium border border-stone-100/60 mb-6">
+              <div class="bg-white rounded-[2rem] p-4 sm:p-8 shadow-premium border border-stone-100/60 mb-6">
                 <h4 class="font-headline text-lg font-extrabold mb-6">Fases del Proceso de Etapa Productiva</h4>
                 <div class="flex items-center justify-between relative" style="max-width: 600px; margin: 0 auto;">
                   <!-- Line behind -->
@@ -255,11 +255,10 @@ onMounted(loadData)
                 </div>
               </div>
 
-              <!-- List of Documents (RF-APR-09) -->
               <section 
                 v-for="doc in mappedDocumentos" 
                 :key="doc.tipoDocumento"
-                class="bg-white rounded-[2rem] p-8 shadow-premium border border-stone-100/60 transition-all hover:shadow-lg group"
+                class="bg-white rounded-[2rem] p-4 sm:p-8 shadow-premium border border-stone-100/60 transition-all hover:shadow-lg group"
               >
                 <!-- Hidden File Inputs -->
                 <input 
@@ -297,7 +296,7 @@ onMounted(loadData)
                 <div 
                   v-if="!doc.archivo"
                   @click="handleFileUpload(doc.tipoDocumento)"
-                  class="border-2 border-dashed border-stone-200 rounded-[1.5rem] bg-stone-50/50 p-12 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all group/upload"
+                  class="border-2 border-dashed border-stone-200 rounded-[1.5rem] bg-stone-50/50 p-6 sm:p-12 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all group/upload"
                 >
                   <div class="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-4 group-hover/upload:translate-y-[-4px] transition-transform">
                     <span v-if="uploading[doc.tipoDocumento]" class="material-symbols-outlined text-3xl text-primary animate-spin">sync</span>
@@ -339,7 +338,7 @@ onMounted(loadData)
             <!-- Right Side: Summary & Objections -->
             <div class="col-span-12 lg:col-span-4 space-y-8">
               <!-- Summary Card -->
-              <section class="bg-white rounded-[2.5rem] p-10 shadow-premium border border-stone-100/60">
+              <section class="bg-white rounded-[2.5rem] p-6 sm:p-10 shadow-premium border border-stone-100/60">
                 <h4 class="font-headline text-2xl font-extrabold mb-8">Resumen de Revisión</h4>
                 
                 <div class="space-y-8">
@@ -371,7 +370,7 @@ onMounted(loadData)
               </section>
 
               <!-- Dynamic Objections Section (RF-APR-10) -->
-              <section class="bg-surface-container-high/60 backdrop-blur-sm rounded-[2.5rem] p-8 relative overflow-hidden">
+              <section class="bg-surface-container-high/60 backdrop-blur-sm rounded-[2.5rem] p-4 sm:p-8 relative overflow-hidden">
                 <div class="flex items-center gap-3 mb-8">
                   <div class="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center">
                     <span class="material-symbols-outlined text-on-surface-variant">forum</span>
@@ -404,7 +403,7 @@ onMounted(loadData)
               </section>
               
               <!-- Institutional Card Footer -->
-              <div class="bg-gradient-to-br from-secondary to-secondary-light rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-xl">
+              <div class="bg-gradient-to-br from-secondary to-secondary-light rounded-[2.5rem] p-6 sm:p-8 text-white relative overflow-hidden group shadow-xl">
                 <div class="absolute top-[-20%] right-[-10%] w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all"></div>
                 <div class="relative z-10">
                   <span class="material-symbols-outlined text-4xl mb-6 opacity-60">architecture</span>
@@ -440,5 +439,18 @@ onMounted(loadData)
 }
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+@media (max-width: 480px) {
+  .w-10 {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+  .h-10 {
+    height: 2rem !important;
+  }
+  .text-xs {
+    font-size: 10px !important;
+  }
 }
 </style>

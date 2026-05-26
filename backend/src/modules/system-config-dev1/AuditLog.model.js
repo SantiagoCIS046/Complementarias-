@@ -24,4 +24,16 @@ const auditLogSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Impedir modificaciones o eliminaciones para garantizar inalterabilidad (RNF-08)
+const bloquearAlteracion = function(next) {
+  next(new Error('Los logs de auditoría son inalterables y no pueden ser modificados o eliminados.'));
+};
+
+auditLogSchema.pre('updateOne', bloquearAlteracion);
+auditLogSchema.pre('findOneAndUpdate', bloquearAlteracion);
+auditLogSchema.pre('updateMany', bloquearAlteracion);
+auditLogSchema.pre('remove', bloquearAlteracion);
+auditLogSchema.pre('deleteOne', bloquearAlteracion);
+auditLogSchema.pre('deleteMany', bloquearAlteracion);
+
 module.exports = mongoose.model('AuditLog', auditLogSchema);

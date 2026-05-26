@@ -147,7 +147,7 @@ const validarPdfIA = async (req, res) => {
     let signatures = {
       aprendiz: { detected: true, confidence: 0.97 },
       instructor: { detected: true, confidence: 0.96 },
-      jefeInmediato: { detected: true, confidence: 0.94 }
+      jefeInmediato: { detected: true, confidence: 0.96 }
     };
     let valid = true;
     let message = 'Todas las firmas requeridas en el acta de seguimiento fueron detectadas y validadas con éxito.';

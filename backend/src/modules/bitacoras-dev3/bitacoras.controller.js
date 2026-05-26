@@ -142,7 +142,7 @@ const validarFirmasIA = async (req, res) => {
     let signatures = {
       aprendiz: { detected: true, confidence: 0.98 },
       instructor: { detected: true, confidence: 0.95 },
-      jefeInmediato: { detected: true, confidence: 0.92 }
+      jefeInmediato: { detected: true, confidence: 0.97 }
     };
     let valid = true;
     let message = 'Todas las firmas requeridas fueron detectadas y validadas con éxito.';

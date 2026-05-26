@@ -169,12 +169,42 @@
                     </div>
                   </div>
 
+                  <!-- Chat de Comentarios (RUI-13) -->
                   <div class="widget">
-                    <div class="widget-header">OBSERVACIONES DEL INSTRUCTOR</div>
-                    <textarea v-model="observaciones" 
-                              class="w-full text-xs p-2 rounded border focus:border-green-600 outline-none" 
-                              rows="4" 
-                              placeholder="Escriba aquí sus observaciones..."></textarea>
+                    <div class="widget-header" style="display: flex; align-items: center; gap: 6px;">
+                      <span class="material-symbols-outlined" style="font-size: 16px;">forum</span> CHAT DE OBSERVACIONES
+                    </div>
+                    
+                    <div class="chat-feed" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+                      <!-- Mensaje 1: Actividades del Aprendiz -->
+                      <div class="chat-bubble apprentice">
+                        <div class="bubble-header">
+                          <span>APRENDIZ (Envío original)</span>
+                          <span>{{ selectedBitacora.createdAt ? new Date(selectedBitacora.createdAt).toLocaleDateString('es-CO') : '' }}</span>
+                        </div>
+                        <p class="bubble-content">{{ selectedBitacora.descripcion }}</p>
+                      </div>
+
+                      <!-- Mensaje 2: Observación del Instructor -->
+                      <div v-if="selectedBitacora.observacionesInstructor || observaciones" class="chat-bubble instructor">
+                        <div class="bubble-header">
+                          <span>INSTRUCTOR</span>
+                          <span>{{ selectedBitacora.updatedAt ? new Date(selectedBitacora.updatedAt).toLocaleDateString('es-CO') : 'Borrador' }}</span>
+                        </div>
+                        <p class="bubble-content">{{ selectedBitacora.observacionesInstructor || observaciones }}</p>
+                      </div>
+                      
+                      <!-- Placeholder si está vacío -->
+                      <div v-else class="text-center p-4" style="font-size: 0.7rem; color: var(--text-muted); font-style: italic;">
+                        No hay comentarios del instructor todavía.
+                      </div>
+                    </div>
+
+                    <!-- Input para escribir si está pendiente (solo Instructor) -->
+                    <textarea v-if="selectedBitacora.estado === 'PENDIENTE'" v-model="observaciones" 
+                              class="w-full text-xs p-3 rounded-xl border focus:border-green-600 outline-none" 
+                              rows="3" 
+                              placeholder="Escriba aquí sus observaciones para la bitácora..."></textarea>
                   </div>
                 </div>
 
@@ -193,9 +223,9 @@
                             <p>Documento adjunto para revisión</p>
                           </div>
                         </div>
-                        <a :href="ev.url" target="_blank" class="btn-view-pdf">
-                          Ver Documento
-                        </a>
+                         <button type="button" class="btn-view-pdf" @click="viewPdfInline(ev.url)">
+                           Ver Documento
+                         </button>
                      </div>
                    </div>
                    <p v-else class="text-xs text-gray-400 italic">No se adjuntaron archivos.</p>
@@ -210,13 +240,44 @@
                     <span class="material-symbols-outlined">check_circle</span> Aprobar
                   </button>
                 </footer>
-                <div v-else class="p-4 bg-gray-50 rounded-xl border text-center">
-                   <p class="text-xs font-bold" :class="selectedBitacora.estado === 'APROBADA' ? 'text-green-600' : 'text-red-600'">
-                     ESTA BITÁCORA YA FUE {{ selectedBitacora.estado }}
-                   </p>
-                   <p v-if="selectedBitacora.observacionesInstructor" class="text-[10px] text-gray-500 mt-1 italic">
-                     "{{ selectedBitacora.observacionesInstructor }}"
-                   </p>
+                     <div v-else class="space-y-4">
+                  <!-- Chat de Comentarios (RUI-13) -->
+                  <div class="widget">
+                    <div class="widget-header" style="display: flex; align-items: center; gap: 6px;">
+                      <span class="material-symbols-outlined" style="font-size: 16px;">forum</span> CHAT DE OBSERVACIONES
+                    </div>
+                    
+                    <div class="chat-feed" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+                      <!-- Mensaje 1: Actividades del Aprendiz -->
+                      <div class="chat-bubble apprentice">
+                        <div class="bubble-header">
+                          <span>APRENDIZ (Envío original)</span>
+                          <span>{{ selectedBitacora.createdAt ? new Date(selectedBitacora.createdAt).toLocaleDateString('es-CO') : '' }}</span>
+                        </div>
+                        <p class="bubble-content">{{ selectedBitacora.descripcion }}</p>
+                      </div>
+
+                      <!-- Mensaje 2: Observación del Instructor -->
+                      <div v-if="selectedBitacora.observacionesInstructor" class="chat-bubble instructor">
+                        <div class="bubble-header">
+                          <span>INSTRUCTOR</span>
+                          <span>{{ selectedBitacora.updatedAt ? new Date(selectedBitacora.updatedAt).toLocaleDateString('es-CO') : '' }}</span>
+                        </div>
+                        <p class="bubble-content">{{ selectedBitacora.observacionesInstructor }}</p>
+                      </div>
+                      
+                      <!-- Placeholder si está vacío -->
+                      <div v-else class="text-center p-4" style="font-size: 0.7rem; color: var(--text-muted); font-style: italic;">
+                        No hay comentarios del instructor.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="p-4 bg-gray-50 rounded-xl border text-center">
+                     <p class="text-xs font-bold" :class="selectedBitacora.estado === 'APROBADA' ? 'text-green-600' : 'text-red-600'">
+                       ESTA BITÁCORA YA FUE {{ selectedBitacora.estado }}
+                     </p>
+                  </div>
                 </div>
               </div>
               
@@ -266,12 +327,35 @@
                   </div>
                 </div>
 
-                <!-- Observaciones -->
+                <!-- Chat de Comentarios (RUI-13) -->
                 <div class="widget mb-4">
-                  <div class="widget-header">OBSERVACIONES DEL INSTRUCTOR</div>
-                  <p class="text-[11px] text-gray-600 bg-white p-2 rounded border">
-                    {{ selectedTracking.observaciones }}
-                  </p>
+                  <div class="widget-header" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">forum</span> CHAT DE OBSERVACIONES
+                  </div>
+                  <div class="chat-feed" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+                    <!-- Mensaje 1: Detalles de la Visita -->
+                    <div class="chat-bubble apprentice">
+                      <div class="bubble-header">
+                        <span>SISTEMA (Visita programada)</span>
+                        <span>{{ selectedTracking.fechaVisita ? new Date(selectedTracking.fechaVisita).toLocaleDateString('es-CO') : '' }}</span>
+                      </div>
+                      <p class="bubble-content">
+                        Visita N° {{ selectedTracking.numeroVisita }} de seguimiento en el lugar {{ selectedTracking.lugarVisita || 'Presencial' }}.
+                      </p>
+                    </div>
+
+                    <!-- Mensaje 2: Observación del Instructor -->
+                    <div v-if="selectedTracking.observaciones" class="chat-bubble instructor">
+                      <div class="bubble-header">
+                        <span>INSTRUCTOR (Observaciones)</span>
+                        <span>{{ selectedTracking.updatedAt ? new Date(selectedTracking.updatedAt).toLocaleDateString('es-CO') : '' }}</span>
+                      </div>
+                      <p class="bubble-content">{{ selectedTracking.observaciones }}</p>
+                    </div>
+                    <div v-else class="text-center p-4" style="font-size: 0.7rem; color: var(--text-muted); font-style: italic;">
+                      No se registraron observaciones de visita.
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Visor / Acceso PDF de Visita -->
@@ -287,9 +371,9 @@
                           <p>Soporte oficial firmado y validado por IA</p>
                         </div>
                       </div>
-                      <a :href="selectedTracking.evidenciaUrl" target="_blank" class="btn-view-pdf" style="color: #2563eb; border-color: #2563eb;">
-                        Descargar Acta
-                      </a>
+                      <button type="button" class="btn-view-pdf" style="color: #2563eb; border-color: #2563eb;" @click="viewPdfInline(selectedTracking.evidenciaUrl)">
+                        Ver Documento
+                      </button>
                    </div>
                 </div>
 
@@ -609,7 +693,7 @@
           >
             <span class="material-symbols-outlined" style="font-size: 3.5rem; color: #2563eb; opacity: 0.8; margin-bottom: 12px;">upload_file</span>
             <h3 style="font-size: 0.85rem; font-weight: 800; color: var(--text-primary); margin: 0 0 6px 0;">Arrastre su Acta de Seguimiento PDF aquí</h3>
-            <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0 0 16px 0;">O haga clic para explorar en sus archivos locales (Máx. 7MB)</p>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0 0 16px 0;">O haga clic para explorar en sus archivos locales (Máx. 5MB)</p>
             <span class="btn-primary-sena" style="padding: 6px 14px; font-size: 0.7rem; display: inline-block; background-color: #2563eb;">Seleccionar Archivo</span>
             <input type="file" id="tracking-file-input" class="hidden" accept="application/pdf" style="display: none;" @change="handleTrackingFileChange" />
           </div>
@@ -738,6 +822,31 @@
     </div>
   </div>
 </div>
+
+<!-- Visor PDF Integrado (RUI-07) -->
+<Transition name="fade">
+  <div v-if="showPdfViewer" class="modal-overlay" style="z-index: 2000;" @click.self="showPdfViewer = false">
+    <div class="modal-content" style="width: 90%; max-width: 950px; height: 85vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 20px; background: white; border: 1px solid var(--border-primary);">
+      <div class="modal-header" style="background: var(--color_button); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; border: none; border-radius: 0;">
+        <h3 style="margin: 0; font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          <span class="material-symbols-outlined">picture_as_pdf</span> Visor de Evidencia PDF
+        </h3>
+        <button @click="showPdfViewer = false" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; line-height: 1; display: flex; align-items: center;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body" style="flex: 1; padding: 0; position: relative; background: #525659;">
+        <iframe :src="activePdfUrl" width="100%" height="100%" style="border: none;"></iframe>
+      </div>
+      <div class="modal-footer-actions" style="padding: 12px 24px; background: var(--bg-secondary); border-top: 1px solid var(--border-primary); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; border-radius: 0;">
+        <button @click="showPdfViewer = false" class="btn-cancel-premium">Cerrar Visor</button>
+        <a :href="activePdfUrl" download class="btn-confirm-premium" style="display: flex; align-items: center; gap: 8px; background-color: var(--color_button); color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;">
+          <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Descargar PDF
+        </a>
+      </div>
+    </div>
+  </div>
+</Transition>
 </template>
 
 <script setup>
@@ -1028,9 +1137,9 @@ const processTrackingFileForScan = async (file) => {
     return
   }
 
-  // Límite estricto de 7MB
-  if (file.size > 7 * 1024 * 1024) {
-    scanTrackingError.value = 'El archivo excede el tamaño máximo permitido de 7MB.'
+  // Límite estricto de 5MB
+  if (file.size > 5 * 1024 * 1024) {
+    scanTrackingError.value = 'El archivo excede el tamaño máximo permitido de 5MB.'
     trackingStep.value = 3
     return
   }
@@ -1106,6 +1215,14 @@ const getInitials = (name) => {
 const formatDate = (date) => {
   if (!date) return ''
   return new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
+const showPdfViewer = ref(false)
+const activePdfUrl = ref(null)
+
+const viewPdfInline = (url) => {
+  activePdfUrl.value = url
+  showPdfViewer.value = true
 }
 
 onMounted(async () => {
@@ -1408,5 +1525,57 @@ onMounted(async () => {
 
 .mt-4 {
   margin-top: 1rem;
+}
+
+/* ── Chat de Comentarios (RUI-13) ── */
+.chat-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-secondary, #f8fafc);
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-primary, #e2e8f0);
+}
+.chat-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+}
+.chat-bubble.apprentice {
+  align-self: flex-start;
+  background: var(--bg-elevated, #ffffff);
+  border: 1px solid var(--border-primary, #e2e8f0);
+  border-bottom-left-radius: 4px;
+}
+.chat-bubble.instructor {
+  align-self: flex-end;
+  background: #e2f0d9;
+  border: 1px solid #c2e0b1;
+  color: #1b5e20;
+  border-bottom-right-radius: 4px;
+}
+.bubble-header {
+  font-size: 0.65rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.chat-bubble.apprentice .bubble-header {
+  color: var(--text-secondary, #64748b);
+}
+.chat-bubble.instructor .bubble-header {
+  color: #2d7a4a;
+}
+.bubble-content {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-word;
 }
 </style>

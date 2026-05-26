@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '../../core/store/auth.store';
 import { useNotificationsStore } from '../../core/store/notifications.store';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAlert } from '../../core/composables/useAlert';
 import { useThemeStore } from '../../core/store/theme.store';
 import SkeletonLoader from '../ui/SkeletonLoader.vue';
@@ -19,7 +19,44 @@ const authStore = useAuthStore();
 const notifStore = useNotificationsStore();
 const themeStore = useThemeStore();
 const router = useRouter();
+const route = useRoute();
 const { showInfo } = useAlert();
+
+const breadcrumbs = computed(() => {
+  const pathArray = route.path.split('/').filter(p => p);
+  const crumbs = [{ label: 'Inicio', path: '/' }];
+  
+  let currentPath = '';
+  pathArray.forEach((segment) => {
+    currentPath += `/${segment}`;
+    
+    // Mapear segmentos a nombres amigables en español
+    let label = segment;
+    if (segment === 'dashboard') label = 'Gestión de Usuarios';
+    else if (segment === 'gestion-empresas') label = 'Empresas';
+    else if (segment === 'fichas') label = 'Fichas';
+    else if (segment === 'configuraciones') label = 'Configuración Global';
+    else if (segment === 'instructor-dashboard') label = 'Tablero del Instructor';
+    else if (segment === 'seguimiento') label = 'Seguimiento';
+    else if (segment === 'bitacoras') label = 'Revisión de Bitácoras';
+    else if (segment === 'certificacion') label = 'Certificaciones';
+    else if (segment === 'informe-horas') label = 'Informe de Horas';
+    else if (segment === 'historico-pagos') label = 'Histórico de Pagos';
+    else if (segment === 'mi-ep') label = 'Mi Etapa Productiva';
+    else if (segment === 'registro-ep') label = 'Formalizar EP';
+    else if (segment === 'seguimiento-ep') label = 'Seguimiento Técnico';
+    else if (segment === 'perfil') label = 'Mi Perfil';
+    
+    crumbs.push({
+      label: label.charAt(0).toUpperCase() + label.slice(1),
+      path: currentPath
+    });
+  });
+  
+  if (route.name === 'Login') return [];
+  
+  return crumbs;
+});
 
 const currentUser = computed(() => authStore.user || { name: 'Usuario SENA', email: 'usuario@sena.edu.co' });
 const userRole = computed(() => authStore.user?.role || 'Visitante');
@@ -151,7 +188,16 @@ const handleSaveQuickEdit = async () => {
 <template>
   <header class="topbar">
     <slot name="title-area">
-      <h2 class="page-title">{{ title }}</h2>
+      <div class="header-title-container">
+        <h2 class="page-title">{{ title }}</h2>
+        <!-- Migas de pan (Breadcrumbs) (RUI-02) -->
+        <nav class="breadcrumbs" v-if="breadcrumbs.length > 0">
+          <span v-for="(crumb, index) in breadcrumbs" :key="index" class="crumb-item">
+            <router-link :to="crumb.path" class="crumb-link">{{ crumb.label }}</router-link>
+            <span v-if="index < breadcrumbs.length - 1" class="crumb-separator">/</span>
+          </span>
+        </nav>
+      </div>
     </slot>
     <div class="topbar-actions">
       <!-- Slot for custom actions per view -->
@@ -322,6 +368,34 @@ const handleSaveQuickEdit = async () => {
 </template>
 
 <style scoped>
+/* ── Breadcrumbs ── */
+.header-title-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.crumb-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 650;
+  transition: color 0.2s;
+}
+.crumb-link:hover {
+  color: var(--color_button);
+}
+.crumb-separator {
+  margin-left: 6px;
+  color: var(--border-primary);
+  font-weight: 400;
+}
+
 /* ── Notification Bell ── */
 .notification-wrapper {
   position: relative;

@@ -137,7 +137,7 @@ const checkServer = () => {
 
     // Esperar hasta que el servidor esté listo
     const pollReady = setInterval(async () => {
-      if (output.includes('Servidor corriendo')) {
+      if (output.includes('Servidor corriendo') || output.includes('Servidor REPFORA activo')) {
         clearInterval(pollReady);
         started = true;
 

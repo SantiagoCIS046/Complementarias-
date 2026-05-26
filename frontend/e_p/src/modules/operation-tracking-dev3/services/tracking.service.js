@@ -8,6 +8,7 @@ export const trackingService = {
      * Listar etapas productivas (aprendices) asignadas al instructor
      */
     getMyApprentices: (params = {}) => http.get('/productive-stages', { params }),
+    getStageDetails: (stageId) => http.get(`/productive-stages/${stageId}`),
     getFichas: () => http.get('/users/fichas/stats'),
     getUsers: (params = {}) => http.get('/users', { params }),
 

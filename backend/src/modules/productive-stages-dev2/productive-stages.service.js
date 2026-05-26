@@ -173,7 +173,11 @@ const getAll = async (filtros = {}) => {
  */
 const getById = async (id) => {
   const stage = await ProductiveStage.findById(id)
-    .populate('apprenticeId', 'name email role')
+    .populate({
+      path: 'apprenticeId',
+      select: 'name email role documento ficha modalidades historialInstructores',
+      populate: { path: 'historialInstructores.instructorId', select: 'name email' }
+    })
     .populate('companyId', 'razonSocial nit jefeInmediato')
     .populate('historialEstados.realizadoPor', 'name email')
     .populate('seguimientos');
@@ -181,6 +185,12 @@ const getById = async (id) => {
   if (!stage) {
     throw new Error('Etapa Productiva no encontrada.');
   }
+
+  // Traer todas las etapas productivas previas/históricas del mismo aprendiz
+  const etapasPrevias = await ProductiveStage.find({ 
+    apprenticeId: stage.apprenticeId._id,
+    _id: { $ne: id }
+  }).populate('companyId', 'razonSocial nit');
 
   // Traer documentos asociados
   const documentos = await Document.find({ stageId: id })
@@ -192,6 +202,7 @@ const getById = async (id) => {
     documentos,
     cronograma: generarResumenCronograma(stage),
     transicionesDisponibles: obtenerTransicionesDisponibles(stage.estado),
+    etapasPrevias
   };
 };
 

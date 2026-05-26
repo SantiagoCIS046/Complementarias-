@@ -108,6 +108,17 @@ const actualizar = async (id, data) => {
 
   if (nuevoInstructorId && nuevoInstructorId.toString() !== oldInstructorId) {
     data.fechaAsignacionInstructor = new Date();
+    if (oldUser.instructorAsignado) {
+      const oldInst = await User.findById(oldUser.instructorAsignado);
+      const historial = oldUser.historialInstructores || [];
+      historial.push({
+        instructorId: oldUser.instructorAsignado,
+        nombre: oldInst ? oldInst.name : 'Instructor Anterior',
+        fechaAsignacion: oldUser.fechaAsignacionInstructor || oldUser.createdAt,
+        fechaFin: new Date()
+      });
+      data.historialInstructores = historial;
+    }
   }
 
   const usuario = await User.findByIdAndUpdate(id, data, {
@@ -217,13 +228,26 @@ const reassignApprentices = async (outgoingId, newInstructorId) => {
 
     if (mainInstructorChanged) {
       rolesCambiados.push('Seguimiento');
+      const oldInst = await User.findById(outgoingId);
+      apprentice.historialInstructores.push({
+        instructorId: outgoingId,
+        nombre: oldInst ? oldInst.name : 'Instructor Anterior',
+        fechaAsignacion: apprentice.fechaAsignacionInstructor || apprentice.createdAt,
+        fechaFin: new Date()
+      });
+      apprentice.instructorAsignado = newInstructorId;
+      apprentice.fechaAsignacionInstructor = new Date();
     }
     if (apprentice.instructorTecnico && apprentice.instructorTecnico.toString() === outgoingId.toString()) {
       rolesCambiados.push('Técnico');
+      apprentice.instructorTecnico = newInstructorId;
     }
     if (apprentice.instructorProyecto && apprentice.instructorProyecto.toString() === outgoingId.toString()) {
       rolesCambiados.push('Proyecto');
+      apprentice.instructorProyecto = newInstructorId;
     }
+
+    await apprentice.save();
 
     // Si cambia el instructor de seguimiento principal, migrar la carpeta física
     if (mainInstructorChanged) {
@@ -307,11 +331,8 @@ const reassignApprentices = async (outgoingId, newInstructorId) => {
     }
   }
 
-  // 2. Reasignar en modelo User (Aprendices)
-  const apprenticesResult = await User.updateMany(
-    { instructorAsignado: outgoingId, role: 'APRENDIZ' },
-    { instructorAsignado: newInstructorId }
-  );
+  // 2. Reasignar en modelo User (Aprendices) - Ya realizado individualmente arriba en el loop.
+  const apprenticesResult = { modifiedCount: affectedApprentices.length };
 
   const technicalResult = await User.updateMany(
     { instructorTecnico: outgoingId, role: 'APRENDIZ' },
@@ -649,6 +670,15 @@ const reassignInstructor = async (oldInstructorId, newInstructorId, motivo) => {
   const { enviarNotificacionAsignacion } = require('../../core/utils/notifications');
 
   for (const apprentice of apprentices) {
+    if (apprentice.instructorAsignado) {
+      const oldInst = await User.findById(oldInstructorId);
+      apprentice.historialInstructores.push({
+        instructorId: oldInstructorId,
+        nombre: oldInst ? oldInst.name : 'Instructor Anterior',
+        fechaAsignacion: apprentice.fechaAsignacionInstructor || apprentice.createdAt,
+        fechaFin: new Date()
+      });
+    }
     apprentice.instructorAsignado = newInstructorId;
     apprentice.fechaAsignacionInstructor = new Date();
     await apprentice.save();

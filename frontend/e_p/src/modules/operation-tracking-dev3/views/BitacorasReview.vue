@@ -106,6 +106,55 @@
         <section class="column-revision">
           <div class="revision-scroll">
             
+            <!-- Historial de Aprendiz: Modalidades e Instructores Anteriores (RF-INS-21) -->
+            <div class="instructor-checklist-container" style="margin-bottom: 16px; background: var(--bg-elevated); border: 1px solid var(--border-primary);">
+              <div class="instructor-checklist-header" style="border-bottom: 1px solid var(--border-primary); padding-bottom: 8px; margin-bottom: 10px;">
+                <div style="display:flex; align-items:center; gap:8px">
+                  <span class="material-symbols-outlined" style="color: var(--color_button); font-size: 1.3rem;">history</span>
+                  <h3 style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--text-primary);">Historial del Aprendiz (RF-INS-21)</h3>
+                </div>
+              </div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <!-- Columna Modalidades -->
+                <div>
+                  <h4 style="font-size: 0.68rem; font-weight: 900; color: var(--text-secondary); margin: 0 0 6px 0; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 0.9rem; color: var(--color_button);">schema</span> Modalidades Registradas
+                  </h4>
+                  <div v-if="historialModalidades.length > 0" style="display: flex; flex-direction: column; gap: 6px;">
+                    <div v-for="(m, idx) in historialModalidades" :key="idx" 
+                         style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-primary); font-size: 0.68rem;">
+                      <span style="font-weight: 700; color: var(--text-primary);">{{ m.modalidad }}</span>
+                      <span style="font-size: 0.58rem; background: var(--bg-hover); color: var(--text-secondary); padding: 1px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase;">
+                        {{ m.detalle }}
+                      </span>
+                    </div>
+                  </div>
+                  <p v-else style="font-size: 0.68rem; color: var(--text-muted); font-style: italic; margin: 0;">Sin modalidades registradas.</p>
+                </div>
+
+                <!-- Columna Instructores -->
+                <div style="border-left: 1px solid var(--border-primary); padding-left: 16px;">
+                  <h4 style="font-size: 0.68rem; font-weight: 900; color: var(--text-secondary); margin: 0 0 6px 0; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 0.9rem; color: var(--color_button);">group</span> Instructores Anteriores
+                  </h4>
+                  <div v-if="apprenticeInstructorsHistory.length > 0" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;">
+                    <div v-for="(inst, idx) in apprenticeInstructorsHistory" :key="idx" 
+                         style="display: flex; flex-direction: column; gap: 2px; background: var(--bg-secondary); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-primary); font-size: 0.68rem;">
+                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; color: var(--text-primary);">{{ inst.nombre }}</span>
+                        <span style="font-size: 0.55rem; background: rgba(37, 99, 235, 0.1); color: #2563eb; padding: 1px 5px; border-radius: 4px; font-weight: 800; text-transform: uppercase;">Tutor</span>
+                      </div>
+                      <p style="font-size: 0.58rem; color: var(--text-muted); margin: 0;">
+                        Asig: {{ formatDateShort(inst.fechaAsignacion) }} <span v-if="inst.fechaFin"> | Fin: {{ formatDateShort(inst.fechaFin) }}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <p v-else style="font-size: 0.68rem; color: var(--text-muted); font-style: italic; margin: 0;">Sin instructores anteriores.</p>
+                </div>
+              </div>
+            </div>
+
             <!-- A. RENDER TAB BITACORAS -->
             <div v-if="activeTab === 'bitacoras'">
               <div class="instructor-checklist-container">
@@ -1225,9 +1274,59 @@ const viewPdfInline = (url) => {
   showPdfViewer.value = true
 }
 
+const stageDetails = ref(null)
+const etapasPrevias = ref([])
+
+const fetchStageDetails = async () => {
+  if (!stageId) return
+  try {
+    const res = await trackingService.getStageDetails(stageId)
+    stageDetails.value = res.data.data?.stage || null
+    etapasPrevias.value = res.data.data?.etapasPrevias || []
+  } catch (err) {
+    console.error('Error fetching stage details:', err)
+  }
+}
+
+const apprenticeInstructorsHistory = computed(() => {
+  return stageDetails.value?.apprenticeId?.historialInstructores || []
+})
+
+const historialModalidades = computed(() => {
+  const list = []
+  if (stageDetails.value?.modalidad) {
+    list.push({
+      modalidad: stageDetails.value.modalidad,
+      detalle: 'Etapa Actual'
+    })
+  }
+  etapasPrevias.value.forEach(ep => {
+    list.push({
+      modalidad: ep.modalidad,
+      detalle: ep.companyId?.razonSocial || 'Etapa Histórica'
+    })
+  })
+  const userModalidades = stageDetails.value?.apprenticeId?.modalidades || []
+  userModalidades.forEach(m => {
+    if (!list.some(item => item.modalidad === m)) {
+      list.push({
+        modalidad: m,
+        detalle: 'Previa'
+      })
+    }
+  })
+  return list
+})
+
+const formatDateShort = (dateStr) => {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 onMounted(async () => {
   await fetchBitacoras()
   await fetchTrackings()
+  await fetchStageDetails()
 })
 </script>
 

@@ -82,6 +82,14 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    historialInstructores: [
+      {
+        instructorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        nombre: { type: String },
+        fechaAsignacion: { type: Date },
+        fechaFin: { type: Date }
+      }
+    ],
     fechaAsignacionInstructor: {
       type: Date,
       default: null,

@@ -38,9 +38,8 @@ export const usersService = {
     },
 
     /**
-     * Reasignar aprendices de un instructor a otro
-     * @param {string} id - ID del instructor saliente
-     * @param {string} newInstructorId - ID del nuevo instructor
+     * Reasignación masiva de aprendices e instructores
      */
-    reassign: (id, newInstructorId) => http.post(`/users/${id}/reassign`, { newInstructorId })
+    reassignInstructor: (oldInstructorId, newInstructorId, motivo = '') => 
+        http.post('/users/reassign-instructor', { oldInstructorId, newInstructorId, motivo })
 }

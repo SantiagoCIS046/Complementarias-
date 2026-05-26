@@ -16,7 +16,7 @@ const {
   generarResumenCronograma,
 } = require('./scheduleCalculator');
 const { DOCUMENTOS_REGISTRO_OBLIGATORIOS, DOCUMENTOS_CERTIFICACION_OBLIGATORIOS, ESTADO_EP, JORNADA } = require('../../core/utils/enums');
-const driveService = require('../documents-dev2/storage.service');
+const driveService = require('../documents-dev2/drive.service');
 
 /**
  * Registrar una nueva Etapa Productiva.
@@ -151,12 +151,8 @@ const getAll = async (filtros = {}) => {
   const stages = await ProductiveStage.find(query)
     .populate({
       path: 'apprenticeId',
-      select: 'name email role documento instructorAsignado instructorTecnico instructorProyecto tipoProyecto',
-      populate: [
-        { path: 'instructorAsignado', select: 'name email telefono' },
-        { path: 'instructorTecnico', select: 'name email telefono' },
-        { path: 'instructorProyecto', select: 'name email telefono' }
-      ]
+      select: 'name email role documento instructorAsignado fechaAsignacionInstructor',
+      populate: { path: 'instructorAsignado', select: 'name' }
     })
     .populate('companyId', 'razonSocial nit')
     .populate('seguimientos')
@@ -177,15 +173,7 @@ const getAll = async (filtros = {}) => {
  */
 const getById = async (id) => {
   const stage = await ProductiveStage.findById(id)
-    .populate({
-      path: 'apprenticeId',
-      select: 'name email role documento instructorAsignado instructorTecnico instructorProyecto tipoProyecto',
-      populate: [
-        { path: 'instructorAsignado', select: 'name email telefono' },
-        { path: 'instructorTecnico', select: 'name email telefono' },
-        { path: 'instructorProyecto', select: 'name email telefono' }
-      ]
-    })
+    .populate('apprenticeId', 'name email role')
     .populate('companyId', 'razonSocial nit jefeInmediato')
     .populate('historialEstados.realizadoPor', 'name email')
     .populate('seguimientos');
@@ -212,14 +200,7 @@ const getById = async (id) => {
  */
 const transicionar = async (stageId, nuevoEstado, userId, motivo) => {
   const stage = await ProductiveStage.findById(stageId)
-    .populate({
-      path: 'apprenticeId',
-      select: 'name email documento instructorAsignado',
-      populate: {
-        path: 'instructorAsignado',
-        select: 'name email onedriveFolderId driveFolderId'
-      }
-    });
+    .populate('apprenticeId', 'name email documento');
   if (!stage) {
     throw new Error('Etapa Productiva no encontrada.');
   }
@@ -228,44 +209,17 @@ const transicionar = async (stageId, nuevoEstado, userId, motivo) => {
   const historial = stageActualizada.historialEstados;
   const estadoAnterior = historial.length >= 2 ? historial[historial.length - 2].estadoNuevo : 'N/A';
 
-  // --- Hook post-transicion: enviar correo de aprobacion (RF-APR-06) ---
-  if (nuevoEstado === ESTADO_EP.APROBADO) {
-    await enviarCorreoAprobacion(stageActualizada);
-  }
-
-  // --- Hook post-transicion: crear carpetas en Drive/OneDrive al APROBAR ---
+  // --- Hook post-transicion: crear carpetas en Drive al APROBAR ---
   let driveInfo = null;
   if (nuevoEstado === ESTADO_EP.APROBADO) {
     try {
       const aprendiz = stage.apprenticeId;
-      const instructor = aprendiz.instructorAsignado;
-      const provider = await driveService.getActiveProvider();
-
-      let instructorNombre = 'Instructor';
-      let instructorFolderId = null;
-
-      if (instructor) {
-        instructorNombre = instructor.name;
-        instructorFolderId = provider === 'ONEDRIVE' ? instructor.onedriveFolderId : instructor.driveFolderId;
-      }
-
       const carpetas = await driveService.crearEstructuraCarpetas({
-        instructorNombre,
-        instructorFolderId,
+        instructorNombre: 'Instructor', // TODO: obtener del usuario que aprueba
         fichaNumero: stage.radicado || stageId,
         aprendizDocumento: aprendiz.documento || aprendiz._id.toString(),
         aprendizNombre: aprendiz.name || 'Aprendiz',
       });
-
-      // Si el instructor existe pero no tenía ID de carpeta guardado, lo actualizamos ahora
-      if (instructor && !instructorFolderId && carpetas.instructor && carpetas.instructor.id) {
-        const User = require('../users-dev1/user.model');
-        if (provider === 'ONEDRIVE') {
-          await User.findByIdAndUpdate(instructor._id, { onedriveFolderId: carpetas.instructor.id });
-        } else {
-          await User.findByIdAndUpdate(instructor._id, { driveFolderId: carpetas.instructor.id });
-        }
-      }
 
       // Guardar IDs de carpetas en la EP
       stageActualizada.driveFolders = {
@@ -276,7 +230,7 @@ const transicionar = async (stageId, nuevoEstado, userId, motivo) => {
       await stageActualizada.save();
 
       driveInfo = {
-        mensaje: `Carpetas de ${provider === 'ONEDRIVE' ? 'OneDrive' : 'Google Drive'} creadas exitosamente.`,
+        mensaje: 'Carpetas de Google Drive creadas exitosamente.',
         carpetas: {
           aprendiz:   carpetas.aprendiz.webViewLink,
           bitacoras:  carpetas.bitacoras.webViewLink,
@@ -287,7 +241,7 @@ const transicionar = async (stageId, nuevoEstado, userId, motivo) => {
       // No bloquear la transicion si Drive falla
       console.error('[DRIVE ERROR] ' + driveError.message);
       driveInfo = {
-        mensaje: 'La EP fue aprobada pero hubo un error al crear carpetas en Drive/OneDrive: ' + driveError.message,
+        mensaje: 'La EP fue aprobada pero hubo un error al crear carpetas en Drive: ' + driveError.message,
       };
     }
   }
@@ -338,7 +292,7 @@ const configurarCronograma = async (stageId, { jornada, fechaInicio }) => {
   const fechaProyectadaFin = calcularFechaProyectadaFin(inicio, jornada);
 
   // Calcular horas requeridas
-  const horasRequeridas = await calcularHorasRequeridas(jornada, stage.modalidad);
+  const horasRequeridas = calcularHorasRequeridas(jornada);
 
   // Actualizar la EP
   stage.jornada = jornada;
@@ -526,11 +480,6 @@ const evaluarEP = async (stageId, { decision, comentario, documentosRevisados },
     comentario || 'Evaluacion completada: ' + decision
   );
 
-  // --- Hook post-transicion: enviar correo de aprobacion (RF-APR-06) ---
-  if (nuevoEstado === ESTADO_EP.APROBADO) {
-    await enviarCorreoAprobacion(stageActualizada);
-  }
-
   // Guardar el comentario en las observaciones de la EP
   if (comentario) {
     stageActualizada.observaciones = (stageActualizada.observaciones || '') +
@@ -643,55 +592,12 @@ const certificarEP = async (stageId, userId) => {
     );
   }
 
-  // RF-ADM-19 Validación de certificación
-  // 1. Validar que no existan solicitudes de seguimientos extraordinarios pendientes
-  const Tracking = require('../trackings-dev3/tracking.model');
-  const pendingExtraordinary = await Tracking.findOne({
-    stageId: stage._id,
-    esExtraordinario: true,
-    estadoExtraordinario: 'PENDIENTE'
-  });
-  if (pendingExtraordinary) {
-    throw new Error('No se puede certificar. Existen solicitudes de seguimientos extraordinarios pendientes de evaluación.');
-  }
-
-  // 2. Validar visitas de seguimiento obligatorias (mínimo 3 visitas realizadas)
-  const completedVisitsCount = await Tracking.countDocuments({
-    stageId: stage._id,
-    estadoVisita: 'REALIZADO',
-    $or: [
-      { esExtraordinario: { $ne: true } },
-      { esExtraordinario: true, estadoExtraordinario: 'APROBADO' }
-    ]
-  });
-  if (completedVisitsCount < 3) {
-    throw new Error(`No se puede certificar. Se requieren al menos 3 visitas de seguimiento realizadas (actual: ${completedVisitsCount}).`);
-  }
-
-  // 3. Validar bitácoras aprobadas según la jornada (12 para TIEMPO_COMPLETO, 24 para MEDIO_TIEMPO)
-  const Bitacora = require('../bitacoras-dev3/bitacora.model');
-  const approvedBitacorasCount = await Bitacora.countDocuments({
-    stageId: stage._id,
-    estado: 'APROBADA'
-  });
-  const reqBitacoras = stage.jornada === 'MEDIO_TIEMPO' ? 24 : 12;
-  if (approvedBitacorasCount < reqBitacoras) {
-    throw new Error(`No se puede certificar. Se requieren al menos ${reqBitacoras} bitácoras aprobadas para la jornada ${stage.jornada === 'MEDIO_TIEMPO' ? 'Medio Tiempo' : 'Tiempo Completo'} (actual: ${approvedBitacorasCount}).`);
-  }
-
-  // 4. Validar totalidad de horas registradas
-  if ((stage.horasCompletadas || 0) < (stage.horasRequeridas || 880)) {
-    throw new Error(`No se puede certificar. El aprendiz no ha completado las horas requeridas (${stage.horasCompletadas || 0} de ${stage.horasRequeridas || 880} hrs).`);
-  }
-
   // Obtener todos los documentos de esta EP
   const documentos = await Document.find({ stageId });
 
-  const TODOS_CERTIFICACION = [...DOCUMENTOS_CERTIFICACION_OBLIGATORIOS, 'SOPORTES_FINALES'];
-
-  // Verificar que los documentos finales esten subidos
+  // Verificar que los 3 documentos finales esten subidos
   const tiposSubidos = documentos.map((d) => d.tipoDocumento);
-  const faltantes = TODOS_CERTIFICACION.filter(
+  const faltantes = DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.filter(
     (tipo) => !tiposSubidos.includes(tipo)
   );
 
@@ -702,9 +608,9 @@ const certificarEP = async (stageId, userId) => {
     );
   }
 
-  // Verificar que los documentos esten APROBADOS
+  // Verificar que los 3 documentos esten APROBADOS
   const docsCertificacion = documentos.filter(
-    (d) => TODOS_CERTIFICACION.includes(d.tipoDocumento)
+    (d) => DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.includes(d.tipoDocumento)
   );
   const docsNoAprobados = docsCertificacion.filter((d) => d.estado !== 'APROBADO');
 
@@ -726,20 +632,6 @@ const certificarEP = async (stageId, userId) => {
     'Certificacion completada: todos los documentos finales aprobados'
   );
 
-  // Archivado de documentación (RF-ADM-20)
-  if (stageActualizada.driveFolders && stageActualizada.driveFolders.aprendiz) {
-    try {
-      const storageService = require('../documents-dev2/storage.service');
-      const archiveFolder = await storageService.obtenerOCrearCarpeta('ARCHIVADOS');
-      await storageService.moverCarpeta(stageActualizada.driveFolders.aprendiz, archiveFolder.id);
-      stageActualizada.archivado = true;
-      await stageActualizada.save();
-    } catch (err) {
-      console.error('⚠️ [ARCHIVADO] Error al archivar la carpeta del aprendiz:', err.message);
-      // No propagamos el error para no invalidar el flujo principal si hay un error en Drive/OneDrive
-    }
-  }
-
   return {
     stage: stageActualizada,
     mensaje: 'La EP ha sido CERTIFICADA exitosamente.',
@@ -752,11 +644,9 @@ const certificarEP = async (stageId, userId) => {
   };
 };
 
-
 /**
  * Obtener el estado de los documentos de certificacion de una EP.
- * Muestra cuales de los documentos finales estan subidos y su estado,
- * junto con la validacion de todos los requisitos de cierre.
+ * Muestra cuales de los 3 documentos finales estan subidos y su estado.
  */
 const getEstadoCertificacion = async (stageId) => {
   const stage = await ProductiveStage.findById(stageId);
@@ -765,10 +655,9 @@ const getEstadoCertificacion = async (stageId) => {
   }
 
   const documentos = await Document.find({ stageId });
-  const TODOS_CERTIFICACION = [...DOCUMENTOS_CERTIFICACION_OBLIGATORIOS, 'SOPORTES_FINALES'];
 
   // Verificar cada documento de certificacion
-  const estadoDocumentos = TODOS_CERTIFICACION.map((tipo) => {
+  const estadoDocumentos = DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.map((tipo) => {
     const doc = documentos.find((d) => d.tipoDocumento === tipo);
     return {
       tipoDocumento: tipo,
@@ -776,257 +665,62 @@ const getEstadoCertificacion = async (stageId) => {
       estado: doc ? doc.estado : 'NO_SUBIDO',
       url: doc ? doc.url : null,
       nombreArchivo: doc ? doc.nombreArchivo : null,
-      observaciones: doc ? doc.observaciones : '',
     };
   });
 
   const todosSubidos = estadoDocumentos.every((d) => d.subido);
   const todosAprobados = estadoDocumentos.every((d) => d.estado === 'APROBADO');
 
-  // Validaciones académicas para checklist
-  const Tracking = require('../trackings-dev3/tracking.model');
-  const pendingExtraordinaryCount = await Tracking.countDocuments({
-    stageId: stage._id,
-    esExtraordinario: true,
-    estadoExtraordinario: 'PENDIENTE'
-  });
-
-  const completedVisitsCount = await Tracking.countDocuments({
-    stageId: stage._id,
-    estadoVisita: 'REALIZADO',
-    $or: [
-      { esExtraordinario: { $ne: true } },
-      { esExtraordinario: true, estadoExtraordinario: 'APROBADO' }
-    ]
-  });
-
-  const Bitacora = require('../bitacoras-dev3/bitacora.model');
-  const approvedBitacorasCount = await Bitacora.countDocuments({
-    stageId: stage._id,
-    estado: 'APROBADA'
-  });
-
-  const reqBitacoras = stage.jornada === 'MEDIO_TIEMPO' ? 24 : 12;
-
-  const horasCompletadas = stage.horasCompletadas || 0;
-  const horasRequeridas = stage.horasRequeridas || 880;
-
-  const cumpleVisitas = completedVisitsCount >= 3;
-  const cumpleBitacoras = approvedBitacorasCount >= reqBitacoras;
-  const cumpleHoras = horasCompletadas >= horasRequeridas;
-  const cumpleExtraordinarias = pendingExtraordinaryCount === 0;
-  const cumpleDocumentos = todosSubidos && todosAprobados;
-
-  const listoCertificar = cumpleVisitas && cumpleBitacoras && cumpleHoras && cumpleExtraordinarias && cumpleDocumentos && stage.estado === 'FINALIZADO';
-
   return {
     estadoEP: stage.estado,
     radicado: stage.radicado,
-    archivado: stage.archivado || false,
-    listoCertificar,
+    listoCertificar: todosSubidos && todosAprobados && stage.estado === 'FINALIZADO',
     documentos: estadoDocumentos,
     resumen: {
       subidos: estadoDocumentos.filter((d) => d.subido).length,
       aprobados: estadoDocumentos.filter((d) => d.estado === 'APROBADO').length,
-      total: TODOS_CERTIFICACION.length,
+      total: DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.length,
     },
-    checklist: {
-      visitas: {
-        completadas: completedVisitsCount,
-        requeridas: 3,
-        cumple: cumpleVisitas
-      },
-      bitacoras: {
-        aprobadas: approvedBitacorasCount,
-        requeridas: reqBitacoras,
-        cumple: cumpleBitacoras
-      },
-      horas: {
-        completadas: horasCompletadas,
-        requeridas: horasRequeridas,
-        cumple: cumpleHoras
-      },
-      extraordinarias: {
-        pendientes: pendingExtraordinaryCount,
-        cumple: cumpleExtraordinarias
-      },
-      documentosFinales: {
-        aprobados: estadoDocumentos.filter((d) => d.estado === 'APROBADO').length,
-        total: TODOS_CERTIFICACION.length,
-        cumple: cumpleDocumentos
-      }
-    }
   };
 };
-
 
 /**
- * RF-ADM-21 Generación de reportes estadísticos.
- * Filtra EPs por año, modalidad, empresa, instructor y rango de horas.
- * Devuelve totales, promedios y desglose por modalidad.
- *
- * @param {Object} filtros
- * @param {number} filtros.year          - Año de creación de la EP
- * @param {string} filtros.modalidad     - Modalidad de EP
- * @param {string} filtros.companyId     - ID de empresa
- * @param {string} filtros.instructorId  - ID de instructor de seguimiento
- * @param {number} filtros.minHoras      - Mínimo de horas completadas
- * @param {number} filtros.maxHoras      - Máximo de horas completadas
+ * Autoriza o desautoriza un seguimiento extraordinario para una EP (RF-INS-10).
  */
-const getReportStats = async (filtros = {}) => {
-  const User = require('../users-dev1/user.model');
-
-  // ── Construir query de MongoDB ───────────────────────
-  const query = {};
-
-  // Filtro por año (basado en createdAt)
-  if (filtros.year) {
-    const yearNum = parseInt(filtros.year, 10);
-    query.createdAt = {
-      $gte: new Date(`${yearNum}-01-01T00:00:00.000Z`),
-      $lte: new Date(`${yearNum}-12-31T23:59:59.999Z`),
-    };
+const authorizeExtraordinary = async (stageId, authorized = true) => {
+  const stage = await ProductiveStage.findById(stageId);
+  if (!stage) {
+    throw new Error('Etapa Productiva no encontrada.');
   }
 
-  // Filtro por modalidad
-  if (filtros.modalidad) {
-    query.modalidad = filtros.modalidad;
-  }
+  stage.extraordinaryTrackingAuthorized = authorized;
+  await stage.save();
 
-  // Filtro por empresa
-  if (filtros.companyId) {
-    query.companyId = filtros.companyId;
-  }
-
-  // Filtro por instructor (buscar aprendices asignados a ese instructor)
-  if (filtros.instructorId) {
-    const apprentices = await User.find({
-      instructorAsignado: filtros.instructorId,
-      role: 'APRENDIZ'
-    }).select('_id');
-    query.apprenticeId = { $in: apprentices.map(a => a._id) };
-  }
-
-  // Filtro por rango de horas
-  if (filtros.minHoras !== undefined || filtros.maxHoras !== undefined) {
-    query.horasCompletadas = {};
-    if (filtros.minHoras !== undefined) query.horasCompletadas.$gte = Number(filtros.minHoras);
-    if (filtros.maxHoras !== undefined) query.horasCompletadas.$lte = Number(filtros.maxHoras);
-  }
-
-  // ── Ejecutar consulta ────────────────────────────────
-  const stages = await ProductiveStage.find(query)
-    .populate('apprenticeId', 'name documento instructorAsignado')
-    .populate('companyId', 'razonSocial nit')
-    .lean();
-
-  // ── Calcular estadísticas ────────────────────────────
-  const totalEPs = stages.length;
-  const totalHoras = stages.reduce((acc, s) => acc + (s.horasCompletadas || 0), 0);
-  const promedioHoras = totalEPs > 0 ? Math.round(totalHoras / totalEPs) : 0;
-
-  // Conteo por estado
-  const porEstado = stages.reduce((acc, s) => {
-    acc[s.estado] = (acc[s.estado] || 0) + 1;
-    return acc;
-  }, {});
-
-  // Conteo por modalidad
-  const porModalidad = stages.reduce((acc, s) => {
-    acc[s.modalidad] = (acc[s.modalidad] || 0) + 1;
-    return acc;
-  }, {});
-
-  // EPs certificadas/archivadas
-  const certificadas = stages.filter(s => s.estado === 'CERTIFICADO').length;
-  const archivadas = stages.filter(s => s.archivado === true).length;
-
-  // Listado simplificado de EPs para la tabla de resultados
-  const lista = stages.map(s => ({
-    _id: s._id,
-    radicado: s.radicado,
-    modalidad: s.modalidad,
-    estado: s.estado,
-    horasCompletadas: s.horasCompletadas || 0,
-    horasRequeridas: s.horasRequeridas || 0,
-    fechaInicio: s.fechaInicio,
-    archivado: s.archivado || false,
-    aprendiz: s.apprenticeId ? { nombre: s.apprenticeId.name, documento: s.apprenticeId.documento } : null,
-    empresa: s.companyId ? { razonSocial: s.companyId.razonSocial, nit: s.companyId.nit } : null,
-  }));
-
-  return {
-    resumen: {
-      totalEPs,
-      totalHoras,
-      promedioHoras,
-      certificadas,
-      archivadas,
-    },
-    porEstado,
-    porModalidad,
-    lista,
-    filtrosAplicados: filtros,
-  };
+  return stage;
 };
 
-const enviarCorreoAprobacion = async (stage) => {
-  try {
-    const User = require('../users-dev1/user.model');
-    // Cargar aprendiz e instructor
-    const apprentice = await User.findById(stage.apprenticeId).populate('instructorAsignado', 'name email telefono');
-    if (!apprentice) return;
-
-    const instructor = apprentice.instructorAsignado;
-    const instructorName = instructor ? instructor.name : 'Por asignar';
-    const instructorEmail = instructor ? instructor.email : 'N/A';
-    const instructorPhone = instructor ? instructor.telefono || 'N/A' : 'N/A';
-
-    const { sendEmail } = require('../../core/utils/mailer');
-    await sendEmail({
-      to: apprentice.email,
-      subject: '🎉 ¡Tu Registro de Etapa Productiva ha sido APROBADO!',
-      html: `
-        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
-          <div style="background: #1b5e20; padding: 24px 32px; border-radius: 12px 12px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 1.2rem;">🎉 ¡Etapa Productiva Aprobada!</h1>
-            <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Plataforma REPFORA — SENA</p>
-          </div>
-          <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-              Estimado(a) aprendiz <strong>${apprentice.name}</strong>,
-            </p>
-            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-              Nos complace informarte que tu registro de Etapa Productiva (Radicado: <strong>${stage.radicado}</strong>) ha sido <strong>APROBADO</strong> con éxito.
-            </p>
-            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-              Se ha asignado al siguiente instructor para realizar tu seguimiento y bitácoras:
-            </p>
-            <div style="background: #f0fdf4; border-left: 4px solid #1b5e20; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Instructor:</strong> ${instructorName}</p>
-              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Correo:</strong> ${instructorEmail}</p>
-              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Teléfono:</strong> ${instructorPhone}</p>
-            </div>
-            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 20px;">
-              <h4 style="margin: 0 0 8px 0; color: #1b5e20;">📋 Recomendaciones Clave:</h4>
-              <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: #475569; line-height: 1.6;">
-                <li>Completa y sube tus bitácoras de manera quincenal (los días 15 y 30 de cada mes).</li>
-                <li>Mantén contacto activo con tu instructor asignado.</li>
-                <li>Informa de inmediato cualquier novedad o cambio de tu situación laboral.</li>
-              </ul>
-            </div>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-            <p style="color: #94a3b8; font-size: 0.75rem; text-align: center;">
-              Este correo fue generado automáticamente por el sistema REPFORA.<br>
-              No responda a este mensaje.
-            </p>
-          </div>
-        </div>
-      `
-    });
-  } catch (err) {
-    console.error('Error enviando correo de aprobacion:', err.message);
+/**
+ * Agrega un mensaje al chat de observaciones de una EP (RF-INS-15).
+ */
+const agregarMensajeChat = async (stageId, { remitente, texto }) => {
+  const stage = await ProductiveStage.findById(stageId);
+  if (!stage) {
+    throw new Error('Etapa Productiva no encontrada.');
   }
+
+  stage.chatObservaciones = stage.chatObservaciones || [];
+  stage.chatObservaciones.push({
+    remitente,
+    texto,
+    fecha: new Date(),
+  });
+
+  // Concatena al historial de observaciones para mantener retrocompatibilidad total
+  const fechaStr = new Date().toLocaleDateString('es-CO');
+  stage.observaciones = (stage.observaciones || '') + `\n[${fechaStr} - ${remitente}] ${texto}`;
+
+  await stage.save();
+  return stage;
 };
 
 module.exports = {
@@ -1042,5 +736,6 @@ module.exports = {
   getSemaforo,
   certificarEP,
   getEstadoCertificacion,
-  getReportStats,
+  authorizeExtraordinary,
+  agregarMensajeChat,
 };

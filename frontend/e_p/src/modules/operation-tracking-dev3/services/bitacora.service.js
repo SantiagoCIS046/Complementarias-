@@ -25,5 +25,16 @@ export const bitacoraService = {
     /**
      * Actualizar una bitácora
      */
-    actualizar: (id, data) => http.put(`/bitacoras/${id}`, data)
+    actualizar: (id, data) => http.put(`/bitacoras/${id}`, data),
+
+    /**
+     * Validar firmas mediante IA en un archivo PDF de bitácora
+     */
+    validateSignatures: (file) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        return http.post('/bitacoras/validate-signatures', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+    }
 }

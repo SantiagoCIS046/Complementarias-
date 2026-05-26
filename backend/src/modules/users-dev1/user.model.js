@@ -82,6 +82,10 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    fechaAsignacionInstructor: {
+      type: Date,
+      default: null,
+    },
     activo: {
       type: Boolean,
       default: true,

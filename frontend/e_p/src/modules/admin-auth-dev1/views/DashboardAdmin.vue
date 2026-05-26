@@ -60,21 +60,13 @@
               </svg>
               Exportar
             </button>
-
-            <button class="btn btn-export-outline" @click="triggerImport">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; margin-right: 8px;">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              Importar
-            </button>
-
             <button class="btn btn-primary-sena" @click="openAddUserModal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; margin-right: 8px;">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
               Nuevo Usuario
             </button>
-            <input type="file" ref="fileInput" accept=".xlsx,.xls,.csv,.txt" style="display:none" @change="handleFileUpload" />
+            <input type="file" ref="fileInput" accept=".xlsx,.csv" style="display:none" @change="handleFileUpload" />
           </div>
         </header>
 
@@ -136,10 +128,8 @@
                   <button class="filter-btn" :class="{active: currentFilter === 'APRENDIZ'}" @click="setFilter('APRENDIZ')">Aprendices</button>
                   <button class="filter-btn" :class="{active: currentFilter === 'INSTRUCTOR'}" @click="setFilter('INSTRUCTOR')">Instructores</button>
                   <button class="filter-btn" :class="{active: currentFilter === 'ADMIN'}" @click="setFilter('ADMIN')">Admin</button>
-                  <button class="filter-btn" :class="{active: currentFilter === 'HORAS'}" @click="setFilter('HORAS')">Control de Horas</button>
-                  <button class="filter-btn" :class="{active: currentFilter === 'REPORTES'}" @click="setFilter('REPORTES')">📊 Reportes</button>
                 </div>
-                <div v-if="currentFilter !== 'HORAS' && currentFilter !== 'REPORTES'" class="search-and-filters" style="display: flex; gap: 12px; align-items: center;">
+                <div class="search-and-filters" style="display: flex; gap: 12px; align-items: center;">
                   <select v-if="currentFilter === 'INSTRUCTOR'" v-model="filterStatus" @change="debouncedSearch" class="select-premium" style="height: 38px; min-width: 180px; padding: 0 35px 0 12px; font-size: 14px; border-radius: 6px; cursor: pointer;">
                     <option value="">Todos los Estados</option>
                     <option value="ACTIVO">Activo</option>
@@ -156,7 +146,7 @@
                 </div>
               </div>
 
-              <table v-if="currentFilter !== 'HORAS' && currentFilter !== 'REPORTES'" class="user-table">
+              <table class="user-table">
                 <thead>
                   <tr>
                     <th>MIEMBRO</th>
@@ -209,270 +199,7 @@
                   </tr>
                 </tbody>
               </table>
-
-              <div v-else-if="currentFilter === 'HORAS'" class="hours-panel" style="padding: 20px;">
-                <SkeletonLoader v-if="isLoadingHours" variant="table-tbody" :rows="6" :columns="6" tag="div" />
-                <div v-else>
-                  <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">Horas Acumuladas por Instructor</h3>
-                  <table class="user-table">
-                    <thead>
-                      <tr>
-                        <th>INSTRUCTOR</th>
-                        <th>ÁREA / ESPECIALIDAD</th>
-                        <th>HORAS ACUMULADAS</th>
-                        <th>HORAS PAGADAS</th>
-                        <th>SALDO PENDIENTE</th>
-                        <th>ACCIONES</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="inst in instructorsHours" :key="inst._id">
-                        <td>
-                          <div class="user-cell">
-                            <div class="avatar bg-pink">{{ getInitials(inst.name) }}</div>
-                            <div class="user-info">
-                              <p class="u-name">{{ inst.name }}</p>
-                              <p class="u-email">{{ inst.email }}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td>{{ inst.areaConocimiento }}</td>
-                        <td><strong>{{ inst.totalHoras }} hrs</strong></td>
-                        <td>{{ inst.horasPagadas }} hrs</td>
-                        <td>
-                          <span class="status-pill" :class="inst.saldoHoras > 0 ? 'contract_ended' : 'activo'" style="font-weight: 700;">
-                            {{ inst.saldoHoras }} hrs
-                          </span>
-                        </td>
-                        <td>
-                          <button class="btn btn-sm btn-success-action" @click="openPayHoursModal(inst)" style="padding: 6px 12px; font-size: 12px; border-radius: 4px;">
-                            Registrar Pago
-                          </button>
-                        </td>
-                      </tr>
-                      <tr v-if="instructorsHours.length === 0">
-                        <td colspan="6" class="empty-state">No se encontraron instructores registrados.</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  <div class="extraordinary-section" style="margin-top: 32px; border-top: 1px solid var(--border-primary); padding-top: 24px;">
-                    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">Aprobación de Seguimientos Extraordinarios</h3>
-                    <SkeletonLoader v-if="isLoadingTrackings" variant="table-tbody" :rows="3" :columns="6" tag="div" />
-                    <table v-else class="user-table">
-                      <thead>
-                        <tr>
-                          <th>INSTRUCTOR</th>
-                          <th>APRENDIZ</th>
-                          <th>VISITA</th>
-                          <th>FECHA</th>
-                          <th>OBSERVACIONES</th>
-                          <th>ACCIONES</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="track in pendingExtraordinaryTrackings" :key="track._id">
-                          <td>{{ track.instructorId?.name || 'Instructor' }}</td>
-                          <td>
-                            <div class="user-info">
-                              <p class="u-name" style="margin: 0;">{{ track.apprenticeId?.name || 'Aprendiz' }}</p>
-                              <p class="u-email" style="margin: 0;">Doc: {{ track.apprenticeId?.documento }}</p>
-                            </div>
-                          </td>
-                          <td><span class="role-badge admin">Visita {{ track.numeroVisita }}</span></td>
-                          <td>{{ new Date(track.fechaVisita).toLocaleDateString() }}</td>
-                          <td style="max-width: 250px; white-space: normal; line-height: 1.4;">{{ track.observaciones }}</td>
-                          <td>
-                            <div style="display: flex; gap: 8px;">
-                              <button class="btn btn-sm btn-success-action" @click="openApproveTrackingModal(track, 'APROBADO')" style="padding: 6px 10px; font-size: 11px; border-radius: 4px;">
-                                Aprobar
-                              </button>
-                              <button class="btn btn-sm btn-danger" @click="openApproveTrackingModal(track, 'RECHAZADO')" style="padding: 6px 10px; font-size: 11px; border-radius: 4px;">
-                                Rechazar
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        <tr v-if="pendingExtraordinaryTrackings.length === 0">
-                          <td colspan="6" class="empty-state">No hay seguimientos extraordinarios pendientes de aprobación.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ═══════ PANEL: Reportes Estadísticos (RF-ADM-21) ═══════ -->
-              <div v-else-if="currentFilter === 'REPORTES'" class="reportes-panel" style="padding: 24px;">
-
-                <!-- Cabecera del Panel -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
-                  <div>
-                    <h3 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0;">📊 Reportes Estadísticos de Etapas Productivas</h3>
-                    <p style="font-size: 13px; color: var(--text-secondary); margin: 4px 0 0;">Filtre por año, modalidad, empresa, instructor y horas ejecutadas.</p>
-                  </div>
-                  <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-export-outline" @click="exportReportPDF" :disabled="isLoadingReport" style="font-size: 13px; padding: 8px 16px;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                      Exportar PDF
-                    </button>
-                    <button class="btn btn-export-outline" @click="exportReportExcel" :disabled="isLoadingReport" style="font-size: 13px; padding: 8px 16px;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; margin-right: 6px;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                      Exportar Excel
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Filtros -->
-                <div style="background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-                  <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin: 0 0 14px;">Filtros</p>
-                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; align-items: end;">
-                    <div>
-                      <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Año</label>
-                      <input id="report-filter-year" type="number" v-model="reportFilters.year" placeholder="Ej: 2025" min="2020" max="2030"
-                        style="width: 100%; height: 36px; border: 1px solid var(--border-primary); border-radius: 6px; padding: 0 10px; font-size: 13px; background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box;" />
-                    </div>
-                    <div>
-                      <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Modalidad</label>
-                      <select id="report-filter-modalidad" v-model="reportFilters.modalidad" class="select-premium" style="width: 100%; height: 36px; font-size: 13px; border-radius: 6px;">
-                        <option value="">Todas</option>
-                        <option v-for="(label, key) in MODALIDADES_DICT" :key="key" :value="key">{{ label }}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Empresa</label>
-                      <select id="report-filter-company" v-model="reportFilters.companyId" class="select-premium" style="width: 100%; height: 36px; font-size: 13px; border-radius: 6px;">
-                        <option value="">Todas</option>
-                        <option v-for="c in reportCompanies" :key="c._id" :value="c._id">{{ c.razonSocial }}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Instructor</label>
-                      <select id="report-filter-instructor" v-model="reportFilters.instructorId" class="select-premium" style="width: 100%; height: 36px; font-size: 13px; border-radius: 6px;">
-                        <option value="">Todos</option>
-                        <option v-for="inst in reportInstructors" :key="inst._id" :value="inst._id">{{ inst.name }}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Horas Mín.</label>
-                      <input id="report-filter-min-horas" type="number" v-model="reportFilters.minHoras" placeholder="0" min="0"
-                        style="width: 100%; height: 36px; border: 1px solid var(--border-primary); border-radius: 6px; padding: 0 10px; font-size: 13px; background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box;" />
-                    </div>
-                    <div>
-                      <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Horas Máx.</label>
-                      <input id="report-filter-max-horas" type="number" v-model="reportFilters.maxHoras" placeholder="9999" min="0"
-                        style="width: 100%; height: 36px; border: 1px solid var(--border-primary); border-radius: 6px; padding: 0 10px; font-size: 13px; background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box;" />
-                    </div>
-                    <div style="display: flex; align-items: flex-end;">
-                      <button id="btn-apply-report-filters" class="btn btn-primary-sena" @click="fetchReportStats" :disabled="isLoadingReport" style="width: 100%; height: 36px; font-size: 13px; border-radius: 6px;">
-                        <span v-if="isLoadingReport">Cargando...</span>
-                        <span v-else>Aplicar Filtros</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- KPI Cards -->
-                <div v-if="reportStats" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px;">
-                  <div class="stat-box border-green" style="padding: 16px 20px;">
-                    <p style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 6px;">Total EPs</p>
-                    <h2 style="font-size: 28px; font-weight: 800; color: var(--text-primary); margin: 0;">{{ reportStats.resumen.totalEPs }}</h2>
-                    <small style="color: var(--text-secondary);">Etapas en el período</small>
-                  </div>
-                  <div class="stat-box border-pink" style="padding: 16px 20px;">
-                    <p style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 6px;">Total Horas</p>
-                    <h2 style="font-size: 28px; font-weight: 800; color: var(--text-primary); margin: 0;">{{ reportStats.resumen.totalHoras }}</h2>
-                    <small style="color: var(--text-secondary);">Horas ejecutadas</small>
-                  </div>
-                  <div class="stat-box border-dark" style="padding: 16px 20px;">
-                    <p style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 6px;">Promedio Hrs</p>
-                    <h2 style="font-size: 28px; font-weight: 800; color: var(--text-primary); margin: 0;">{{ reportStats.resumen.promedioHoras }}</h2>
-                    <small style="color: var(--text-secondary);">Horas promedio por EP</small>
-                  </div>
-                  <div class="stat-box border-green" style="padding: 16px 20px;">
-                    <p style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 6px;">Certificadas</p>
-                    <h2 style="font-size: 28px; font-weight: 800; color: #1b5e20; margin: 0;">{{ reportStats.resumen.certificadas }}</h2>
-                    <small style="color: var(--text-secondary);">EPs con certificado</small>
-                  </div>
-                  <div class="stat-box border-pink" style="padding: 16px 20px;">
-                    <p style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 6px;">Archivadas</p>
-                    <h2 style="font-size: 28px; font-weight: 800; color: var(--text-primary); margin: 0;">{{ reportStats.resumen.archivadas }}</h2>
-                    <small style="color: var(--text-secondary);">Documentación archivada</small>
-                  </div>
-                </div>
-
-                <!-- Skeleton para KPIs -->
-                <div v-if="isLoadingReport && !reportStats" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px;">
-                  <div v-for="i in 5" :key="i" style="height: 100px; background: var(--bg-secondary); border-radius: 10px; animation: pulse 1.5s infinite;"></div>
-                </div>
-
-                <!-- Desglose por Modalidad + tabla de resultados -->
-                <div v-if="reportStats" style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: start;">
-                  <!-- Desglose por modalidad -->
-                  <div style="background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 12px; padding: 20px;">
-                    <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin: 0 0 14px;">Desglose por Modalidad</h4>
-                    <div v-for="(count, modalidad) in reportStats.porModalidad" :key="modalidad" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                      <span style="font-size: 13px; color: var(--text-primary);">{{ MODALIDADES_DICT[modalidad] || modalidad }}</span>
-                      <span class="role-badge admin" style="font-size: 12px; min-width: 32px; text-align: center;">{{ count }}</span>
-                    </div>
-                    <div v-if="Object.keys(reportStats.porModalidad).length === 0" style="font-size: 13px; color: var(--text-secondary); text-align: center; padding: 16px 0;">Sin datos</div>
-                  </div>
-
-                  <!-- Tabla de resultados -->
-                  <div style="overflow-x: auto;">
-                    <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin: 0 0 14px;">
-                      Listado de EPs ({{ reportStats.lista.length }} resultado{{ reportStats.lista.length !== 1 ? 's' : '' }})
-                    </h4>
-                    <table class="user-table">
-                      <thead>
-                        <tr>
-                          <th>RADICADO</th>
-                          <th>APRENDIZ</th>
-                          <th>EMPRESA</th>
-                          <th>MODALIDAD</th>
-                          <th>HORAS</th>
-                          <th>ESTADO</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="ep in reportStats.lista" :key="ep._id">
-                          <td><code style="font-size: 11px; background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px;">{{ ep.radicado || '—' }}</code></td>
-                          <td>
-                            <div class="user-info">
-                              <p class="u-name" style="margin: 0;">{{ ep.aprendiz?.nombre || '—' }}</p>
-                              <p class="u-email" style="margin: 0;">Doc: {{ ep.aprendiz?.documento || '—' }}</p>
-                            </div>
-                          </td>
-                          <td style="font-size: 12px;">{{ ep.empresa?.razonSocial || '—' }}</td>
-                          <td><span class="role-badge" style="font-size: 11px;">{{ MODALIDADES_DICT[ep.modalidad] || ep.modalidad }}</span></td>
-                          <td>
-                            <div style="font-size: 13px;">
-                              <strong>{{ ep.horasCompletadas }}</strong>
-                              <span style="color: var(--text-secondary);"> / {{ ep.horasRequeridas }} hrs</span>
-                            </div>
-                          </td>
-                          <td>
-                            <span class="status-pill" :class="ep.estado === 'CERTIFICADO' ? 'activo' : ep.estado === 'RECHAZADO' ? 'contract_ended' : 'en-curso'" style="font-size: 11px;">
-                              {{ ep.estado }}
-                            </span>
-                          </td>
-                        </tr>
-                        <tr v-if="reportStats.lista.length === 0">
-                          <td colspan="6" class="empty-state">No se encontraron Etapas Productivas con los filtros aplicados.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <!-- Estado inicial (sin búsqueda) -->
-                <div v-if="!reportStats && !isLoadingReport" style="text-align: center; padding: 48px 24px; color: var(--text-secondary);">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width: 48px; opacity: 0.3; margin-bottom: 12px;"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
-                  <p style="font-size: 14px;">Aplique filtros y presione <strong>Aplicar Filtros</strong> para generar el reporte.</p>
-                </div>
-              </div>
-
-              <div v-if="currentFilter !== 'HORAS' && currentFilter !== 'REPORTES'" class="table-footer">
+              <div class="table-footer">
                 <span>{{ showingText }}</span>
                 <div class="pagination">
                   <button class="page-btn" @click="changePage(pagination.page - 1)" :disabled="pagination.page === 1">&lt;</button>
@@ -520,10 +247,6 @@
             <label>Programa</label>
             <input v-model="editModal.data.programa" />
           </div>
-          <div v-if="editModal.data.role === 'APRENDIZ'" class="field-sm">
-            <label>Fin Etapa Lectiva / Vencimiento</label>
-            <input type="date" v-model="editModal.data.fechaFinLectiva" />
-          </div>
           <div class="field-sm">
             <label>Documento</label>
             <input v-model="editModal.data.documento" />
@@ -561,76 +284,6 @@
                 
                 <!-- Estados exclusivos para Instructores -->
                 <option v-if="editModal.data.role === 'INSTRUCTOR'" value="TERMINADO_CONTRATO">Terminado Contrato</option>
-              </select>
-            </div>
-          </div>
-          
-          <!-- Modalidades que supervisa (para Instructores) -->
-          <div v-if="editModal.data.role === 'INSTRUCTOR'" class="field-sm mt-3" style="width: 100%;">
-            <label style="font-weight: 700;">Modalidades que supervisa</label>
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px;">
-              <label v-for="m in Object.keys(MODALIDADES_DICT)" :key="m" style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-primary); cursor: pointer;">
-                <input type="checkbox" :value="m" v-model="editModal.data.modalidades" />
-                {{ MODALIDADES_DICT[m] }}
-              </label>
-            </div>
-          </div>
-
-          <!-- Instructor de Seguimiento y adicionales por modalidad (para Aprendices) -->
-          <div v-if="editModal.data.role === 'APRENDIZ'" class="field-sm mt-3" style="width: 100%;">
-            <div v-if="loadingStage" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
-              Cargando modalidad y etapa productiva...
-            </div>
-            <div v-else style="margin-bottom: 8px;">
-              <p style="font-size: 13px; margin: 0 0 8px 0; color: var(--text-primary);">
-                <strong>Modalidad de Etapa Productiva:</strong> 
-                <span v-if="apprenticeStage" class="role-badge" style="background: rgba(27, 94, 32, 0.1); color: #1b5e20; font-size: 11px; margin-left: 6px; padding: 2px 8px; border-radius: 4px; font-weight: bold;">
-                  {{ MODALIDADES_DICT[apprenticeStage.modalidad] || apprenticeStage.modalidad }}
-                </span>
-                <span v-else style="color: var(--text-secondary); font-style: italic; margin-left: 6px;">Sin registro de Etapa Productiva</span>
-              </p>
-            </div>
-
-            <!-- Si es PROYECTO_PRODUCTIVO, permitir seleccionar individual o grupal -->
-            <div v-if="apprenticeStage && apprenticeStage.modalidad === 'PROYECTO_PRODUCTIVO'" class="field-sm mt-2" style="width: 100%;">
-              <label style="font-weight: 700;">Tipo de Proyecto</label>
-              <select v-model="editModal.data.tipoProyecto" class="select-premium" style="width: 100%; height: 38px; font-size: 14px; border-radius: 6px; padding: 0 12px; background: var(--bg-secondary); border: 1px solid var(--border-primary); color: var(--text-primary);">
-                <option :value="null">Seleccione tipo de proyecto...</option>
-                <option value="INDIVIDUAL">Individual</option>
-                <option value="GRUPAL">Grupal (Asociativo)</option>
-              </select>
-            </div>
-
-            <!-- Instructor de Seguimiento (siempre se muestra) -->
-            <div class="field-sm mt-2">
-              <label style="font-weight: 700;">Instructor de Seguimiento</label>
-              <select v-model="editModal.data.instructorAsignado" class="select-premium" style="width: 100%; height: 38px; font-size: 14px; border-radius: 6px; padding: 0 12px; background: var(--bg-secondary); border: 1px solid var(--border-primary); color: var(--text-primary);">
-                <option :value="null">Sin asignar</option>
-                <option v-for="inst in filteredInstructorsForApprentice" :key="inst._id" :value="inst._id">
-                  👨‍🏫 {{ inst.name }} (Especialidades/Áreas: {{ inst.areaConocimiento || 'General' }})
-                </option>
-              </select>
-            </div>
-
-            <!-- Instructor Técnico (proyecto individual o grupal) -->
-            <div v-if="apprenticeStage && apprenticeStage.modalidad === 'PROYECTO_PRODUCTIVO' && (editModal.data.tipoProyecto === 'INDIVIDUAL' || editModal.data.tipoProyecto === 'GRUPAL')" class="field-sm mt-2">
-              <label style="font-weight: 700;">Instructor Técnico</label>
-              <select v-model="editModal.data.instructorTecnico" class="select-premium" style="width: 100%; height: 38px; font-size: 14px; border-radius: 6px; padding: 0 12px; background: var(--bg-secondary); border: 1px solid var(--border-primary); color: var(--text-primary);">
-                <option :value="null">Sin asignar</option>
-                <option v-for="inst in filteredInstructorsForApprentice" :key="inst._id" :value="inst._id">
-                  👨‍🏫 {{ inst.name }} (Especialidades/Áreas: {{ inst.areaConocimiento || 'General' }})
-                </option>
-              </select>
-            </div>
-
-            <!-- Instructor de Proyecto (solo grupal) -->
-            <div v-if="apprenticeStage && apprenticeStage.modalidad === 'PROYECTO_PRODUCTIVO' && editModal.data.tipoProyecto === 'GRUPAL'" class="field-sm mt-2">
-              <label style="font-weight: 700;">Instructor de Proyecto</label>
-              <select v-model="editModal.data.instructorProyecto" class="select-premium" style="width: 100%; height: 38px; font-size: 14px; border-radius: 6px; padding: 0 12px; background: var(--bg-secondary); border: 1px solid var(--border-primary); color: var(--text-primary);">
-                <option :value="null">Sin asignar</option>
-                <option v-for="inst in filteredInstructorsForApprentice" :key="inst._id" :value="inst._id">
-                  👨‍🏫 {{ inst.name }} (Especialidades/Áreas: {{ inst.areaConocimiento || 'General' }})
-                </option>
               </select>
             </div>
           </div>
@@ -782,13 +435,24 @@
             <select v-model="newInstructorId" class="select-premium">
               <option value="">Seleccione un instructor...</option>
               <option 
-                v-for="inst in activeInstructors.filter(i => i._id !== selectedInstructor?._id)" 
-                :key="inst._id" 
-                :value="inst._id"
+                v-for="ins in allInstructors.filter(i => i._id !== selectedInstructor?._id)" 
+                :key="ins._id" 
+                :value="ins._id"
               >
-                {{ inst.name }} ({{ inst.areaConocimiento || 'General' }})
+                {{ ins.name }} ({{ ins.programa || ins.areaConocimiento || 'ADSO' }})
               </option>
             </select>
+          </div>
+
+          <div class="field-group mt-4">
+            <label class="field-label">Motivo de la Reasignación</label>
+            <textarea 
+              v-model="reassignMotivo" 
+              placeholder="Ej: Fin de contrato de prestación de servicios, licencia de maternidad o traslado administrativo..." 
+              class="input-premium" 
+              rows="3" 
+              style="width: 100%; border-radius: 8px; border: 1px solid var(--border-primary); padding: 8px 12px; font-size: 0.8rem; background: var(--bg-secondary); color: var(--text-primary); resize: none; outline: none; margin-top: 4px;"
+            ></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -914,15 +578,6 @@
                 <input type="text" v-model="newUserForm.areaConocimiento" placeholder="Ej: ADSO, Sistemas" class="input-premium" />
               </div>
             </div>
-            <div class="field-group mt-4">
-              <label class="label-premium">Modalidades que supervisa</label>
-              <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px;">
-                <label v-for="m in Object.keys(MODALIDADES_DICT)" :key="m" style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-primary); cursor: pointer;">
-                  <input type="checkbox" :value="m" v-model="newUserForm.modalidades" />
-                  {{ MODALIDADES_DICT[m] }}
-                </label>
-              </div>
-            </div>
           </div>
 
           <div class="form-section-premium mt-6" v-if="newUserForm.role === 'APRENDIZ'">
@@ -940,21 +595,6 @@
               <div class="field-group">
                 <label class="label-premium">Programa de Formación</label>
                 <input type="text" v-model="newUserForm.programa" placeholder="Ej: ADSO" class="input-premium" />
-              </div>
-            </div>
-            <div class="form-grid-2" style="margin-top: 16px;">
-              <div class="field-group">
-                <label class="label-premium">Fin Etapa Lectiva / Vencimiento</label>
-                <input type="date" v-model="newUserForm.fechaFinLectiva" class="input-premium" />
-              </div>
-              <div class="field-group">
-                <label class="label-premium">Instructor de Seguimiento</label>
-                <select v-model="newUserForm.instructorAsignado" class="select-premium">
-                  <option :value="null">Sin asignar</option>
-                  <option v-for="inst in activeInstructors" :key="inst._id" :value="inst._id">
-                    {{ inst.name }} ({{ inst.areaConocimiento || 'General' }})
-                  </option>
-                </select>
               </div>
             </div>
           </div>
@@ -1013,63 +653,6 @@
         </div>
       </div>
     </div>
-
-    <!-- ═══════ MODAL: Registrar Pago de Horas (RF-ADM-17) ═══════ -->
-    <div class="modal-overlay" v-if="payHoursModal.show" @click.self="payHoursModal.show = false">
-      <div class="modal-card modal-sm">
-        <div class="modal-head">
-          <h2>Registrar Pago de Horas</h2>
-          <button class="modal-close" @click="payHoursModal.show = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p style="font-size: 14px; margin-bottom: 12px; color: var(--text-secondary);">
-            Registra el pago de horas para <strong>{{ payHoursModal.instructor?.name }}</strong>.
-          </p>
-          <div class="field-sm">
-            <label>Horas a registrar como pagadas</label>
-            <input type="number" v-model="payHoursModal.hours" placeholder="Ej: 10" min="1" step="1" />
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="payHoursModal.show = false">Cancelar</button>
-          <button class="btn btn-primary" @click="handlePayHours" :disabled="!payHoursModal.hours || payHoursModal.saving">
-            Registrar Pago
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══════ MODAL: Aprobación de Seguimiento Extraordinario (RF-ADM-18) ═══════ -->
-    <div class="modal-overlay" v-if="approveTrackingModal.show" @click.self="approveTrackingModal.show = false">
-      <div class="modal-card modal-sm">
-        <div class="modal-head">
-          <h2>Confirmar Acción</h2>
-          <button class="modal-close" @click="approveTrackingModal.show = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p style="font-size: 14px; text-align: center; margin-bottom: 12px;">
-            ¿Estás seguro de que deseas <strong>{{ approveTrackingModal.estado === 'APROBADO' ? 'aprobar' : 'rechazar' }}</strong> el seguimiento extraordinario #{{ approveTrackingModal.tracking?.numeroVisita }} del instructor <strong>{{ approveTrackingModal.tracking?.instructorId?.name }}</strong> para el aprendiz <strong>{{ approveTrackingModal.tracking?.apprenticeId?.name }}</strong>?
-          </p>
-          <div class="field-sm mt-3" style="width: 100%; margin-top: 15px;">
-            <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">
-              Observaciones de la Evaluación
-              <span v-if="approveTrackingModal.estado === 'RECHAZADO'" style="color: #ef4444; font-weight: bold;">* (Obligatorio)</span>
-            </label>
-            <textarea 
-              v-model="approveTrackingModal.observacionesEvaluacion" 
-              placeholder="Escriba el motivo de la decisión..." 
-              style="width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border-primary); border-radius: 8px; font-size: 0.85rem; outline: none; background: var(--bg-secondary); color: var(--text-primary); box-sizing: border-box; font-family: inherit; resize: vertical;"
-            ></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="approveTrackingModal.show = false">Cancelar</button>
-          <button class="btn" :class="approveTrackingModal.estado === 'APROBADO' ? 'btn-success-action' : 'btn-danger'" @click="handleApproveTracking" :disabled="approveTrackingModal.saving">
-            Confirmar
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -1086,17 +669,8 @@ import Sidebar from '../../../components/layout/Sidebar.vue';
 import Header from '../../../components/layout/Header.vue';
 import SkeletonLoader from '../../../components/ui/SkeletonLoader.vue';
 import axios from 'axios';
-import http from '@/core/api/http';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-
-const MODALIDADES_DICT = {
-  CONTRATO_APRENDIZAJE: 'Contrato de Aprendizaje',
-  VINCULACION_LABORAL: 'Vínculo Laboral',
-  PASANTIA: 'Pasantía',
-  MONITORIA: 'Monitoría',
-  PROYECTO_PRODUCTIVO: 'Proyecto Productivo'
-};
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -1111,13 +685,6 @@ const filterStatus = ref('');
 const pagination = ref({ total: 0, page: 1, limit: 10, totalPages: 0 });
 const stats = ref({ instructors: 0, aprendices: 0 });
 
-// ── Estado Reportes (RF-ADM-21) ───────────────────────
-const reportFilters = ref({ year: '', modalidad: '', companyId: '', instructorId: '', minHoras: '', maxHoras: '' });
-const reportStats   = ref(null);
-const isLoadingReport = ref(false);
-const reportCompanies   = ref([]);
-const reportInstructors = ref([]);
-
 // Modal Nuevo Usuario (ARQUITECTURA SENA)
 const showAddUserModal = ref(false);
 const isSubmitting = ref(false);
@@ -1130,27 +697,11 @@ const newUserForm = ref({
   role: 'APRENDIZ',
   ficha: '',
   programa: '',
-  areaConocimiento: '',
-  fechaFinLectiva: '',
-  modalidades: [],
-  instructorAsignado: null
+  areaConocimiento: ''
 });
 
 const openAddUserModal = () => {
-  newUserForm.value = {
-    tipoDocumento: 'CC',
-    documento: '',
-    name: '',
-    email: '',
-    telefono: '',
-    role: 'APRENDIZ',
-    ficha: '',
-    programa: '',
-    areaConocimiento: '',
-    fechaFinLectiva: '',
-    modalidades: [],
-    instructorAsignado: null
-  };
+  newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ', ficha: '', programa: '' };
   showAddUserModal.value = true;
 };
 
@@ -1265,51 +816,59 @@ const formatStatus = (status, role) => {
 const showReassignModal = ref(false);
 const selectedInstructor = ref(null);
 const newInstructorId = ref('');
-const activeInstructors = ref([]);
+const reassignMotivo = ref('');
+const allInstructors = ref([]);
 
-const fetchActiveInstructors = async () => {
+const fetchAllInstructors = async () => {
   try {
-    const res = await usersService.getAll({ role: 'INSTRUCTOR', status: 'ACTIVO' });
-    activeInstructors.value = res.data.users || [];
+    const res = await usersService.getAll({ role: 'INSTRUCTOR', limit: 100 });
+    allInstructors.value = res.data.users.filter(u => u.activo && u.status === 'ACTIVO');
   } catch (err) {
-    console.error('Error fetching instructors:', err);
+    console.error('Error cargando instructores:', err);
   }
 };
 
 const openReassignModal = (user) => {
   selectedInstructor.value = user;
-  fetchActiveInstructors();
+  newInstructorId.value = '';
+  reassignMotivo.value = '';
   showReassignModal.value = true;
 };
 
 const handleReassign = async () => {
-  if (!selectedInstructor.value || !newInstructorId.value) return;
+  if (!newInstructorId.value || !selectedInstructor.value) return;
 
   uiStore.showLoader();
+  isSubmitting.value = true;
+
   try {
-    const res = await usersService.reassign(selectedInstructor.value._id, newInstructorId.value);
+    const res = await usersService.reassignInstructor(
+      selectedInstructor.value._id, 
+      newInstructorId.value,
+      reassignMotivo.value.trim()
+    );
     showReassignModal.value = false;
+    newInstructorId.value = '';
+    
     alertBox.value = { 
       show: true, 
-      message: `¡Migración completada con éxito! ${res.data.message}`, 
+      message: res.data.message || '¡Migración y reasignación completada con éxito!', 
       type: 'success' 
     };
-    newInstructorId.value = '';
-    // Actualizar lista y estadísticas
+
     fetchUsers();
     fetchStats();
   } catch (err) {
-    console.error('Error reassigning apprentices:', err);
+    console.error('Error en reasignación:', err);
     alertBox.value = { 
       show: true, 
       message: 'Error al reasignar: ' + (err.response?.data?.message || err.message), 
       type: 'danger' 
     };
   } finally {
+    isSubmitting.value = false;
     uiStore.hideLoader();
-    setTimeout(() => {
-      if (alertBox.value) alertBox.value.show = false;
-    }, 6000);
+    setTimeout(() => alertBox.value.show = false, 6000);
   }
 };
 
@@ -1393,276 +952,15 @@ const fetchStats = async () => {
 onMounted(() => {
   fetchUsers();
   fetchStats();
-  fetchActiveInstructors();
+  fetchAllInstructors();
 });
-
-const instructorsHours = ref([]);
-const isLoadingHours = ref(false);
-const pendingExtraordinaryTrackings = ref([]);
-const isLoadingTrackings = ref(false);
-
-const fetchInstructorsHours = async () => {
-  isLoadingHours.value = true;
-  uiStore.showLoader();
-  try {
-    const res = await http.get('/users/instructors/hours');
-    instructorsHours.value = res.data.data || [];
-  } catch (err) {
-    console.error('Error fetching instructors hours:', err);
-  } finally {
-    isLoadingHours.value = false;
-    uiStore.hideLoader();
-  }
-};
-
-const fetchPendingTrackings = async () => {
-  isLoadingTrackings.value = true;
-  try {
-    const res = await http.get('/trackings');
-    const allTrackings = res.data.data || [];
-    pendingExtraordinaryTrackings.value = allTrackings.filter(t => t.esExtraordinario && t.estadoExtraordinario === 'PENDIENTE');
-  } catch (err) {
-    console.error('Error fetching pending trackings:', err);
-  } finally {
-    isLoadingTrackings.value = false;
-  }
-};
-
-// Modal Registrar Pago de Horas (RF-ADM-17)
-const payHoursModal = ref({
-  show: false,
-  instructor: null,
-  hours: '',
-  saving: false
-});
-
-const openPayHoursModal = (instructor) => {
-  payHoursModal.value.instructor = instructor;
-  payHoursModal.value.hours = '';
-  payHoursModal.value.show = true;
-};
-
-const handlePayHours = async () => {
-  if (!payHoursModal.value.instructor || !payHoursModal.value.hours) return;
-  const hoursToPay = Number(payHoursModal.value.hours);
-  if (isNaN(hoursToPay) || hoursToPay <= 0) {
-    alert('Por favor ingrese un número de horas válido mayor a 0.');
-    return;
-  }
-
-  // Pedir confirmación antes de descontar horas
-  const confirmed = confirm(`¿Está seguro de que desea registrar ${hoursToPay} horas pagadas para el instructor ${payHoursModal.value.instructor.name}? Esto reducirá su saldo pendiente por esa misma cantidad.`);
-  if (!confirmed) return;
-
-  payHoursModal.value.saving = true;
-  uiStore.showLoader();
-  try {
-    await http.patch(`/users/instructors/${payHoursModal.value.instructor._id}/pay-hours`, {
-      hours: hoursToPay
-    });
-    alertBox.value = {
-      show: true,
-      message: `¡Pago de ${hoursToPay} horas registrado con éxito para ${payHoursModal.value.instructor.name}!`,
-      type: 'success'
-    };
-    payHoursModal.value.show = false;
-    await fetchInstructorsHours();
-  } catch (err) {
-    console.error('Error paying hours:', err);
-    alertBox.value = {
-      show: true,
-      message: 'Error al registrar el pago: ' + (err.response?.data?.message || err.message),
-      type: 'danger'
-    };
-  } finally {
-    payHoursModal.value.saving = false;
-    uiStore.hideLoader();
-    setTimeout(() => {
-      if (alertBox.value) alertBox.value.show = false;
-    }, 5000);
-  }
-};
-
-// Modal Aprobación de Seguimiento Extraordinario (RF-ADM-18)
-const approveTrackingModal = ref({
-  show: false,
-  tracking: null,
-  estado: '',
-  observacionesEvaluacion: '',
-  saving: false
-});
-
-const openApproveTrackingModal = (tracking, estado) => {
-  approveTrackingModal.value.tracking = tracking;
-  approveTrackingModal.value.estado = estado;
-  approveTrackingModal.value.observacionesEvaluacion = '';
-  approveTrackingModal.value.show = true;
-};
-
-const handleApproveTracking = async () => {
-  if (!approveTrackingModal.value.tracking || !approveTrackingModal.value.estado) return;
-  const { tracking, estado, observacionesEvaluacion } = approveTrackingModal.value;
-
-  if (estado === 'RECHAZADO' && (!observacionesEvaluacion || !observacionesEvaluacion.trim())) {
-    alert('Las observaciones son obligatorias para rechazar un seguimiento extraordinario.');
-    return;
-  }
-
-  approveTrackingModal.value.saving = true;
-  uiStore.showLoader();
-  try {
-    await http.patch(`/trackings/${tracking._id}/approve-extraordinary`, {
-      estado,
-      observacionesEvaluacion
-    });
-    alertBox.value = {
-      show: true,
-      message: `¡Seguimiento extraordinario ${estado === 'APROBADO' ? 'aprobado' : 'rechazado'} con éxito!`,
-      type: 'success'
-    };
-    approveTrackingModal.value.show = false;
-    await Promise.all([
-      fetchInstructorsHours(),
-      fetchPendingTrackings()
-    ]);
-  } catch (err) {
-    console.error('Error approving tracking:', err);
-    alertBox.value = {
-      show: true,
-      message: 'Error al cambiar estado del seguimiento: ' + (err.response?.data?.message || err.message),
-      type: 'danger'
-    };
-  } finally {
-    approveTrackingModal.value.saving = false;
-    uiStore.hideLoader();
-    setTimeout(() => {
-      if (alertBox.value) alertBox.value.show = false;
-    }, 5000);
-  }
-};
 
 // ── Filtros & Paginación ─────────────────────────────
 const setFilter = (filter) => {
   currentFilter.value = filter;
   pagination.value.page = 1;
-  if (filter === 'HORAS') {
-    fetchInstructorsHours();
-    fetchPendingTrackings();
-  } else if (filter === 'REPORTES') {
-    // Cargar listas para los selectores de filtros
-    fetchReportSelectors();
-  } else {
-    fetchUsers();
-  }
+  fetchUsers();
 };
-
-// ── Funciones de Reportes (RF-ADM-21) ───────────────
-
-const fetchReportSelectors = async () => {
-  try {
-    const [compRes, usrRes] = await Promise.all([
-      http.get('/companies'),
-      http.get('/users?role=INSTRUCTOR&limit=500')
-    ]);
-    reportCompanies.value   = compRes.data?.data || compRes.data || [];
-    reportInstructors.value = usrRes.data?.data || usrRes.data || [];
-  } catch (err) {
-    console.error('Error cargando selectores de reporte:', err.message);
-  }
-};
-
-const fetchReportStats = async () => {
-  isLoadingReport.value = true;
-  try {
-    const params = {};
-    if (reportFilters.value.year)         params.year         = reportFilters.value.year;
-    if (reportFilters.value.modalidad)    params.modalidad    = reportFilters.value.modalidad;
-    if (reportFilters.value.companyId)    params.companyId    = reportFilters.value.companyId;
-    if (reportFilters.value.instructorId) params.instructorId = reportFilters.value.instructorId;
-    if (reportFilters.value.minHoras)     params.minHoras     = reportFilters.value.minHoras;
-    if (reportFilters.value.maxHoras)     params.maxHoras     = reportFilters.value.maxHoras;
-    const res = await http.get('/productive-stages/reports/stats', { params });
-    reportStats.value = res.data?.data || res.data;
-  } catch (err) {
-    alertBox.value = { show: true, message: 'Error al generar el reporte: ' + err.message, type: 'danger' };
-    setTimeout(() => alertBox.value.show = false, 5000);
-  } finally {
-    isLoadingReport.value = false;
-  }
-};
-
-const exportReportPDF = () => {
-  if (!reportStats.value) return;
-  const doc = new jsPDF({ orientation: 'landscape' });
-  const r   = reportStats.value.resumen;
-
-  // Encabezado SENA
-  doc.setFillColor(27, 94, 32);
-  doc.rect(0, 0, doc.internal.pageSize.width, 20, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('REPFORA — Reporte Estadístico de Etapas Productivas', 14, 13);
-
-  // KPI resumen
-  doc.setTextColor(40, 40, 40);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Total EPs: ${r.totalEPs}   |   Total Horas: ${r.totalHoras}   |   Promedio Horas: ${r.promedioHoras}   |   Certificadas: ${r.certificadas}   |   Archivadas: ${r.archivadas}`, 14, 28);
-
-  // Tabla principal
-  const head = [['Radicado', 'Aprendiz', 'Documento', 'Empresa', 'Modalidad', 'Horas Comp.', 'Horas Req.', 'Estado']];
-  const body = reportStats.value.lista.map(ep => [
-    ep.radicado || '—',
-    ep.aprendiz?.nombre || '—',
-    ep.aprendiz?.documento || '—',
-    ep.empresa?.razonSocial || '—',
-    MODALIDADES_DICT[ep.modalidad] || ep.modalidad,
-    ep.horasCompletadas,
-    ep.horasRequeridas,
-    ep.estado,
-  ]);
-
-  doc.autoTable({
-    head,
-    body,
-    startY: 34,
-    styles: { fontSize: 8, cellPadding: 3 },
-    headStyles: { fillColor: [27, 94, 32], textColor: 255, fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [240, 253, 244] },
-  });
-
-  doc.save(`reporte_eps_${new Date().toISOString().split('T')[0]}.pdf`);
-};
-
-const exportReportExcel = () => {
-  if (!reportStats.value) return;
-  const XLSX = window._XLSX;
-
-  // Fallback: usar datos como CSV si no tenemos XLSX
-  const headers = ['Radicado', 'Aprendiz', 'Documento', 'Empresa', 'Modalidad', 'Horas Completadas', 'Horas Requeridas', 'Estado'];
-  const rows = reportStats.value.lista.map(ep => [
-    ep.radicado || '',
-    ep.aprendiz?.nombre || '',
-    ep.aprendiz?.documento || '',
-    ep.empresa?.razonSocial || '',
-    MODALIDADES_DICT[ep.modalidad] || ep.modalidad,
-    ep.horasCompletadas,
-    ep.horasRequeridas,
-    ep.estado,
-  ]);
-
-  // Generar CSV directamente (sin dependencia de xlsx en el frontend)
-  const csvContent = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `reporte_eps_${new Date().toISOString().split('T')[0]}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-};
-
 
 let searchTimeout = null;
 const debouncedSearch = () => {
@@ -1709,59 +1007,8 @@ const adminInitials = computed(() => getInitials(adminName.value));
 // ── Editar Usuario ───────────────────────────────────
 const editModal = ref({ show: false, data: {}, saving: false });
 
-const apprenticeStage = ref(null);
-const loadingStage = ref(false);
-
-const loadApprenticeStage = async (apprenticeId) => {
-  apprenticeStage.value = null;
-  loadingStage.value = true;
-  try {
-    const res = await http.get(`/productive-stages?apprenticeId=${apprenticeId}`);
-    const stages = res.data?.data || [];
-    if (stages.length > 0) {
-      apprenticeStage.value = stages[0];
-    }
-  } catch (err) {
-    console.error('Error fetching apprentice stage:', err);
-  } finally {
-    loadingStage.value = false;
-  }
-};
-
-const filteredInstructorsForApprentice = computed(() => {
-  if (!apprenticeStage.value || !apprenticeStage.value.modalidad) {
-    return activeInstructors.value;
-  }
-  const reqModality = apprenticeStage.value.modalidad;
-  return activeInstructors.value.filter(inst => {
-    return !inst.modalidades || inst.modalidades.length === 0 || inst.modalidades.includes(reqModality);
-  });
-});
-
 const openEditModal = (user) => {
   editModal.value.data = { ...user };
-  if (user.instructorAsignado && typeof user.instructorAsignado === 'object') {
-    editModal.value.data.instructorAsignado = user.instructorAsignado._id;
-  }
-  if (user.instructorTecnico && typeof user.instructorTecnico === 'object') {
-    editModal.value.data.instructorTecnico = user.instructorTecnico._id;
-  }
-  if (user.instructorProyecto && typeof user.instructorProyecto === 'object') {
-    editModal.value.data.instructorProyecto = user.instructorProyecto._id;
-  }
-  if (!editModal.value.data.modalidades) {
-    editModal.value.data.modalidades = [];
-  }
-  if (user.fechaFinLectiva) {
-    editModal.value.data.fechaFinLectiva = new Date(user.fechaFinLectiva).toISOString().split('T')[0];
-  } else {
-    editModal.value.data.fechaFinLectiva = '';
-  }
-  
-  if (user.role === 'APRENDIZ') {
-    loadApprenticeStage(user._id);
-  }
-  
   editModal.value.show = true;
 };
 
@@ -1818,42 +1065,20 @@ const confirmAndSaveEdit = () => {
 const saveEdit = async () => {
   editModal.value.saving = true;
   try {
-    const targetUserId = editModal.value.data._id;
-    const targetRole = editModal.value.data.role;
-    const targetStatus = editModal.value.data.status;
-    const isTerminatedStatus = ['TERMINADO_CONTRATO', 'CONTRACT_ENDED', 'CONTRATO_TERMINADO'].includes(targetStatus?.toUpperCase());
-
-    const isProyecto = apprenticeStage.value?.modalidad === 'PROYECTO_PRODUCTIVO';
-    const tipoProyecto = isProyecto ? editModal.value.data.tipoProyecto : null;
-    const instructorTecnico = (isProyecto && (tipoProyecto === 'INDIVIDUAL' || tipoProyecto === 'GRUPAL')) ? editModal.value.data.instructorTecnico : null;
-    const instructorProyecto = (isProyecto && tipoProyecto === 'GRUPAL') ? editModal.value.data.instructorProyecto : null;
-
-    await usersService.update(targetUserId, {
+    await usersService.update(editModal.value.data._id, {
       name: editModal.value.data.name,
       email: editModal.value.data.email,
       telefono: editModal.value.data.telefono,
       areaConocimiento: editModal.value.data.areaConocimiento,
       documento: editModal.value.data.documento,
       role: editModal.value.data.role,
-      status: targetStatus,
+      status: editModal.value.data.status,
       ficha: editModal.value.data.ficha,
-      programa: editModal.value.data.programa,
-      fechaFinLectiva: editModal.value.data.fechaFinLectiva || null,
-      modalidades: editModal.value.data.modalidades || [],
-      instructorAsignado: editModal.value.data.instructorAsignado || null,
-      instructorTecnico,
-      instructorProyecto,
-      tipoProyecto
+      programa: editModal.value.data.programa
     });
-    
-    const updatedUser = { ...editModal.value.data };
     editModal.value.show = false;
-    await fetchUsers();
-    await fetchStats();
-
-    if (targetRole === 'INSTRUCTOR' && isTerminatedStatus) {
-      openReassignModal(updatedUser);
-    }
+    fetchUsers();
+    fetchStats();
   } catch (err) {
     alert('Error al guardar: ' + (err.response?.data?.message || err.message));
   } finally {

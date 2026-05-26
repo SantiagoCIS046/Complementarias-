@@ -98,6 +98,18 @@ const actualizar = async (id, data) => {
     }
   }
 
+  const oldUser = await User.findById(id);
+  if (!oldUser) {
+    throw new Error('Usuario no encontrado.');
+  }
+
+  const nuevoInstructorId = data.instructorAsignado;
+  const oldInstructorId = oldUser.instructorAsignado ? oldUser.instructorAsignado.toString() : null;
+
+  if (nuevoInstructorId && nuevoInstructorId.toString() !== oldInstructorId) {
+    data.fechaAsignacionInstructor = new Date();
+  }
+
   const usuario = await User.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
@@ -106,8 +118,21 @@ const actualizar = async (id, data) => {
   if (!usuario) {
     throw new Error('Usuario no encontrado.');
   }
+
+  // Si es un APRENDIZ y se le asigna un instructor (o cambia), enviar correo y alerta interna
+  if (usuario.role === 'APRENDIZ' && nuevoInstructorId && nuevoInstructorId.toString() !== oldInstructorId) {
+    const { enviarNotificacionAsignacion } = require('../../core/utils/notifications');
+    const motivo = oldInstructorId 
+      ? (data.motivoReasignacion || 'Cambio individual de instructor asignado por el Administrador')
+      : null;
+    enviarNotificacionAsignacion(usuario._id, nuevoInstructorId, motivo).catch(err => 
+      console.error('Error al enviar notificación de asignación:', err)
+    );
+  }
+
   return usuario;
 };
+
 
 /**
  * Activar o desactivar un usuario (Soft toggle — nunca se elimina de la BD).
@@ -157,6 +182,7 @@ const getFichasSummary = async () => {
 };
 
 /**
+<<<<<<< Updated upstream
  * Reasignar aprendices de un instructor saliente a uno nuevo.
  * También actualiza las fichas (Batches) y los trackings programados/pendientes.
  */
@@ -596,6 +622,66 @@ const payInstructorsHours = async (instructorId, hoursPaid) => {
   return inst;
 };
 
+/**
+ * Reasignación masiva de aprendices entre instructores (por fin de contrato)
+ * e inicio de transferencia de permisos de Drive.
+ */
+const reassignInstructor = async (oldInstructorId, newInstructorId, motivo) => {
+  const oldInstructor = await User.findById(oldInstructorId);
+  const newInstructor = await User.findById(newInstructorId);
+
+  if (!oldInstructor || oldInstructor.role !== 'INSTRUCTOR') {
+    throw new Error('El instructor saliente no es válido.');
+  }
+  if (!newInstructor || newInstructor.role !== 'INSTRUCTOR') {
+    throw new Error('El nuevo instructor no es válido.');
+  }
+
+  // 1. Obtener todos los aprendices del instructor saliente
+  const apprentices = await User.find({ instructorAsignado: oldInstructorId, role: 'APRENDIZ' });
+  if (apprentices.length === 0) {
+    return { success: true, count: 0, message: 'El instructor saliente no tenía aprendices asignados.' };
+  }
+
+  // 2. Reasignar a cada aprendiz
+  const ProductiveStage = require('../productive-stages-dev2/productive-stage.model');
+  const driveService = require('../documents-dev2/drive.service');
+  const { enviarNotificacionAsignacion } = require('../../core/utils/notifications');
+
+  for (const apprentice of apprentices) {
+    apprentice.instructorAsignado = newInstructorId;
+    apprentice.fechaAsignacionInstructor = new Date();
+    await apprentice.save();
+
+    // 3. Buscar etapa productiva activa para migrar permisos de Drive
+    const stage = await ProductiveStage.findOne({
+      apprenticeId: apprentice._id,
+      estado: { $nin: ['FINALIZADO', 'CERTIFICADO', 'RECHAZADO'] }
+    });
+
+    if (stage && stage.driveFolders && stage.driveFolders.aprendiz) {
+      // Transferir permisos en Drive
+      driveService.transferirPermisos(
+        stage.driveFolders.aprendiz,
+        oldInstructor.email,
+        newInstructor.email
+      ).catch(err => console.error(`Error migrando permisos de Drive para el aprendiz ${apprentice.name}:`, err.message));
+    }
+
+    // 4. Enviar notificación al nuevo instructor
+    const finalMotivo = motivo || 'Reasignación masiva de aprendices por finalización de contrato del instructor anterior';
+    enviarNotificacionAsignacion(apprentice._id, newInstructorId, finalMotivo).catch(err =>
+      console.error(`Error enviando notificación al reasignar aprendiz ${apprentice.name}:`, err.message)
+    );
+  }
+
+  return {
+    success: true,
+    count: apprentices.length,
+    message: `Se reasignaron exitosamente ${apprentices.length} aprendices al instructor ${newInstructor.name}.`
+  };
+};
+
 module.exports = {
   getAll,
   getById,
@@ -603,6 +689,7 @@ module.exports = {
   toggleStatus,
   getFichasSummary,
   reassignApprentices,
+  reassignInstructor,
   importExcel,
   getMyLogs,
   getInstructorsHours,

@@ -26,6 +26,12 @@ const upload = multer({
 router.use(verifyToken);
 
 /**
+ * @route   POST /api/bitacoras/validate-signatures
+ * @access  Private (APRENDIZ, INSTRUCTOR, ADMIN)
+ */
+router.post('/validate-signatures', checkRole(['APRENDIZ', 'INSTRUCTOR', 'ADMIN']), upload.single('file'), controller.validarFirmasIA);
+
+/**
  * @route   POST /api/bitacoras
  * @access  Private (APRENDIZ)
  */

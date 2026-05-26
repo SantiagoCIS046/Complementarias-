@@ -289,6 +289,55 @@ const buscarCarpetaPorNombre = async (nombre, parentId) => {
   return null;
 };
 
+/**
+ * Transfiere permisos de visualización/edición de una carpeta de Drive de un instructor a otro.
+ */
+const transferirPermisos = async (folderId, oldEmail, newEmail) => {
+  const drive = getDriveClient();
+  
+  // Modo desarrollo: simular si no hay credenciales
+  if (!drive) {
+    console.log(`[DRIVE-DEV] Transferencia simulada para carpeta ${folderId}: ${oldEmail} -> ${newEmail}`);
+    return true;
+  }
+
+  try {
+    // 1. Conceder permiso de lectura/escritura al nuevo instructor
+    await drive.permissions.create({
+      fileId: folderId,
+      resource: {
+        role: 'writer',
+        type: 'user',
+        emailAddress: newEmail,
+      },
+    });
+
+    // 2. Obtener lista de permisos actuales para buscar el del instructor anterior
+    const res = await drive.permissions.list({
+      fileId: folderId,
+      fields: 'permissions(id, emailAddress)',
+    });
+
+    const oldPermission = res.data.permissions.find(
+      (p) => p.emailAddress && p.emailAddress.toLowerCase() === oldEmail.toLowerCase()
+    );
+
+    // 3. Eliminar el permiso del instructor anterior si existe
+    if (oldPermission) {
+      await drive.permissions.delete({
+        fileId: folderId,
+        permissionId: oldPermission.id,
+      });
+    }
+
+    console.log(`[DRIVE] Permisos transferidos exitosamente: ${oldEmail} -> ${newEmail}`);
+    return true;
+  } catch (error) {
+    console.error('[DRIVE ERROR] Error al transferir permisos:', error.message);
+    return false;
+  }
+};
+
 module.exports = {
   getDriveClient,
   crearCarpeta,
@@ -297,4 +346,5 @@ module.exports = {
   subirDocumentoEP,
   moverCarpeta,
   buscarCarpetaPorNombre,
+  transferirPermisos,
 };

@@ -33,15 +33,40 @@ const asignarInstructor = async (batchId, instructorId) => {
     throw new Error('El usuario seleccionado debe tener el rol de INSTRUCTOR');
   }
 
-  return await Batch.findByIdAndUpdate(
+  const batch = await Batch.findById(batchId);
+  if (!batch) throw new Error('Ficha no encontrada');
+
+  const updatedBatch = await Batch.findByIdAndUpdate(
     batchId,
     {
       'instructor_asignado.instructor_id': instructorId,
       'instructor_asignado.nombre': instructor.name,
+      'instructor_asignado.fecha_asignacion': new Date(),
       estado: 'ACTIVA'
     },
     { new: true }
   );
+
+  // Actualizar la relación instructorAsignado en todos los aprendices vinculados a esta ficha
+  if (batch.aprendices_ids && batch.aprendices_ids.length > 0) {
+    await User.updateMany(
+      { _id: { $in: batch.aprendices_ids } },
+      { 
+        instructorAsignado: instructorId,
+        fechaAsignacionInstructor: new Date()
+      }
+    );
+
+    // Enviar notificación y correo por cada aprendiz asignado
+    const { enviarNotificacionAsignacion } = require('../../core/utils/notifications');
+    for (const apprenticeId of batch.aprendices_ids) {
+      enviarNotificacionAsignacion(apprenticeId, instructorId).catch(err =>
+        console.error(`Error enviando notificación al asignar instructor a ficha para el aprendiz ${apprenticeId}:`, err.message)
+      );
+    }
+  }
+
+  return updatedBatch;
 };
 
 /**

@@ -18,16 +18,22 @@ router.use(verifyToken);
 // para que Express no capture "fichas" como parámetro :id
 
 // Rutas restringidas a ADMIN e INSTRUCTOR
-router.post('/import',      checkRole(['ADMIN']), upload.single('file'), controller.importExcel);
-router.get('/instructors/hours', checkRole(['ADMIN']), controller.getInstructorsHours);
-router.patch('/instructors/:id/pay-hours', checkRole(['ADMIN']), controller.payInstructorsHours);
+// TODO: implementar controller.importExcel
+// router.post('/import',      checkRole(['ADMIN']), upload.single('file'), controller.importExcel);
+// TODO: implementar controller.getInstructorsHours
+// router.get('/instructors/hours', checkRole(['ADMIN']), controller.getInstructorsHours);
+// TODO: implementar controller.payInstructorsHours
+// router.patch('/instructors/:id/pay-hours', checkRole(['ADMIN']), controller.payInstructorsHours);
 router.get('/fichas/stats', checkRole(['ADMIN', 'INSTRUCTOR']), controller.getFichasSummary);
 router.get('/',             checkRole(['ADMIN', 'INSTRUCTOR']), controller.getAll);
 router.patch('/:id/toggle-status', checkRole(['ADMIN']),        controller.toggleStatus);
-router.post('/:id/reassign',       checkRole(['ADMIN']),        controller.reassignApprentices);
+// TODO: implementar controller.reassignApprentices
+// router.post('/:id/reassign',       checkRole(['ADMIN']),        controller.reassignApprentices);
+router.post('/reassign-instructor', checkRole(['ADMIN']),       controller.reassignInstructor);
 
 // Rutas accesibles por cualquier usuario autenticado (ver/editar su propio perfil)
-router.get('/me/logs', controller.getMyLogs);
+// TODO: implementar controller.getMyLogs
+// router.get('/me/logs', controller.getMyLogs);
 router.get('/:id',  controller.getById);
 router.put('/:id',  controller.actualizar);
 

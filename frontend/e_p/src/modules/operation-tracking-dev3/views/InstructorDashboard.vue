@@ -79,6 +79,7 @@ const fetchApprentices = async () => {
         phase: item.estadoEP || 'ACTIVO',
         modality: item.modalidad || 'CONTRATO',
         ficha: item.ficha || item.apprenticeId?.ficha || 'S/F',
+        fechaAsignacion: item.apprenticeId?.fechaAsignacionInstructor ? new Date(item.apprenticeId.fechaAsignacionInstructor).toLocaleString('es-CO') : null,
         createdAt: item.createdAt
       })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Orden Cronológico (Más reciente primero)
     } else {
@@ -90,9 +91,79 @@ const fetchApprentices = async () => {
   } finally {
     isLoading.value = false
   }
+// ── RF-INS-11: Control de Horas Adicionales ──
+const additionalHours = ref([])
+const isHoursLoading = ref(false)
+
+const fetchAdditionalHours = async () => {
+  isHoursLoading.value = true
+  try {
+    const res = await trackingService.getAdditionalHours()
+    additionalHours.value = res.data.data || []
+  } catch (err) {
+    console.error('Error fetching additional hours:', err)
+  } finally {
+    isHoursLoading.value = false
+  }
 }
 
-onMounted(fetchApprentices)
+const toggleHourState = async (hour, stateName) => {
+  const originalState = {
+    ejecutado: hour.ejecutado,
+    cobrado: hour.cobrado,
+    pendiente: hour.pendiente
+  }
+
+  // Lógica inteligente premium de dependencias:
+  if (stateName === 'pendiente') {
+    if (!hour.pendiente) {
+      hour.pendiente = true
+      hour.ejecutado = false
+      hour.cobrado = false
+    } else {
+      hour.pendiente = false
+    }
+  } else {
+    hour[stateName] = !hour[stateName]
+    if (hour.ejecutado || hour.cobrado) {
+      hour.pendiente = false
+    } else {
+      hour.pendiente = true
+    }
+  }
+
+  try {
+    hour.isSaving = true
+    await trackingService.updateAdditionalHourStatus(hour._id, {
+      ejecutado: hour.ejecutado,
+      cobrado: hour.cobrado,
+      pendiente: hour.pendiente
+    })
+  } catch (err) {
+    console.error('Error updating hour status:', err)
+    hour.ejecutado = originalState.ejecutado
+    hour.cobrado = originalState.cobrado
+    hour.pendiente = originalState.pendiente
+  } finally {
+    hour.isSaving = false
+  }
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '---'
+  return new Date(dateStr).toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
+onMounted(async () => {
+  await Promise.all([
+    fetchApprentices(),
+    fetchAdditionalHours()
+  ])
+})
 
 const availableFichas = computed(() => [...new Set(apprentices.value.map(a => a.ficha))].sort())
 
@@ -329,7 +400,10 @@ const getPhaseStyle = (phase) => {
                           <div class="avatar" :style="{ backgroundColor: '#E6F4EA' }">{{ app.initials }}</div>
                           <div class="user-info">
                             <p class="user-name">{{ app.name }}</p>
-                            <p class="user-sub">Doc: {{ app.doc }}</p>
+                            <p class="user-sub">
+                              Doc: {{ app.doc }}
+                              <span v-if="app.fechaAsignacion"> | Asig: {{ app.fechaAsignacion }}</span>
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -359,8 +433,128 @@ const getPhaseStyle = (phase) => {
                     </tr>
                   </template>
 
-                  <tr v-if="(filters.module === 'APRENDICES' && filteredApprentices.length === 0) || (filters.module === 'FICHAS' && groupedFichas.length === 0)">
+                  <!-- Requerimiento RF-INS-02: Mensaje de no hay aprendices en tiempo real -->
+                  <tr v-if="apprentices.length === 0">
+                    <td colspan="6" class="text-center" style="padding: 4rem 2rem; color: #94a3b8; background: var(--bg-elevated);">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 3rem; color: var(--text-muted); opacity: 0.6;">group_off</span>
+                        <p style="font-size: 0.9rem; font-weight: 800; color: var(--text-secondary); margin: 8px 0 2px; letter-spacing: 0.5px;">NO HAY APRENDICES AÚN ASIGNADOS</p>
+                        <p style="font-size: 0.72rem; color: var(--text-muted); max-width: 320px; margin: 0; line-height: 1.4;">Comuníquese con el administrador del sistema para realizar la vinculación oficial de sus fichas.</p>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr v-else-if="(filters.module === 'APRENDICES' && filteredApprentices.length === 0) || (filters.module === 'FICHAS' && groupedFichas.length === 0)">
                     <td colspan="6" class="text-center" style="padding: 3rem; color: #94a3b8; font-weight: 600;">No hay datos que coincidan con la búsqueda.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- RF-INS-11: Control de Horas Adicionales (Seguimientos Extraordinarios) -->
+          <div class="table-container-card mt-8" style="margin-top: 2rem;">
+            <div class="flex items-center justify-between gap-4 mb-4" style="padding: 1.25rem 1.25rem 0.5rem 1.25rem;">
+              <div>
+                <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2" style="margin: 0; font-size: 0.85rem; color: var(--text-primary);">
+                  <span class="material-symbols-outlined text-sena" style="color: var(--color_button); font-size: 1.3rem;">history_toggle_off</span>
+                  Control de Horas Adicionales (Seguimientos Extraordinarios)
+                </h3>
+                <p class="text-xs text-gray-500 font-medium" style="margin: 2px 0 0; font-size: 0.7rem; color: var(--text-muted);">
+                  Registro y seguimiento del estado de cobro y ejecución de visitas extraordinarias aprobadas.
+                </p>
+              </div>
+              <button class="btn-primary-sena" @click="fetchAdditionalHours" :disabled="isHoursLoading" style="height: 32px; font-size: 0.7rem; padding: 0 10px;">
+                <span class="material-symbols-outlined" :class="{ 'animate-spin': isHoursLoading }" style="font-size: 0.95rem;">sync</span> 
+                {{ isHoursLoading ? 'Cargando...' : 'Sincronizar' }}
+              </button>
+            </div>
+
+            <SkeletonLoader v-if="isHoursLoading" variant="table" :rows="3" :columns="5" />
+            
+            <!-- Sin horas registradas -->
+            <div v-else-if="additionalHours.length === 0" class="text-center" style="padding: 3.5rem 2rem; color: #94a3b8; background: var(--bg-elevated); border-radius: 0 0 14px 14px;">
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 2.5rem; color: var(--text-muted); opacity: 0.6;">query_builder</span>
+                <p style="font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); margin: 6px 0 2px; letter-spacing: 0.5px; text-transform: uppercase;">SIN SEGUIMIENTOS EXTRAORDINARIOS</p>
+                <p style="font-size: 0.68rem; color: var(--text-muted); max-width: 320px; margin: 0; line-height: 1.4;">Las horas adicionales se registrarán automáticamente aquí cuando se apruebe una visita de seguimiento extraordinaria.</p>
+              </div>
+            </div>
+
+            <!-- Tabla de horas -->
+            <div class="scrollable-table" v-else style="border-radius: 0 0 14px 14px; overflow: hidden;">
+              <table class="apprentices-table">
+                <thead>
+                  <tr>
+                    <th>APRENDIZ</th>
+                    <th>FICHA</th>
+                    <th>SEGUIMIENTO ASOCIADO</th>
+                    <th class="text-center">FECHA VISITA</th>
+                    <th class="text-center">ESTADOS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="hour in additionalHours" :key="hour._id">
+                    <td>
+                      <div class="user-cell">
+                        <div class="avatar" style="background-color: #f3e8ff; color: #7c3aed;">
+                          {{ (hour.apprenticeId?.name || 'A').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() }}
+                        </div>
+                        <div class="user-info">
+                          <p class="user-name">{{ hour.apprenticeId?.name || 'Aprendiz sin nombre' }}</p>
+                          <p class="user-sub">Doc: {{ hour.apprenticeId?.documento || 'S/N' }}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="ficha-cell-premium"><span class="ficha-number">#{{ hour.stageId?.ficha || hour.apprenticeId?.ficha || 'S/F' }}</span></div>
+                    </td>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="status-pill-admin" style="background-color: #f3e8ff; color: #7c3aed; font-size: 0.65rem; font-weight: 900; border: 1px solid #ddd6fe; border-radius: 8px; gap: 4px; display: inline-flex; align-items: center;">
+                          <span class="material-symbols-outlined" style="font-size: 0.95rem;">star</span>
+                          Visita Especial #{{ hour.trackingId?.numeroVisita || 'E' }}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="text-center font-semibold text-xs" style="color: var(--text-secondary);">
+                      {{ formatDate(hour.trackingId?.fechaVisita || hour.fecha) }}
+                    </td>
+                    <td class="text-center">
+                      <!-- RF-INS-13: Bloqueo si el registro ya está cerrado (pendiente===false) -->
+                      <div v-if="hour.pendiente === false" class="hour-locked-pill" title="Horas registradas. No editable">
+                        <span class="material-symbols-outlined lock-icon">lock</span>
+                        <span class="locked-text">Horas registradas. No editable</span>
+                      </div>
+                      <div v-else style="display: inline-flex; align-items: center; gap: 1rem; background: var(--bg-secondary); padding: 6px 16px; border-radius: 12px; border: 1px solid var(--border-primary);">
+                        <!-- Checkbox EJECUTADO (Verde) -->
+                        <label class="premium-checkbox-label" @click.prevent="toggleHourState(hour, 'ejecutado')">
+                          <div class="premium-checkbox" :class="{ 'checked': hour.ejecutado }">
+                            <span class="material-symbols-outlined check-icon" v-if="hour.ejecutado">check</span>
+                          </div>
+                          <span class="label-text executed-text">Ejecutado</span>
+                        </label>
+
+                        <!-- Checkbox COBRADO (Morado) -->
+                        <label class="premium-checkbox-label" @click.prevent="toggleHourState(hour, 'cobrado')">
+                          <div class="premium-checkbox morado-checkbox" :class="{ 'checked': hour.cobrado }">
+                            <span class="material-symbols-outlined check-icon" v-if="hour.cobrado">check</span>
+                          </div>
+                          <span class="label-text billed-text">Cobrado</span>
+                        </label>
+
+                        <!-- Checkbox PENDIENTE (Naranja) -->
+                        <label class="premium-checkbox-label" @click.prevent="toggleHourState(hour, 'pendiente')">
+                          <div class="premium-checkbox naranja-checkbox" :class="{ 'checked': hour.pendiente }">
+                            <span class="material-symbols-outlined check-icon" v-if="hour.pendiente">check</span>
+                          </div>
+                          <span class="label-text pending-text">Pendiente</span>
+                        </label>
+                        
+                        <!-- Mini spinner guardando -->
+                        <span v-if="hour.isSaving" class="material-symbols-outlined animate-spin text-muted" style="font-size: 0.9rem; color: var(--text-muted); opacity: 0.7;">sync</span>
+                      </div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -462,4 +656,94 @@ const getPhaseStyle = (phase) => {
 .loading-state-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem; gap: 1rem; color: var(--text-muted); }
 .spin-ring-lg { width: 40px; height: 40px; border: 3px solid var(--bg-hover); border-top-color: var(--color_header); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* PREMIUM CHECKBOX STYLING (RF-INS-11) */
+.premium-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.premium-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border-primary);
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ejecutado: Verde */
+.premium-checkbox.checked {
+  background: #10b981;
+  border-color: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+/* Cobrado: Morado */
+.premium-checkbox.morado-checkbox.checked {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  box-shadow: 0 0 6px rgba(124, 58, 237, 0.4);
+}
+
+/* Pendiente: Naranja */
+.premium-checkbox.naranja-checkbox.checked {
+  background: #f97316;
+  border-color: #f97316;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.4);
+}
+
+.check-icon {
+  font-size: 10px !important;
+  color: white !important;
+  font-weight: 900;
+  animation: checkPop 0.15s ease-out;
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.label-text {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.premium-checkbox-label:hover .label-text {
+  color: var(--text-primary);
+}
+
+.executed-text { color: #059669; }
+.billed-text { color: #6d28d9; }
+.pending-text { color: #ea580c; }
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* RF-INS-13: Candado de horas cerradas */
+.hour-locked-pill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: #f1f5f9; border: 1.5px solid #cbd5e1;
+  border-radius: 20px; padding: 5px 14px;
+  color: #64748b; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em;
+}
+.lock-icon { font-size: 1rem !important; color: #94a3b8; }
+.locked-text { white-space: nowrap; }
 </style>
+

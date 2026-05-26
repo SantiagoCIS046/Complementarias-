@@ -114,6 +114,21 @@ const productiveStageSchema = new mongoose.Schema(
       default: '',
     },
 
+    // --- Chat de Observaciones (RF-INS-15) ---
+    chatObservaciones: [
+      {
+        remitente: { type: String, required: true }, // 'Instructor' | 'Aprendiz' | 'ADMIN'
+        texto:     { type: String, required: true },
+        fecha:     { type: Date, default: Date.now }
+      }
+    ],
+
+    // --- Autorización de Seguimientos Extraordinarios (RF-INS-10) ---
+    extraordinaryTrackingAuthorized: {
+      type: Boolean,
+      default: false,
+    },
+
     // --- Archivado de documentación (RF-ADM-20) ---
     archivado: {
       type: Boolean,

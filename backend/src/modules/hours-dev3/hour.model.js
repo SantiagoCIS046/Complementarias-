@@ -73,6 +73,11 @@ const hourSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    tipo: {
+      type: String,
+      enum: ['REGULAR', 'PASANTIA', 'BRIGADA', 'PROYECTO'],
+      default: 'REGULAR',
+    },
   },
   {
     timestamps: true,

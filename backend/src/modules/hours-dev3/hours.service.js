@@ -10,7 +10,7 @@ const ProductiveStage = require('../productive-stages-dev2/productive-stage.mode
 /**
  * Registrar horas de un día.
  */
-const registrar = async ({ stageId, apprenticeId, fecha, horaEntrada, horaSalida, horasTrabajadas, actividades }) => {
+const registrar = async ({ stageId, apprenticeId, fecha, horaEntrada, horaSalida, horasTrabajadas, actividades, tipo }) => {
   // Verificar que la EP existe y está EN_CURSO
   const stage = await ProductiveStage.findById(stageId);
   if (!stage) {
@@ -18,6 +18,22 @@ const registrar = async ({ stageId, apprenticeId, fecha, horaEntrada, horaSalida
   }
   if (stage.estado !== 'EN_CURSO') {
     throw new Error('Solo se pueden registrar horas cuando la EP está EN_CURSO. Estado actual: ' + stage.estado);
+  }
+
+  const tipoHora = tipo || 'REGULAR';
+  if (!['REGULAR', 'PASANTIA', 'BRIGADA', 'PROYECTO'].includes(tipoHora)) {
+    throw new Error(`El tipo de hora "${tipoHora}" no es válido.`);
+  }
+
+  // Validar límites máximos de horas por día según el tipo
+  if ((tipoHora === 'REGULAR' || tipoHora === 'PASANTIA') && horasTrabajadas > 8) {
+    throw new Error(`Las horas trabajadas para la modalidad ${tipoHora} no pueden superar las 8 horas diarias.`);
+  }
+  if (tipoHora === 'PROYECTO' && horasTrabajadas > 10) {
+    throw new Error('Las horas trabajadas para la modalidad PROYECTO no pueden superar las 10 horas diarias.');
+  }
+  if (tipoHora === 'BRIGADA' && horasTrabajadas > 12) {
+    throw new Error('Las horas trabajadas para la modalidad BRIGADA no pueden superar las 12 horas diarias.');
   }
 
   const hora = await Hour.create({
@@ -28,6 +44,7 @@ const registrar = async ({ stageId, apprenticeId, fecha, horaEntrada, horaSalida
     horaSalida,
     horasTrabajadas,
     actividades: actividades || '',
+    tipo: tipoHora,
   });
 
   return hora;
@@ -73,6 +90,20 @@ const getResumen = async (stageId) => {
   const totalHoras = horas.reduce((sum, h) => sum + h.horasTrabajadas, 0);
   const totalDias  = horas.length;
 
+  const consolidadas = {
+    REGULAR: 0,
+    PASANTIA: 0,
+    BRIGADA: 0,
+    PROYECTO: 0,
+  };
+
+  horas.forEach(h => {
+    const t = h.tipo || 'REGULAR';
+    if (consolidadas[t] !== undefined) {
+      consolidadas[t] += h.horasTrabajadas;
+    }
+  });
+
   const stage = await ProductiveStage.findById(stageId);
 
   return {
@@ -83,6 +114,7 @@ const getResumen = async (stageId) => {
     porcentaje: stage && stage.horasRequeridas > 0
       ? Math.min(100, Math.round((totalHoras / stage.horasRequeridas) * 100))
       : 0,
+    consolidadas,
   };
 };
 

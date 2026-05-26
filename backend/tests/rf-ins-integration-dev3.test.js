@@ -156,6 +156,10 @@ describe('RF-INS-12, 13, 14, 15 Integration Tests', () => {
         lugarVisita: 'SENA Principal',
         observaciones: 'Todo correcto con el aprendiz',
         isValidatedByIA: true,
+        signaturesValidated: {
+          aprendiz: { detected: true, confidence: 0.97 },
+          instructor: { detected: true, confidence: 0.96 }
+        },
         estadoVisita: 'PROGRAMADO'
       };
 

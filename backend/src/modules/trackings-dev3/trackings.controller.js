@@ -166,6 +166,14 @@ const validarPdfIA = async (req, res) => {
       message = 'Falta la firma obligatoria del Aprendiz en el acta.';
     }
 
+    // RF-INS-23: Certificar explícitamente que cuenta con firmas de instructor y aprendiz
+    if (!signatures.aprendiz.detected || !signatures.instructor.detected) {
+      valid = false;
+      if (!message || message.includes('Todas las firmas')) {
+        message = 'Falta una o más firmas obligatorias. El acta de seguimiento debe estar firmada por el Aprendiz y el Instructor.';
+      }
+    }
+
     res.json({
       success: true,
       fileSize: `${fileSizeMB} MB`,

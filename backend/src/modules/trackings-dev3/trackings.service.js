@@ -87,6 +87,20 @@ const crear = async ({ stageId, instructorId, apprenticeId, numeroVisita, fechaV
     throw new Error(`Ya existe la visita de seguimiento #${numeroVisita} registrada para esta etapa productiva.`);
   }
 
+  // RF-INS-23: Certificar firmas digital de instructor y aprendiz
+  if (isValidatedByIA === true || isValidatedByIA === 'true') {
+    if (!signaturesValidated) {
+      throw new Error('Debe proporcionar los resultados de la validación de firmas por IA.');
+    }
+    const { aprendiz, instructor } = signaturesValidated;
+    if (!aprendiz || !aprendiz.detected) {
+      throw new Error('El acta de seguimiento debe contar con la firma digital del aprendiz.');
+    }
+    if (!instructor || !instructor.detected) {
+      throw new Error('El acta de seguimiento debe contar con la firma digital del instructor.');
+    }
+  }
+
   const isExtraordinary = esExtraordinario === true || esExtraordinario === 'true';
 
   const tracking = await Tracking.create({
@@ -192,6 +206,18 @@ const actualizar = async (id, data) => {
     const iaValid = data.isValidatedByIA ?? existing.isValidatedByIA;
     if (!iaValid) {
       throw new Error('El acta de seguimiento debe ser validada por IA antes de marcar la visita como REALIZADO.');
+    }
+    // RF-INS-23: Certificar firmas digital de instructor y aprendiz para estado REALIZADO
+    const sigs = data.signaturesValidated ?? existing.signaturesValidated;
+    if (!sigs) {
+      throw new Error('No se han encontrado resultados de validación de firmas por IA.');
+    }
+    const { aprendiz, instructor } = sigs;
+    if (!aprendiz || !aprendiz.detected) {
+      throw new Error('El acta de seguimiento debe contar con la firma digital del aprendiz para marcarse como REALIZADO.');
+    }
+    if (!instructor || !instructor.detected) {
+      throw new Error('El acta de seguimiento debe contar con la firma digital del instructor para marcarse como REALIZADO.');
     }
   }
 

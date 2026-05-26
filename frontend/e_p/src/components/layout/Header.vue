@@ -126,19 +126,12 @@ const handleLogout = () => {
 
 const handleChangePassword = () => {
   showProfileMenu.value = false;
-  showInfo(
-    'Módulo en Desarrollo',
-    'La funcionalidad para cambiar la contraseña se encuentra actualmente en desarrollo y estará disponible en una futura actualización.'
-  );
+  router.push('/perfil');
 };
 
 const handleViewProfile = () => {
-  quickEditData.value = {
-    name: currentUser.value.name,
-    email: currentUser.value.email,
-    telefono: currentUser.value.telefono || ''
-  };
-  showQuickEdit.value = !showQuickEdit.value;
+  showProfileMenu.value = false;
+  router.push('/perfil');
 };
 
 const handleSaveQuickEdit = async () => {
@@ -264,7 +257,7 @@ const handleSaveQuickEdit = async () => {
                 <span class="material-symbols-outlined">person</span>
                 <span>Ver Perfil</span>
               </button>
-              <button v-if="userRole === 'ADMIN'" class="dropdown-item" @click="handleChangePassword">
+              <button class="dropdown-item" @click="handleChangePassword">
                 <span class="material-symbols-outlined">key</span>
                 <span>Cambiar Clave</span>
               </button>

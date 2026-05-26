@@ -63,7 +63,26 @@
         </div>
       </div>
 
-      <button class="submit-btn" :disabled="loading" @click="handleReset">
+      <!-- Checklist de Requisitos -->
+      <div class="requirements" style="margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 0.75rem; border: 1px solid #e2e8f0; text-align: left;">
+        <p :class="{ met: hasMinLength }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+          {{ hasMinLength ? '✔' : '○' }} Al menos 8 caracteres
+        </p>
+        <p :class="{ met: hasUppercase }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+          {{ hasUppercase ? '✔' : '○' }} Al menos una letra mayúscula
+        </p>
+        <p :class="{ met: hasLowercase }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+          {{ hasLowercase ? '✔' : '○' }} Al menos una letra minúscula
+        </p>
+        <p :class="{ met: hasNumber }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+          {{ hasNumber ? '✔' : '○' }} Al menos un número
+        </p>
+        <p :class="{ met: hasSpecialChar }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+          {{ hasSpecialChar ? '✔' : '○' }} Al menos un carácter especial (!@#$%^&*...)
+        </p>
+      </div>
+
+      <button class="submit-btn" :disabled="loading || !isPolicyMet" @click="handleReset">
         <span v-if="loading" class="spin-ring"></span>
         <span>{{ loading ? 'Actualizando...' : 'Cambiar Contraseña' }}</span>
       </button>
@@ -84,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authService } from '../services/auth.service'
 
@@ -98,13 +117,28 @@ const loading  = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
 
+// Validaciones reactivas de la contraseña (alineado con regex del backend)
+const hasMinLength = computed(() => password.value.length >= 8);
+const hasUppercase = computed(() => /[A-Z]/.test(password.value));
+const hasLowercase = computed(() => /[a-z]/.test(password.value));
+const hasNumber = computed(() => /\d/.test(password.value));
+const hasSpecialChar = computed(() => /[!@#$%^&*()_+\-=\[\]\{\};':",.\/<>?]/.test(password.value));
+
+const isPolicyMet = computed(() => {
+  return hasMinLength.value &&
+         hasUppercase.value &&
+         hasLowercase.value &&
+         hasNumber.value &&
+         hasSpecialChar.value;
+});
+
 async function handleReset() {
-  if (password.value !== confirmPassword.value) {
-    errorMsg.value = 'Las contraseñas no coinciden'
+  if (!isPolicyMet.value) {
+    errorMsg.value = 'La contraseña no cumple con la política de seguridad.'
     return
   }
-  if (password.value.length < 6) {
-    errorMsg.value = 'La contraseña debe tener al menos 6 caracteres'
+  if (password.value !== confirmPassword.value) {
+    errorMsg.value = 'Las contraseñas no coinciden'
     return
   }
 
@@ -182,4 +216,22 @@ async function handleReset() {
 .success-alert { background: #f0fdf4; color: #166534; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-top: 15px; text-align: center; }
 .spin-ring { width: 16px; height: 16px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.requirements {
+  margin-top: 10px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  text-align: left;
+}
+.requirements p {
+  margin: 4px 0;
+  color: #94a3b8;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.requirements p.met {
+  color: #16a34a;
+  font-weight: 700;
+}
 </style>

@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useAuthStore } from '../../../core/store/auth.store';
 import { usersService } from '../services/users.service';
+import { authService } from '../services/auth.service';
 
 const authStore = useAuthStore();
 const user = authStore.user;
@@ -65,6 +66,82 @@ const saveContactDetails = async () => {
     };
   } finally {
     isSubmitting.value = false;
+  }
+};
+
+// --- Cambiar Contraseña ---
+const showPasswordModal = ref(false);
+const newPassword = ref('');
+const confirmPassword = ref('');
+const showNewPass = ref(false);
+const showConfirmPass = ref(false);
+const passwordSubmitting = ref(false);
+const passwordMessage = ref({ text: '', type: '' });
+
+// Validaciones reactivas de la contraseña (alineado con regex del backend)
+const hasMinLength = computed(() => newPassword.value.length >= 8);
+const hasUppercase = computed(() => /[A-Z]/.test(newPassword.value));
+const hasLowercase = computed(() => /[a-z]/.test(newPassword.value));
+const hasNumber = computed(() => /\d/.test(newPassword.value));
+const hasSpecialChar = computed(() => /[!@#$%^&*()_+\-=\[\]\{\};':",.\/<>?]/.test(newPassword.value));
+
+const isPolicyMet = computed(() => {
+  return hasMinLength.value &&
+         hasUppercase.value &&
+         hasLowercase.value &&
+         hasNumber.value &&
+         hasSpecialChar.value;
+});
+
+const openPasswordModal = () => {
+  newPassword.value = '';
+  confirmPassword.value = '';
+  showNewPass.value = false;
+  showConfirmPass.value = false;
+  passwordMessage.value = { text: '', type: '' };
+  showPasswordModal.value = true;
+};
+
+const closePasswordModal = () => {
+  if (!passwordSubmitting.value) {
+    showPasswordModal.value = false;
+  }
+};
+
+const savePassword = async () => {
+  if (!isPolicyMet.value) {
+    passwordMessage.value = { text: 'La contraseña no cumple con la política de seguridad.', type: 'error' };
+    return;
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    passwordMessage.value = { text: 'Las contraseñas no coinciden.', type: 'error' };
+    return;
+  }
+
+  passwordSubmitting.value = true;
+  passwordMessage.value = { text: '', type: '' };
+
+  const token = authStore.token || localStorage.getItem('repfora_token');
+
+  try {
+    const res = await authService.changePassword(newPassword.value, token);
+    passwordMessage.value = { text: res.data?.message || '¡Contraseña actualizada con éxito!', type: 'success' };
+    
+    if (authStore.user && authStore.user.isFirstLogin) {
+      authStore.updateUser({ isFirstLogin: false });
+    }
+    
+    setTimeout(() => {
+      closePasswordModal();
+    }, 1500);
+  } catch (error) {
+    console.error('Error al cambiar contraseña:', error);
+    passwordMessage.value = { 
+      text: error.response?.data?.message || 'Error al cambiar contraseña.', 
+      type: 'error' 
+    };
+  } finally {
+    passwordSubmitting.value = false;
   }
 };
 
@@ -141,7 +218,10 @@ const getInitials = (name) => {
             </div>
           </div>
 
-          <div class="form-actions">
+          <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; flex-wrap: wrap;">
+            <button type="button" class="cancel-btn" @click="openPasswordModal" style="background: #1b5e20; color: white;">
+              <span>Cambiar Contraseña</span>
+            </button>
             <button type="button" class="submit-btn" @click="openModal">
               <span>Modificar Datos de Contacto</span>
             </button>
@@ -190,6 +270,85 @@ const getInitials = (name) => {
             <button type="button" class="cancel-btn" @click="closeModal" :disabled="isSubmitting">Cancelar</button>
             <button type="button" class="save-btn" :disabled="isSubmitting || !confirmCheck" @click="saveContactDetails">
               <span v-if="!isSubmitting">Guardar</span>
+              <span v-else class="loader"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Modal de Cambiar Contraseña -->
+    <Transition name="fade">
+      <div v-if="showPasswordModal" class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>Cambiar Contraseña</h3>
+            <button class="close-btn" @click="closePasswordModal">×</button>
+          </div>
+          <div class="modal-body">
+            <!-- Nueva Contraseña -->
+            <div class="form-group">
+              <label for="modal-new-password">Nueva Contraseña</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined">lock</span>
+                <input
+                  id="modal-new-password"
+                  v-model="newPassword"
+                  :type="showNewPass ? 'text' : 'password'"
+                  placeholder="Ingresa tu nueva contraseña"
+                  required
+                />
+                <button type="button" class="eye-btn" @click="showNewPass = !showNewPass" style="position: absolute; right: 12px; background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; align-items: center; z-index: 10;">
+                  <span class="material-symbols-outlined">{{ showNewPass ? 'visibility' : 'visibility_off' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Confirmar Contraseña -->
+            <div class="form-group" style="margin-top: 1.5rem;">
+              <label for="modal-confirm-password">Confirmar Contraseña</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined">lock</span>
+                <input
+                  id="modal-confirm-password"
+                  v-model="confirmPassword"
+                  :type="showConfirmPass ? 'text' : 'password'"
+                  placeholder="Repite tu nueva contraseña"
+                  required
+                />
+                <button type="button" class="eye-btn" @click="showConfirmPass = !showConfirmPass" style="position: absolute; right: 12px; background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; align-items: center; z-index: 10;">
+                  <span class="material-symbols-outlined">{{ showConfirmPass ? 'visibility' : 'visibility_off' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Checklist de Requisitos -->
+            <div class="requirements" style="margin-top: 1.5rem; background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 0.75rem;">
+              <p :class="{ met: hasMinLength }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+                {{ hasMinLength ? '✔' : '○' }} Al menos 8 caracteres
+              </p>
+              <p :class="{ met: hasUppercase }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+                {{ hasUppercase ? '✔' : '○' }} Al menos una letra mayúscula
+              </p>
+              <p :class="{ met: hasLowercase }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+                {{ hasLowercase ? '✔' : '○' }} Al menos una letra minúscula
+              </p>
+              <p :class="{ met: hasNumber }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+                {{ hasNumber ? '✔' : '○' }} Al menos un número
+              </p>
+              <p :class="{ met: hasSpecialChar }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+                {{ hasSpecialChar ? '✔' : '○' }} Al menos un carácter especial (!@#$%^&*...)
+              </p>
+            </div>
+
+            <div v-if="passwordMessage.text" :class="['message', passwordMessage.type]" style="margin-top: 1.5rem;">
+              {{ passwordMessage.text }}
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="cancel-btn" @click="closePasswordModal" :disabled="passwordSubmitting">Cancelar</button>
+            <button type="button" class="save-btn" :disabled="passwordSubmitting || !isPolicyMet" @click="savePassword">
+              <span v-if="!passwordSubmitting">Guardar</span>
               <span v-else class="loader"></span>
             </button>
           </div>
@@ -546,5 +705,23 @@ const getInitials = (name) => {
 .save-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+.requirements {
+  margin-top: 10px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  text-align: left;
+}
+.requirements p {
+  margin: 4px 0;
+  color: #94a3b8;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.requirements p.met {
+  color: #16a34a;
+  font-weight: 700;
 }
 </style>

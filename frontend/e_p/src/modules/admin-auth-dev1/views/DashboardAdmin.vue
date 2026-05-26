@@ -364,7 +364,7 @@
           <div class="field-sm relative">
             <label>Nueva contraseña</label>
             <div class="input-with-icon">
-              <input :type="showNewPass ? 'text' : 'password'" v-model="newPassword" placeholder="Mínimo 6 caracteres" />
+              <input :type="showNewPass ? 'text' : 'password'" v-model="newPassword" placeholder="Ingresa tu nueva contraseña" />
               <button class="icon-btn" @click="showNewPass = !showNewPass">
                 <svg v-if="!showNewPass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -374,18 +374,38 @@
           <div class="field-sm relative">
             <label>Confirmar contraseña</label>
             <div class="input-with-icon">
-              <input :type="showConfirmPass ? 'text' : 'password'" v-model="confirmPassword" />
+              <input :type="showConfirmPass ? 'text' : 'password'" v-model="confirmPassword" placeholder="Repite tu nueva contraseña" />
               <button class="icon-btn" @click="showConfirmPass = !showConfirmPass">
                 <svg v-if="!showConfirmPass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
               </button>
             </div>
           </div>
+          
+          <!-- Checklist de Requisitos -->
+          <div class="requirements" style="margin-top: 15px; background: var(--bg-secondary); padding: 12px; border-radius: 8px; font-size: 0.75rem; border: 1px solid var(--border-primary); text-align: left;">
+            <p :class="{ met: hasMinLength }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+              {{ hasMinLength ? '✔' : '○' }} Al menos 8 caracteres
+            </p>
+            <p :class="{ met: hasUppercase }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+              {{ hasUppercase ? '✔' : '○' }} Al menos una letra mayúscula
+            </p>
+            <p :class="{ met: hasLowercase }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+              {{ hasLowercase ? '✔' : '○' }} Al menos una letra minúscula
+            </p>
+            <p :class="{ met: hasNumber }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+              {{ hasNumber ? '✔' : '○' }} Al menos un número
+            </p>
+            <p :class="{ met: hasSpecialChar }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+              {{ hasSpecialChar ? '✔' : '○' }} Al menos un carácter especial (!@#$%^&*...)
+            </p>
+          </div>
+
           <p v-if="passwordMsg" :class="passwordMsg.type === 'error' ? 'error-msg' : 'success-msg'">{{ passwordMsg.text }}</p>
         </div>
         <div class="modal-footer">
           <button class="btn-cancel" @click="showPasswordModal = false">Cancelar</button>
-          <button class="btn btn-primary" @click="handleChangePassword" :disabled="changingPassword">
+          <button class="btn btn-primary" @click="handleChangePassword" :disabled="changingPassword || !isPolicyMet">
             {{ changingPassword ? 'Cambiando...' : 'Cambiar Clave' }}
           </button>
         </div>
@@ -1249,9 +1269,24 @@ const confirmPassword = ref('');
 const changingPassword = ref(false);
 const passwordMsg = ref(null);
 
+// Validaciones reactivas de la contraseña (alineado con regex del backend)
+const hasMinLength = computed(() => newPassword.value.length >= 8);
+const hasUppercase = computed(() => /[A-Z]/.test(newPassword.value));
+const hasLowercase = computed(() => /[a-z]/.test(newPassword.value));
+const hasNumber = computed(() => /\d/.test(newPassword.value));
+const hasSpecialChar = computed(() => /[!@#$%^&*()_+\-=\[\]\{\};':",.\/<>?]/.test(newPassword.value));
+
+const isPolicyMet = computed(() => {
+  return hasMinLength.value &&
+         hasUppercase.value &&
+         hasLowercase.value &&
+         hasNumber.value &&
+         hasSpecialChar.value;
+});
+
 const handleChangePassword = async () => {
-  if (newPassword.value.length < 6) {
-    passwordMsg.value = { type: 'error', text: 'Mínimo 6 caracteres' };
+  if (!isPolicyMet.value) {
+    passwordMsg.value = { type: 'error', text: 'La contraseña no cumple con la política de seguridad.' };
     return;
   }
   if (newPassword.value !== confirmPassword.value) {
@@ -2098,5 +2133,23 @@ const handleLogout = () => {
 
   .modal-card { width: 100vw; border-radius: 12px; }
   .modal-head h2 { font-size: 0.95rem; }
+}
+.requirements {
+  margin-top: 10px;
+  background: var(--bg-secondary);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  text-align: left;
+}
+.requirements p {
+  margin: 4px 0;
+  color: #94a3b8;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.requirements p.met {
+  color: #16a34a;
+  font-weight: 700;
 }
 </style>

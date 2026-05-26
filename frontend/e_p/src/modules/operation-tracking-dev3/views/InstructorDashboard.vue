@@ -91,6 +91,7 @@ const fetchApprentices = async () => {
   } finally {
     isLoading.value = false
   }
+}
 // ── RF-INS-11: Control de Horas Adicionales ──
 const additionalHours = ref([])
 const isHoursLoading = ref(false)

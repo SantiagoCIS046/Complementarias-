@@ -185,7 +185,8 @@ async function handleChange() {
 .input-box { display: flex; align-items: center; gap: 12px; padding: 0 15px; background: #f8fafc; border: 2px solid transparent; border-radius: 10px; transition: 0.3s; }
 .input-box:focus-within { border-color: var(--color_button); background: white; box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1); }
 .field-icon { width: 18px; color: #94a3b8; }
-.field-input { flex: 1; border: none; background: transparent; padding: 12px 0; outline: none; font-size: 0.9rem; }
+.field-input { flex: 1; border: none; background: transparent; padding: 12px 0; outline: none; font-size: 0.9rem; color: #334155; }
+.field-input::placeholder { color: #94a3b8; }
 
 .requirements {
   margin-top: 10px;

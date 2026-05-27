@@ -76,6 +76,21 @@ const getResumen = async (req, res) => {
 const actualizarEstado = async (req, res) => {
   try {
     const data = await service.actualizarEstado(req.params.id, req.body);
+
+    try {
+      const { registrarAuditoria } = require('../../core/utils/audit');
+      await registrarAuditoria({
+        usuarioId: req.user._id,
+        accion: 'ACTUALIZAR_ESTADO_HORA',
+        entidad: 'Hour',
+        entidadId: req.params.id,
+        detalle: `El instructor ${req.user.name || 'N/A'} actualizó el estado del registro de horas a: ejecutado=${req.body.ejecutado !== undefined ? req.body.ejecutado : 'sin cambio'}, cobrado=${req.body.cobrado !== undefined ? req.body.cobrado : 'sin cambio'}, pendiente=${req.body.pendiente !== undefined ? req.body.pendiente : 'sin cambio'}.`,
+        ip: req.ip
+      });
+    } catch (auditErr) {
+      console.error('Error registrando auditoría en contabilidad de horas:', auditErr.message);
+    }
+
     res.json({
       success: true,
       data,

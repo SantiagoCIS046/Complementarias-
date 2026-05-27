@@ -22,6 +22,7 @@ export const epService = {
 
   // ── Aprobaciones (Módulo 4) ────────────────────────────────────
   enviarARevision: (id)     => http.patch(`/productive-stages/${id}/enviar-revision`),
+  agregarMensajeChat:(id, data) => http.post(`/productive-stages/${id}/chat`, data),
 
   // ── Bitácoras (DEV 3 - consumidas desde dashboard del aprendiz) ─
   getBitacoras:       ()            => http.get('/bitacoras'),

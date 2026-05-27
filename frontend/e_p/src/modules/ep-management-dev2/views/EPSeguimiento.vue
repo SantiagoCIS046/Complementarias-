@@ -1,5 +1,5 @@
 <script setup>
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { useThemeStore } from '../../../core/store/theme.store'
@@ -9,6 +9,7 @@ import Sidebar from '../../../components/layout/Sidebar.vue'
 import Header from '../../../components/layout/Header.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 
@@ -118,16 +119,55 @@ const uploadFile = () => {
 }
 
 const sendMessage = () => {
-  openDialog('Nuevo Mensaje', 'Escribe el mensaje que deseas enviar al instructor encargado:', 'info', (msg) => {
-    if (msg && msg !== true) notify('Mensaje enviado correctamente al instructor.', 'success')
-  }, true)
+  openChatDrawer()
+}
+
+// --- OBSERVACIONES CHAT DRAWER (RF-INS-30) ---
+const showChatDrawer = ref(false)
+const chatMessageText = ref('')
+const isSendingChatMessage = ref(false)
+
+const openChatDrawer = () => {
+  showChatDrawer.value = true
+}
+
+const closeChatDrawer = () => {
+  showChatDrawer.value = false
+}
+
+const sendChatMessage = async () => {
+  if (!chatMessageText.value || chatMessageText.value.trim() === '') return
+  if (!stage.value) return
+
+  isSendingChatMessage.value = true
+  try {
+    const res = await epService.agregarMensajeChat(stage.value._id, {
+      remitente: 'Aprendiz',
+      texto: chatMessageText.value.trim()
+    })
+    
+    // Recargar datos para ver el mensaje de inmediato
+    await loadData()
+    chatMessageText.value = ''
+    notify('Mensaje enviado al chat de observaciones.', 'success')
+  } catch (err) {
+    console.error('Error al enviar mensaje de chat:', err)
+    notify('Error al enviar el mensaje al servidor.', 'error')
+  } finally {
+    isSendingChatMessage.value = false
+  }
 }
 
 const openBitacora = (b) => {
   openDialog(`Bitácora Semana ${b.semana}`, b.descripcion || 'No se registraron observaciones detalladas para esta quincena.', 'info')
 }
 
-onMounted(loadData)
+onMounted(async () => {
+  await loadData()
+  if (route.query.openChat === 'true') {
+    showChatDrawer.value = true
+  }
+})
 </script>
 
 <template>
@@ -429,6 +469,70 @@ onMounted(loadData)
           <div class="modal-footer">
             <button class="modal-btn btn-cancel" @click="closeDialog(false)">Cancelar</button>
             <button class="modal-btn btn-confirm" @click="closeDialog(true)">Confirmar</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ═══ CAJÓN DE OBSERVACIONES FLOW CHAT (RF-INS-30) ═══ -->
+    <Transition name="drawer">
+      <div v-if="showChatDrawer" class="chat-drawer-backdrop" @click="closeChatDrawer">
+        <div class="chat-drawer-content" @click.stop>
+          <div class="chat-drawer-header">
+            <div class="chat-drawer-title">
+              <span class="material-symbols-outlined chat-title-icon">forum</span>
+              <div>
+                <h3>Observaciones del Flujo</h3>
+                <p>Chat de seguimiento y aclaraciones generales</p>
+              </div>
+            </div>
+            <button class="chat-close-btn" @click="closeChatDrawer">&times;</button>
+          </div>
+
+          <!-- Feed de mensajes -->
+          <div class="chat-drawer-body">
+            <div v-if="!stage?.chatObservaciones || stage.chatObservaciones.length === 0" class="chat-empty-state">
+              <span class="material-symbols-outlined">chat_bubble</span>
+              <p>No hay mensajes en este flujo todavía.</p>
+              <span class="empty-sub">Las observaciones generales del Administrador o Instructor se mostrarán aquí.</span>
+            </div>
+            
+            <div v-else class="chat-feed-list">
+              <div 
+                v-for="(msg, idx) in stage.chatObservaciones" 
+                :key="idx" 
+                class="chat-bubble-wrapper"
+                :class="msg.remitente.toLowerCase()"
+              >
+                <div class="chat-bubble-meta">
+                  <span class="bubble-sender">{{ msg.remitente === 'ADMIN' ? 'Coordinador / Admin' : msg.remitente }}</span>
+                  <span class="bubble-time">{{ new Date(msg.fecha).toLocaleString('es-CO') }}</span>
+                </div>
+                <div class="chat-bubble-text-box">
+                  <p>{{ msg.texto }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulario de envío -->
+          <div class="chat-drawer-footer">
+            <textarea 
+              v-model="chatMessageText" 
+              placeholder="Escribe tu mensaje o aclaración..." 
+              class="chat-input"
+              rows="2"
+              @keydown.enter.prevent="sendChatMessage"
+            ></textarea>
+            <button 
+              class="btn-send-message" 
+              @click="sendChatMessage" 
+              :disabled="isSendingChatMessage || !chatMessageText.trim()"
+            >
+              <span class="material-symbols-outlined" :class="{ 'animate-spin': isSendingChatMessage }">
+                {{ isSendingChatMessage ? 'sync' : 'send' }}
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -906,6 +1010,258 @@ onMounted(loadData)
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* --- OBSERVACIONES CHAT DRAWER GLASSMORPHISM (RF-INS-30) --- */
+.chat-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(6px);
+  z-index: 2100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.chat-drawer-content {
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(190%);
+  border-left: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .chat-drawer-content {
+  background: rgba(30, 41, 59, 0.8);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chat-drawer-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-title-icon {
+  font-size: 1.6rem;
+  color: var(--color_button);
+}
+
+.chat-drawer-title h3 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.chat-drawer-title p {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin: 2px 0 0 0;
+  font-weight: 500;
+}
+
+.chat-close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.chat-close-btn:hover {
+  color: var(--text-primary);
+}
+
+.chat-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-empty-state {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  max-width: 280px;
+}
+
+.chat-empty-state .material-symbols-outlined {
+  font-size: 3rem;
+  opacity: 0.4;
+  margin-bottom: 12px;
+  color: var(--color_button);
+}
+
+.chat-empty-state p {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 0 0 4px 0;
+}
+
+.chat-empty-state .empty-sub {
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.chat-feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chat-bubble-wrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+}
+
+.chat-bubble-wrapper.aprendiz {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.chat-bubble-wrapper.admin,
+.chat-bubble-wrapper.instructor {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.chat-bubble-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.chat-bubble-text-box {
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-primary);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.chat-bubble-text-box p {
+  margin: 0;
+}
+
+.chat-bubble-wrapper.aprendiz .chat-bubble-text-box {
+  background: var(--bg-active);
+  border-color: rgba(26, 77, 46, 0.15);
+  color: var(--text-primary);
+  border-bottom-right-radius: 2px;
+}
+
+.chat-bubble-wrapper.admin .chat-bubble-text-box,
+.chat-bubble-wrapper.instructor .chat-bubble-text-box {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-bottom-left-radius: 2px;
+}
+
+.chat-drawer-footer {
+  padding: 16px 24px 24px;
+  border-top: 1px solid var(--border-primary);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.chat-input {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.chat-input:focus {
+  border-color: var(--color_button);
+}
+
+.btn-send-message {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color_button);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(26, 77, 46, 0.15);
+}
+
+.btn-send-message:hover:not(:disabled) {
+  transform: scale(1.05);
+  filter: brightness(0.95);
+}
+
+.btn-send-message:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--border-primary);
+  box-shadow: none;
+}
+
+/* Transición del Drawer */
+.drawer-enter-active, .drawer-leave-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-enter-active .chat-drawer-content,
+.drawer-leave-active .chat-drawer-content {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-enter-from {
+  opacity: 0;
+}
+
+.drawer-enter-from .chat-drawer-content {
+  transform: translateX(100%);
+}
+
+.drawer-leave-to {
+  opacity: 0;
+}
+
+.drawer-leave-to .chat-drawer-content {
+  transform: translateX(100%);
 }
 
 /* Utility Overrides */

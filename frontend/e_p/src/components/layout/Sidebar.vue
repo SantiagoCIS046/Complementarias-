@@ -21,6 +21,7 @@ const menuItems = computed(() => {
       { name: 'Parámetros Formativos', icon: 'settings', path: '/configuraciones' },
       { name: 'Revisión de Documentos', icon: 'folder_shared', path: '/instructor-dashboard' },
       { name: 'Histórico de Pagos', icon: 'payments', path: '/historico-pagos' },
+      { name: 'Plantillas Oficiales', icon: 'download', path: '/plantillas' },
     ];
   }
 
@@ -34,6 +35,7 @@ const menuItems = computed(() => {
         { name: 'Seguimientos Técnicos', icon: 'engineering', path: '/seguimiento' },
         { name: 'Informe de Horas', icon: 'schedule', path: '/informe-horas' },
         { name: 'Histórico de Pagos', icon: 'payments', path: '/historico-pagos' },
+        { name: 'Plantillas Oficiales', icon: 'download', path: '/plantillas' },
       ];
     }
 
@@ -44,6 +46,7 @@ const menuItems = computed(() => {
         { name: 'Certificación', icon: 'workspace_premium', path: '/certificacion' },
         { name: 'Informe de Horas', icon: 'schedule', path: '/informe-horas' },
         { name: 'Histórico de Pagos', icon: 'payments', path: '/historico-pagos' },
+        { name: 'Plantillas Oficiales', icon: 'download', path: '/plantillas' },
       ];
     }
 
@@ -55,6 +58,7 @@ const menuItems = computed(() => {
       { name: 'Certificación', icon: 'workspace_premium', path: '/certificacion' },
       { name: 'Informe de Horas', icon: 'schedule', path: '/informe-horas' },
       { name: 'Histórico de Pagos', icon: 'payments', path: '/historico-pagos' },
+      { name: 'Plantillas Oficiales', icon: 'download', path: '/plantillas' },
     ];
   }
 
@@ -62,7 +66,8 @@ const menuItems = computed(() => {
     { name: 'Mi Etapa Productiva', icon: 'grid_view', path: '/mi-ep' },
     { name: 'Formalizar EP', icon: 'app_registration', path: '/registro-ep' },
     { name: 'Seguimientos Técnicos', icon: 'assessment', path: '/seguimiento-ep' },
-    { name: 'Certificación Final', icon: 'workspace_premium', path: '/certificacion' }
+    { name: 'Certificación Final', icon: 'workspace_premium', path: '/certificacion' },
+    { name: 'Plantillas Oficiales', icon: 'download', path: '/plantillas' },
   ];
 });
 

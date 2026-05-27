@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { trackingService } from '../services/tracking.service'
+import http from '../../../core/api/http'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
@@ -166,6 +167,7 @@ const toggleHourState = async (hour, stateName) => {
       cobrado: hour.cobrado,
       pendiente: hour.pendiente
     })
+    await fetchAuditLogs()
   } catch (err) {
     console.error('Error updating hour status:', err)
     hour.ejecutado = originalState.ejecutado
@@ -174,6 +176,36 @@ const toggleHourState = async (hour, stateName) => {
   } finally {
     hour.isSaving = false
   }
+}
+
+// ── RF-INS-29: Historial de Acciones de Auditoría ──
+const auditLogs = ref([])
+const isLogsLoading = ref(false)
+
+const fetchAuditLogs = async () => {
+  isLogsLoading.value = true
+  try {
+    const res = await http.get('/users/me/logs')
+    auditLogs.value = res.data.data || []
+  } catch (err) {
+    console.error('Error fetching audit logs:', err)
+  } finally {
+    isLogsLoading.value = false
+  }
+}
+
+const getAuditIcon = (accion) => {
+  if (accion === 'LOGIN') return 'login'
+  if (accion === 'REVISAR_BITACORA') return 'assignment_turned_in'
+  if (accion === 'ACTUALIZAR_ESTADO_HORA') return 'payments'
+  return 'settings'
+}
+
+const getAuditBadgeClass = (accion) => {
+  if (accion === 'LOGIN') return 'badge-login'
+  if (accion === 'REVISAR_BITACORA') return 'badge-bitacora'
+  if (accion === 'ACTUALIZAR_ESTADO_HORA') return 'badge-hours'
+  return 'badge-default'
 }
 
 const formatDate = (dateStr) => {
@@ -188,7 +220,8 @@ const formatDate = (dateStr) => {
 onMounted(async () => {
   await Promise.all([
     fetchApprentices(),
-    fetchAdditionalHours()
+    fetchAdditionalHours(),
+    fetchAuditLogs()
   ])
 })
 
@@ -596,6 +629,59 @@ const getPhaseStyle = (phase) => {
               </table>
             </div>
           </div>
+
+          <!-- RF-INS-29: Historial de Acciones del Instructor (Auditoría) -->
+          <div class="table-container-card mt-8" style="margin-top: 2rem; margin-bottom: 2rem;">
+            <div class="flex items-center justify-between gap-4 mb-4" style="padding: 1.25rem 1.25rem 0.5rem 1.25rem;">
+              <div>
+                <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2" style="margin: 0; font-size: 0.85rem; color: var(--text-primary);">
+                  <span class="material-symbols-outlined text-sena" style="color: var(--color_button); font-size: 1.3rem;">history</span>
+                  Historial de Acciones Recientes (Registro Auditable)
+                </h3>
+                <p class="text-xs text-gray-500 font-medium" style="margin: 2px 0 0; font-size: 0.7rem; color: var(--text-muted);">
+                  Registro auditable inalterable de tus transacciones y actividades más recientes en la plataforma.
+                </p>
+              </div>
+              <button class="btn-primary-sena" @click="fetchAuditLogs" :disabled="isLogsLoading" style="height: 32px; font-size: 0.7rem; padding: 0 10px;">
+                <span class="material-symbols-outlined" :class="{ 'animate-spin': isLogsLoading }" style="font-size: 0.95rem;">sync</span> 
+                {{ isLogsLoading ? 'Cargando...' : 'Sincronizar' }}
+              </button>
+            </div>
+
+            <SkeletonLoader v-if="isLogsLoading" variant="table" :rows="3" :columns="3" />
+            
+            <!-- Sin logs registrados -->
+            <div v-else-if="auditLogs.length === 0" class="text-center" style="padding: 3.5rem 2rem; color: #94a3b8; background: var(--bg-elevated); border-radius: 0 0 14px 14px;">
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 2.5rem; color: var(--text-muted); opacity: 0.6;">receipt_long</span>
+                <p style="font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); margin: 6px 0 2px; letter-spacing: 0.5px; text-transform: uppercase;">SIN ACCIONES REGISTRADAS</p>
+                <p style="font-size: 0.68rem; color: var(--text-muted); max-width: 320px; margin: 0; line-height: 1.4;">Tus actividades de inicio de sesión, revisión de bitácoras y actualización de horas se auditarán automáticamente aquí.</p>
+              </div>
+            </div>
+
+            <!-- Listado de auditoría estilo Timeline moderno -->
+            <div v-else class="audit-timeline-container" style="padding: 0 1.25rem 1.5rem 1.25rem; max-height: 320px; overflow-y: auto;">
+              <div class="audit-timeline">
+                <div v-for="log in auditLogs" :key="log._id" class="audit-timeline-item">
+                  <div class="audit-timeline-badge" :class="getAuditBadgeClass(log.accion)">
+                    <span class="material-symbols-outlined">{{ getAuditIcon(log.accion) }}</span>
+                  </div>
+                  <div class="audit-timeline-content">
+                    <div class="audit-timeline-header">
+                      <span class="audit-action-name">{{ log.accion }}</span>
+                      <span class="audit-time">{{ new Date(log.createdAt).toLocaleString('es-CO') }}</span>
+                    </div>
+                    <p class="audit-detail">{{ log.detalle }}</p>
+                    <div class="audit-metadata">
+                      <span v-if="log.ip">📡 IP: <code>{{ log.ip }}</code></span>
+                      <span v-if="log.entidad">📦 Recurso: <strong>{{ log.entidad }}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </main>
     </div>
@@ -795,6 +881,118 @@ const getPhaseStyle = (phase) => {
   letter-spacing: 0.04em;
   white-space: nowrap;
   text-transform: uppercase;
+}
+
+/* TIMELINE AUDITORIA PREMIUM (RF-INS-29) */
+.audit-timeline-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+}
+
+.audit-timeline {
+  position: relative;
+  padding-left: 2rem;
+  border-left: 2px solid var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.audit-timeline-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  padding: 0.85rem 1.15rem;
+  transition: all 0.2s ease;
+}
+
+.audit-timeline-item:hover {
+  transform: translateX(4px);
+  border-color: var(--color_button);
+  box-shadow: var(--shadow-sm);
+}
+
+.audit-timeline-badge {
+  position: absolute;
+  left: calc(-2rem - 13px);
+  top: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: 2.5px solid var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+}
+
+.audit-timeline-badge .material-symbols-outlined {
+  font-size: 13px !important;
+}
+
+.badge-login { background: #dcfce7; color: #16a34a; border-color: #22c55e; }
+.badge-bitacora { background: #f3e8ff; color: #7c3aed; border-color: #8b5cf6; }
+.badge-hours { background: #eff6ff; color: #2563eb; border-color: #3b82f6; }
+.badge-default { background: #f1f5f9; color: #475569; border-color: #64748b; }
+
+.audit-timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.audit-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.audit-action-name {
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+}
+
+.audit-time {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.audit-detail {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0.15rem 0;
+}
+
+.audit-metadata {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  border-top: 1px dashed var(--border-primary);
+  padding-top: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.audit-metadata code {
+  background: var(--bg-hover);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-family: monospace;
 }
 </style>
 

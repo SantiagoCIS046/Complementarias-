@@ -170,10 +170,59 @@ const getAll = async (req, res) => {
   }
 };
 
+const templateGenerator = require('./templates.generator');
+
+/**
+ * GET /api/documents/templates/download/:type/:format
+ * Descarga las plantillas oficiales (bitácora o seguimiento) en PDF o DOCX.
+ */
+const downloadOfficialTemplate = async (req, res) => {
+  try {
+    const { type, format } = req.params;
+
+    if (!['bitacora', 'seguimiento'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: 'El tipo de plantilla debe ser "bitacora" o "seguimiento".',
+      });
+    }
+
+    if (!['pdf', 'docx'].includes(format)) {
+      return res.status(400).json({
+        success: false,
+        message: 'El formato debe ser "pdf" o "docx".',
+      });
+    }
+
+    const filename = type === 'bitacora' 
+      ? `F-GFPI-023_Plantilla_Bitacora.${format}`
+      : `F-GFPI-024_Plantilla_Seguimiento_Evaluacion.${format}`;
+
+    if (format === 'pdf') {
+      const buffer = await templateGenerator.generarPdf(type);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      return res.send(buffer);
+    } else {
+      const buffer = templateGenerator.generarDoc(type);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      return res.send(buffer);
+    }
+  } catch (error) {
+    console.error('[downloadOfficialTemplate]', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al generar la plantilla oficial: ' + error.message,
+    });
+  }
+};
+
 module.exports = {
   subir,
   uploadToDrive,
   getByStage,
   revisar,
   getAll,
+  downloadOfficialTemplate,
 };

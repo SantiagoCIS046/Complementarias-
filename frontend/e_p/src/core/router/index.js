@@ -123,6 +123,12 @@ const routes = [
     component: () => import('../../modules/operation-tracking-dev3/views/Certifications.vue'),
     meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
   },
+  {
+    path: '/plantillas',
+    name: 'OfficialTemplates',
+    component: () => import('../../modules/operation-tracking-dev3/views/OfficialTemplates.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'INSTRUCTOR', 'APRENDIZ'] },
+  },
 
   {
     // Vista de seguimiento EP — accesible para ver la agenda de visitas

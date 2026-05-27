@@ -32,8 +32,7 @@ router.patch('/:id/toggle-status', checkRole(['ADMIN']),        controller.toggl
 router.post('/reassign-instructor', checkRole(['ADMIN']),       controller.reassignInstructor);
 
 // Rutas accesibles por cualquier usuario autenticado (ver/editar su propio perfil)
-// TODO: implementar controller.getMyLogs
-// router.get('/me/logs', controller.getMyLogs);
+router.get('/me/logs', controller.getMyLogs);
 router.get('/:id',  controller.getById);
 router.put('/:id',  controller.actualizar);
 

@@ -70,19 +70,66 @@ const toggleMes = (key) => {
 }
 const isExpanded = (key) => expandedMeses.value.has(key)
 
-// ── Acción rápida: Marcar como Cobrado ─────────────────────────────
+// ── Control de Horas (Ejecutado / Cobrado) ──────────────────────────
+const findDetalleById = (hourId) => {
+  for (const m of meses.value) {
+    const found = m.detalles.find(d => d.hourId === hourId)
+    if (found) return found
+  }
+  return null
+}
+
+const marcarEjecutado = async (hourId) => {
+  if (isUpdating.value) return
+  isUpdating.value = hourId
+
+  const det = findDetalleById(hourId)
+  let previousEjecutado = false
+  if (det) {
+    previousEjecutado = det.ejecutado
+    det.ejecutado = true
+  }
+
+  try {
+    await http.patch(`/hours/${hourId}/estado`, {
+      ejecutado: true
+    })
+  } catch (err) {
+    if (det) {
+      det.ejecutado = previousEjecutado
+    }
+    alert('Error al actualizar estado: ' + (err.response?.data?.message || err.message))
+  } finally {
+    isUpdating.value = null
+  }
+}
+
 const marcarCobrado = async (hourId) => {
   if (isUpdating.value) return
   isUpdating.value = hourId
+
+  const det = findDetalleById(hourId)
+  let previousCobrado = false
+  let previousPendiente = true
+  if (det) {
+    previousCobrado = det.cobrado
+    previousPendiente = det.pendiente
+    det.cobrado = true
+    det.pendiente = false
+  }
+
   try {
     await http.patch(`/hours/${hourId}/estado`, {
       ejecutado: true,
       cobrado: true,
       pendiente: false
     })
-    // Sincronizar de forma atómica para actualizar KPIs y gráficos
     await fetchData()
   } catch (err) {
+    if (det) {
+      det.cobrado = previousCobrado
+      det.pendiente = previousPendiente
+    }
     alert('Error al actualizar estado: ' + (err.response?.data?.message || err.message))
   } finally {
     isUpdating.value = null
@@ -216,8 +263,7 @@ const calculoPorcentaje = (mesItem) => {
                           <th>Visita N°</th>
                           <th>Fecha Visita</th>
                           <th>Horas</th>
-                          <th>Estado Pago</th>
-                          <th class="text-center">Acciones</th>
+                          <th class="text-center" style="width: 220px;">Control de Pago</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -236,29 +282,38 @@ const calculoPorcentaje = (mesItem) => {
                           </td>
                           <td>{{ fmtDate(det.fecha) }}</td>
                           <td class="font-bold">2.0h</td>
-                          <td>
-                            <span :class="['state-badge', det.cobrado ? 'badge-success' : 'badge-warning']">
-                              {{ det.cobrado ? 'COBRADA' : 'PENDIENTE' }}
-                            </span>
-                          </td>
                           <td class="text-center">
-                            <!-- Botón de acción rápida si el registro está pendiente de pago -->
-                            <button
-                              v-if="!det.cobrado"
-                              :id="'btn-cobrar-' + det.hourId"
-                              class="btn-cobrar-accion"
-                              @click="marcarCobrado(det.hourId)"
-                              :disabled="isUpdating === det.hourId"
-                            >
-                              <span class="material-symbols-outlined icon-btn-sm" :class="{ 'spin': isUpdating === det.hourId }">
-                                {{ isUpdating === det.hourId ? 'sync' : 'paid' }}
-                              </span>
-                              {{ isUpdating === det.hourId ? 'Guardando...' : 'Cobrar' }}
-                            </button>
-                            <span v-else class="text-muted-check">
-                              <span class="material-symbols-outlined check-icon">check_circle</span>
-                              Pagado
-                            </span>
+                            <div class="control-checkbox-group">
+                              <!-- Checkbox Ejecutado -->
+                              <label 
+                                class="checkbox-control"
+                                :class="{ 'disabled': det.cobrado || det.pendiente === false || isUpdating === det.hourId }"
+                              >
+                                <input 
+                                  type="checkbox"
+                                  :id="'chk-ejecutado-' + det.hourId"
+                                  :checked="det.ejecutado"
+                                  :disabled="det.cobrado || det.pendiente === false || isUpdating === det.hourId"
+                                  @change="marcarEjecutado(det.hourId)"
+                                />
+                                <span>Ejecutado</span>
+                              </label>
+
+                              <!-- Checkbox Cobrado -->
+                              <label 
+                                class="checkbox-control"
+                                :class="{ 'disabled': !det.ejecutado || det.cobrado || det.pendiente === false || isUpdating === det.hourId }"
+                              >
+                                <input 
+                                  type="checkbox"
+                                  :id="'chk-cobrado-' + det.hourId"
+                                  :checked="det.cobrado"
+                                  :disabled="!det.ejecutado || det.cobrado || det.pendiente === false || isUpdating === det.hourId"
+                                  @change="marcarCobrado(det.hourId)"
+                                />
+                                <span>Cobrado</span>
+                              </label>
+                            </div>
                           </td>
                         </tr>
                       </tbody>
@@ -391,17 +446,44 @@ const calculoPorcentaje = (mesItem) => {
 
 .text-center { text-align: center; }
 
-/* Botones de acción rápida */
-.btn-cobrar-accion {
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
-  background: #ede9fe; border: 1.5px solid #ddd6fe; border-radius: 8px;
-  padding: 0.3rem 0.75rem; font-size: 0.74rem; font-weight: 700; color: #7c3aed;
-  cursor: pointer; transition: all 0.15s;
+/* Control de Horas Checkboxes Premium */
+.control-checkbox-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
 }
-.btn-cobrar-accion:hover:not(:disabled) { background: #7c3aed; color: #fff; border-color: #7c3aed; }
-.btn-cobrar-accion:disabled { opacity: 0.6; cursor: not-allowed; }
-.icon-btn-sm { font-size: 0.95rem !important; }
 
-.text-muted-check { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700; color: #059669; }
-.check-icon { font-size: 1rem !important; color: #10b981; }
+.checkbox-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #475569;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.checkbox-control:hover:not(.disabled) {
+  color: #7c3aed;
+}
+
+.checkbox-control.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkbox-control input[type="checkbox"] {
+  accent-color: #7c3aed;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.checkbox-control input:disabled {
+  cursor: not-allowed;
+}
 </style>

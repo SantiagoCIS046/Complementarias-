@@ -78,4 +78,11 @@ router.patch(
   controller.revisar
 );
 
+// GET /api/documents/templates/download/:type/:format - Descargar plantillas oficiales (bitácoras o seguimientos)
+router.get(
+  '/templates/download/:type/:format',
+  verifyToken,
+  controller.downloadOfficialTemplate
+);
+
 module.exports = router;

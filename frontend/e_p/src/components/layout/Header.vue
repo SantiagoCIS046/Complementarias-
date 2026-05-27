@@ -107,6 +107,21 @@ const handleMarkResolved = async (id) => {
   await notifStore.markAsResolved(id);
 };
 
+const handleNotificationClick = async (notif) => {
+  if (!notif.leido) {
+    await notifStore.markAsRead(notif._id);
+  }
+  showNotifDropdown.value = false;
+
+  if (notif.referenciaModelo === 'ProductiveStage' && notif.referencia) {
+    if (userRole.value === 'APRENDIZ') {
+      router.push({ path: '/seguimiento-ep', query: { openChat: 'true' } });
+    } else if (userRole.value === 'INSTRUCTOR' || userRole.value === 'ADMIN') {
+      router.push({ path: '/bitacoras', query: { id: notif.referencia, openChat: 'true' } });
+    }
+  }
+};
+
 const closeDropdowns = (e) => {
   // Cerrar dropdowns si se hace click fuera
   if (!e.target.closest('.notification-wrapper') && !e.target.closest('.user-profile-wrapper')) {
@@ -243,7 +258,7 @@ const handleSaveQuickEdit = async () => {
                 <div class="notif-icon-col">
                   <span class="notif-type-icon">{{ getNotifIcon(notif.tipo) }}</span>
                 </div>
-                <div class="notif-content">
+                <div class="notif-content" @click="handleNotificationClick(notif)" style="cursor: pointer;">
                   <p class="notif-msg">{{ notif.mensaje }}</p>
                   <span class="notif-time">{{ timeAgo(notif.createdAt) }}</span>
                 </div>

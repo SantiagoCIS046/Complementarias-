@@ -98,6 +98,21 @@ const revisar = async (req, res) => {
       ...req.body,
       revisadoPor: req.user._id,
     });
+
+    try {
+      const { registrarAuditoria } = require('../../core/utils/audit');
+      await registrarAuditoria({
+        usuarioId: req.user._id,
+        accion: 'REVISAR_BITACORA',
+        entidad: 'Bitacora',
+        entidadId: req.params.id,
+        detalle: `El instructor ${req.user.name || 'N/A'} revisó la bitácora asignándole el estado ${req.body.estado || 'N/A'}.`,
+        ip: req.ip
+      });
+    } catch (auditErr) {
+      console.error('Error registrando auditoría en bitácoras:', auditErr.message);
+    }
+
     res.json({
       success: true,
       data,

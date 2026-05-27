@@ -152,6 +152,21 @@ const reassignInstructor = async (req, res) => {
   }
 };
 
+const getMyLogs = async (req, res) => {
+  try {
+    const data = await service.getMyLogs(req.user._id);
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAll,
   getById,
@@ -159,4 +174,5 @@ module.exports = {
   toggleStatus,
   getFichasSummary,
   reassignInstructor,
+  getMyLogs,
 };

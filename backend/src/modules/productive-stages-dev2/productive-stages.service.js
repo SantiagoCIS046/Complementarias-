@@ -740,6 +740,54 @@ const agregarMensajeChat = async (stageId, { remitente, texto }) => {
   stage.observaciones = (stage.observaciones || '') + `\n[${fechaStr} - ${remitente}] ${texto}`;
 
   await stage.save();
+
+  // --- RF-INS-30: Enviar notificaciones persistentes e inmediatas ---
+  try {
+    const Notification = require('../system-config-dev1/Notification.model');
+    const User = require('../users-dev1/user.model');
+    const apprentice = await User.findById(stage.apprenticeId);
+
+    if (apprentice) {
+      const textoTruncado = texto.length > 60 ? texto.substring(0, 60) + '...' : texto;
+      
+      if (remitente === 'ADMIN' || remitente === 'Instructor') {
+        // Notificar al Aprendiz
+        const remitenteLabel = remitente === 'ADMIN' ? 'El Administrador' : 'El Instructor';
+        await Notification.create({
+          usuario: apprentice._id,
+          mensaje: `${remitenteLabel} ha dejado una observación en tu flujo de Etapa Productiva: "${textoTruncado}"`,
+          tipo: 'INFO',
+          referencia: stage._id,
+          referenciaModelo: 'ProductiveStage'
+        });
+
+        // Si el comentario es de ADMIN, también notificar al Instructor de Seguimiento si existe
+        if (remitente === 'ADMIN' && apprentice.instructorAsignado) {
+          await Notification.create({
+            usuario: apprentice.instructorAsignado,
+            mensaje: `El Administrador ha dejado un comentario en el flujo de ${apprentice.name}: "${textoTruncado}"`,
+            tipo: 'INFO',
+            referencia: stage._id,
+            referenciaModelo: 'ProductiveStage'
+          });
+        }
+      } else if (remitente === 'Aprendiz') {
+        // Notificar al Instructor de Seguimiento
+        if (apprentice.instructorAsignado) {
+          await Notification.create({
+            usuario: apprentice.instructorAsignado,
+            mensaje: `El aprendiz ${apprentice.name} ha dejado un comentario en su flujo de Etapa Productiva: "${textoTruncado}"`,
+            tipo: 'INFO',
+            referencia: stage._id,
+            referenciaModelo: 'ProductiveStage'
+          });
+        }
+      }
+    }
+  } catch (notifErr) {
+    console.error('Error al generar notificación para el chat de flujo:', notifErr.message);
+  }
+
   return stage;
 };
 

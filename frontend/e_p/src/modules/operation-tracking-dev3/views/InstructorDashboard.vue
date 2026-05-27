@@ -994,5 +994,27 @@ const getPhaseStyle = (phase) => {
   border-radius: 4px;
   font-family: monospace;
 }
+
+@media (max-width: 768px) {
+  .dashboard-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .filters-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .filter-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .filter-actions button {
+    flex: 1;
+  }
+  .apprentices-table {
+    min-width: 750px;
+  }
+}
 </style>
 

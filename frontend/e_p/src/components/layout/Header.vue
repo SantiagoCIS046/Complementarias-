@@ -947,7 +947,7 @@ const handleSaveQuickEdit = async () => {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 780px) {
   .notif-dropdown {
     position: fixed;
     top: 52px;

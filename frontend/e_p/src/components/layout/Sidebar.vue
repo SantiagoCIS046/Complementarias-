@@ -1,13 +1,26 @@
 <script setup>
 import { computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../../core/store/auth.store';
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const userRole        = computed(() => authStore.user?.role || 'APRENDIZ');
 const tipoInstructor  = computed(() => authStore.tipoInstructor);
+
+const handleItemClick = (item, navigate) => {
+  if (item.path === '/certificacion' && userRole.value === 'APRENDIZ' && window.innerWidth <= 780) {
+    if (route.path === '/mi-ep') {
+      window.dispatchEvent(new CustomEvent('open-new-bitacora'));
+    } else {
+      router.push({ path: '/mi-ep', query: { openModal: '1' } });
+    }
+  } else {
+    navigate();
+  }
+};
 
 const menuItems = computed(() => {
   const role = userRole.value;
@@ -95,11 +108,11 @@ const handleLogout = () => {
         :key="item.name" 
         :to="item.path" 
         custom 
-        v-slot="{ navigate, isActive }"
+        v-slot="{ href, navigate, isActive }"
       >
-        <button @click="navigate" :class="['nav-item', { active: isActive }]">
+        <a :href="href" @click.prevent="handleItemClick(item, navigate)" :class="['nav-item', { active: isActive }]">
           <span class="material-symbols-outlined">{{ item.icon }}</span> {{ item.name }}
-        </button>
+        </a>
       </router-link>
     </nav>
 

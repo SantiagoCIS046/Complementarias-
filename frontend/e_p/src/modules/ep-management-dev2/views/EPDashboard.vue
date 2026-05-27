@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { epService } from '../services/ep.service'
 import Sidebar from '../../../components/layout/Sidebar.vue'
@@ -206,7 +206,29 @@ async function crearBitacora() {
 
 const handleLogout = () => { authStore.logout(); router.push('/login') }
 
-onMounted(load)
+const handleOpenModal = () => {
+  showModal.value = true
+}
+
+onMounted(async () => {
+  await load()
+  if (router.currentRoute.value.query.openModal === '1') {
+    showModal.value = true
+    router.replace({ path: '/mi-ep', query: {} })
+  }
+  window.addEventListener('open-new-bitacora', handleOpenModal)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('open-new-bitacora', handleOpenModal)
+})
+
+watch(() => router.currentRoute.value.query.openModal, (newVal) => {
+  if (newVal === '1') {
+    showModal.value = true
+    router.replace({ path: '/mi-ep', query: {} })
+  }
+})
 </script>
 
 <template>
@@ -215,10 +237,13 @@ onMounted(load)
 
     <!-- CONTENIDO -->
     <div class="main-wrapper">
-      <Header title="Seguimiento de Aprendiz">
+      <Header title="Mi Etapa Productiva">
         <template #actions>
-          <button v-if="puedeEnviarRevision" @click="enviarRevision" :disabled="enviando" class="btn-new" style="background:#3B82F6">{{ enviando ? 'Enviando...' : 'Enviar a Revisión' }}</button>
-          <button @click="showModal = true" class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
+          <div class="desktop-actions-only">
+            <button v-if="puedeEnviarRevision" @click="enviarRevision" :disabled="enviando" class="btn-new" style="background:#3B82F6">{{ enviando ? 'Enviando...' : 'Enviar a Revisión' }}</button>
+            <button v-else class="btn-new" style="display: none;" disabled>Enviar</button>
+            <button @click="showModal = true" class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
+          </div>
           <div v-if="msgRevision" class="revision-msg-banner" :class="msgRevision.type">{{ msgRevision.text }}</div>
         </template>
       </Header>

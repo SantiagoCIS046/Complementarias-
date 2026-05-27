@@ -440,6 +440,37 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
               </tr>
             </tbody>
           </table>
+          <!-- LISTADO DE TARJETAS PARA MÓVIL (<= 430px) -->
+          <div class="bitacoras-mobile-list" v-if="!loading">
+            <div v-if="filteredBitacoras.length === 0" class="empty-row">
+              No tienes bitácoras que coincidan con la búsqueda.
+            </div>
+            <div v-for="item in paginatedBitacoras" :key="item._id" class="bitacora-mobile-card">
+              <div class="card-header-mobile">
+                <span class="bold">Semana {{ item.semana }}</span>
+                <span class="badge" :class="item.estado === 'APROBADA' ? 'success' : 'pending'">
+                  <span class="dot"></span> {{ item.estado }}
+                </span>
+              </div>
+              <div class="card-body-mobile">
+                <div class="desc-row">
+                  <span class="material-symbols-outlined mini">calendar_today</span>
+                  <span class="desc-text" :title="item.descripcion">{{ item.descripcion }}</span>
+                </div>
+                <div class="footer-row-mobile">
+                  <span class="hours-badge">{{ item.horasReportadas }}h</span>
+                  <div class="actions-mobile">
+                    <button v-if="item.estado === 'APROBADA'" @click="openView(item)" class="action-mobile-btn view" title="Ver Detalle">
+                      <span class="material-symbols-outlined">visibility</span> Ver Detalle
+                    </button>
+                    <button v-else @click="openEdit(item)" class="action-mobile-btn edit" title="Editar Bitácora">
+                      <span class="material-symbols-outlined">edit_square</span> Editar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div v-else style="padding: 24px;">
             <SkeletonLoader variant="table" :rows="4" :columns="5" />
           </div>
@@ -1566,6 +1597,118 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
 }
 [data-theme="dark"] .hours-count {
   background: rgba(255,255,255,0.1);
+}
+
+.bitacoras-mobile-list {
+  display: none;
+}
+
+@media (max-width: 430px) {
+  .bitacora-table {
+    display: none !important;
+  }
+  .bitacoras-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+  .bitacora-mobile-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .bitacora-mobile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  }
+  .card-header-mobile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-primary);
+    padding-bottom: 8px;
+  }
+  .card-header-mobile .bold {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .card-body-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .desc-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    color: var(--text-secondary);
+  }
+  .desc-row .mini {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .desc-text {
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .footer-row-mobile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+  }
+  .actions-mobile {
+    display: flex;
+    gap: 6px;
+  }
+  .action-mobile-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+  .action-mobile-btn.view {
+    color: #16A34A;
+  }
+  .action-mobile-btn.edit {
+    color: #3B82F6;
+  }
+  .action-mobile-btn:hover {
+    background: var(--bg-hover);
+  }
+  .action-mobile-btn .material-symbols-outlined {
+    font-size: 16px;
+  }
+  .table-footer {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 20px;
+    text-align: center;
+  }
 }
 </style>
 

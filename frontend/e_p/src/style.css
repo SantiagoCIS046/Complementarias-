@@ -1038,4 +1038,29 @@ body,
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── Mobile Cellphones (iPhone SE, Small Android, Average Cellphone <= 430px) ── */
+@media (max-width: 430px) {
+  /* Optimize checklist cards for density on narrow screens */
+  .checklist-grid {
+    gap: 8px !important;
+  }
+  .checklist-card {
+    flex: 0 0 92px !important;
+    min-width: 92px !important;
+    min-height: 58px !important;
+    padding: 6px 8px !important;
+  }
+  .checklist-card .status-icon {
+    font-size: 15px !important;
+  }
+  .checklist-card .status-label {
+    font-size: 8px !important;
+  }
+  .checklist-card .hours-count {
+    font-size: 8px !important;
+    padding: 1px 4px !important;
+  }
+}
+
+
 

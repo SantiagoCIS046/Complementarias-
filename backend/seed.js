@@ -20,7 +20,7 @@ async function runSeed() {
   try {
     console.log('🚀 Conectando a MongoDB...');
     await mongoose.connect(MONGO_URI);
-    
+
     // Limpieza
     await User.collection.drop().catch(e => console.log('Colección users ya limpia o inexistente'));
     await Company.collection.drop().catch(e => console.log('Colección companies ya limpia o inexistente'));
@@ -89,8 +89,8 @@ async function runSeed() {
 
     // 4. EMPRESAS (Alineadas con el nuevo modelo de REPFORA)
     const companiesData = [
-      { 
-        razon_social: 'TechSolutions S.A.S.', 
+      {
+        razon_social: 'TechSolutions S.A.S.',
         nit: '900123456-1',
         direccion: 'Calle 10 #15-20, San Gil',
         municipio: 'San Gil',
@@ -99,35 +99,35 @@ async function runSeed() {
         datos_contacto: { telefono: '6077240000', correo_corporativo: 'contacto@techsolutions.com' },
         jefe_inmediato: { nombre_completo: 'Juan Pérez', cargo: 'Director de IT', telefono: '3154445566', correo: 'jperez@techsolutions.com' }
       },
-      { 
-        razon_social: 'Global Logistica Ltda', 
+      {
+        razon_social: 'Global Logistica Ltda',
         nit: '901.442.110-3',
         direccion: 'Av. Industrial 45',
         municipio: 'Bucaramanga',
         estado: 'EN_REVISION'
       },
-      { 
-        razon_social: 'Inversiones Delta', 
+      {
+        razon_social: 'Inversiones Delta',
         nit: '880.992.451-0',
         estado: 'HABILITADA'
       },
-      { 
-        razon_social: 'Constructora Bolívar', 
+      {
+        razon_social: 'Constructora Bolívar',
         nit: '830.005.123-4',
         estado: 'HABILITADA'
       },
-      { 
-        razon_social: 'Servicios Integrales SAS', 
+      {
+        razon_social: 'Servicios Integrales SAS',
         nit: '900.551.442-8',
         estado: 'RECHAZADA'
       },
-      { 
-        razon_social: 'BioMedica Research', 
+      {
+        razon_social: 'BioMedica Research',
         nit: '880.112.990-2',
         estado: 'EN_REVISION'
       },
-      { 
-        razon_social: 'Bancolombia S.A.', 
+      {
+        razon_social: 'Bancolombia S.A.',
         nit: '890.903.938-8',
         estado: 'HABILITADA'
       }
@@ -198,7 +198,7 @@ async function runSeed() {
       estado: 'ACTIVA',
       aprendices_ids: [a2._id]
     });
-    
+
     await Batch.create({
       codigo_ficha: '2800111',
       programa: 'Sistemas',
@@ -215,7 +215,7 @@ async function runSeed() {
     console.log('🔑 ADMIN:      santiagocisneros046@gmail.com / sena2024');
     console.log('🔑 INSTRUCTOR: martin@gmail.com / sena2024');
     console.log('🔑 APRENDIZ:   mancilla@gmail.com / sena2024');
-    
+
     process.exit(0);
   } catch (err) {
     console.error('❌ Error en el seed:', err.message);

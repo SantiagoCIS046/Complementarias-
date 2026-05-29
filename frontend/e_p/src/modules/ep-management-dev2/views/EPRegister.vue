@@ -649,4 +649,45 @@ onMounted(loadData)
 .cert-icon { width: 60px; height: 60px; background: var(--bg-active); color: var(--color_button); border-radius: 16px; display: flex; align-items: center; justify-content: center; }
 .cert-icon span { font-size: 32px; }
 .custom-textarea { width: 100%; background: var(--bg-secondary); border: 2px solid var(--border-primary); border-radius: 16px; padding: 16px; outline: none; min-height: 100px; font-family: inherit; color: var(--text-primary); }
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.top-logo {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--color_button);
+  letter-spacing: 0.5px;
+}
+
+.top-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.tab.active {
+  background: var(--bg-active);
+  color: var(--color_button);
+  border: 1px solid rgba(46, 125, 50, 0.15);
+}
 </style>

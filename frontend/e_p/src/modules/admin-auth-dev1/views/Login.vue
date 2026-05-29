@@ -102,15 +102,7 @@
           </div>
         </div>
 
-        <!-- Mensaje sesión expirada -->
-        <transition name="fade">
-          <div v-if="expiredMsg" class="expired-alert">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="expired-icon">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            {{ expiredMsg }}
-          </div>
-        </transition>
+
 
         <!-- Mensajes Globales -->
         <transition name="fade">
@@ -156,12 +148,7 @@ const showRecovery  = ref(false)
 const loading       = ref(false)
 const errorMsg      = ref('')
 const successMsg    = ref('')
-const expiredMsg    = ref('')
 
-// Detectar si el sistema cerró la sesión automáticamente por inactividad
-if (route.query.expired === '1') {
-  expiredMsg.value = '⏰ Tu sesión expiró por inactividad (1 hora). Por favor inicia sesión nuevamente.'
-}
 
 async function handleLogin() {
   errorMsg.value   = ''
@@ -381,24 +368,5 @@ async function handleRecovery() {
   .left-panel { width: 100%; }
 }
 
-.expired-alert {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  background: #fffbeb;
-  color: #92400e;
-  padding: 12px 14px;
-  border-radius: 10px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  margin-top: 15px;
-  border: 1px solid #fde68a;
-  line-height: 1.5;
-}
-.expired-icon {
-  width: 18px;
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: #d97706;
-}
+
 </style>

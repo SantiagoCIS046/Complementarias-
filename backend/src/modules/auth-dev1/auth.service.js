@@ -96,6 +96,7 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
       email: usuario.email,
       role:  usuario.role,
       tipoInstructor: usuario.tipoInstructor || null,
+      fotoPerfil: usuario.fotoPerfil || null,
     },
     token,
   };
@@ -152,6 +153,7 @@ const login = async ({ email, password }) => {
       role:         usuario.role,
       tipoInstructor: usuario.tipoInstructor || null,
       isFirstLogin: usuario.isFirstLogin,
+      fotoPerfil: usuario.fotoPerfil || null,
     },
     token,
   };

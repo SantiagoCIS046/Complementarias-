@@ -167,6 +167,29 @@ const getMyLogs = async (req, res) => {
   }
 };
 
+/**
+ * PUT /api/users/:id/foto-perfil
+ * Actualiza la foto de perfil del usuario con la imagen Base64 optimizada
+ * (recortada a cuadrado, 400×400, WEBP al 85%).
+ */
+const updateFotoPerfil = async (req, res) => {
+  try {
+    const { base64 } = req.body;
+    const data = await service.actualizarFotoPerfil(req.params.id, base64);
+    res.json({
+      success: true,
+      message: 'Foto de perfil actualizada correctamente.',
+      data,
+    });
+  } catch (error) {
+    const status = error.message.includes('no encontrado') ? 404 : 400;
+    res.status(status).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAll,
   getById,
@@ -175,4 +198,5 @@ module.exports = {
   getFichasSummary,
   reassignInstructor,
   getMyLogs,
+  updateFotoPerfil,
 };

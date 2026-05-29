@@ -6,6 +6,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useAlert } from '../../core/composables/useAlert';
 import { useThemeStore } from '../../core/store/theme.store';
 import SkeletonLoader from '../ui/SkeletonLoader.vue';
+import AvatarDisplay from '../shared/AvatarDisplay.vue';
 import { usersService } from '../../modules/admin-auth-dev1/services/users.service';
 
 const props = defineProps({
@@ -58,6 +59,7 @@ const breadcrumbs = computed(() => {
   return crumbs;
 });
 
+// currentUser ahora es computed para reaccionar a cambios del store (foto de perfil, etc.)
 const currentUser = computed(() => authStore.user || { name: 'Usuario SENA', email: 'usuario@sena.edu.co' });
 const userRole = computed(() => authStore.user?.role || 'Visitante');
 
@@ -69,11 +71,6 @@ const quickEditData = ref({
   name: '',
   email: '',
   telefono: ''
-});
-
-const avatarUrl = computed(() => {
-  const name = encodeURIComponent(currentUser.value.name);
-  return `https://ui-avatars.com/api/?name=${name}&background=2e7d32&color=fff&bold=true`;
 });
 
 // ── Notificaciones ──────────────────────────────────
@@ -300,7 +297,7 @@ const handleSaveQuickEdit = async () => {
         <div class="user-profile" @click.stop="toggleProfileMenu">
           <span class="user-name">{{ currentUser.name }}</span>
           <div class="user-avatar">
-            <img :src="avatarUrl" :alt="currentUser.name">
+            <AvatarDisplay :user="currentUser" size="sm" />
           </div>
         </div>
 
@@ -309,9 +306,16 @@ const handleSaveQuickEdit = async () => {
           <div v-if="showProfileMenu" class="profile-dropdown" @click.stop>
             <div v-if="!showQuickEdit">
               <div class="dropdown-header">
-                <p class="dropdown-user-name">{{ currentUser.name }}</p>
-                <p class="dropdown-user-email">{{ currentUser.email || 'usuario@sena.edu.co' }}</p>
-                <p class="dropdown-user-role">{{ userRole }}</p>
+                <div class="dropdown-avatar-row">
+                  <div class="dropdown-avatar-wrap">
+                    <AvatarDisplay :user="currentUser" size="xs" />
+                  </div>
+                  <div class="dropdown-user-texts">
+                    <p class="dropdown-user-name">{{ currentUser.name }}</p>
+                    <p class="dropdown-user-email">{{ currentUser.email || 'usuario@sena.edu.co' }}</p>
+                    <p class="dropdown-user-role">{{ userRole }}</p>
+                  </div>
+                </div>
               </div>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item" @click="handleViewProfile">
@@ -709,23 +713,51 @@ const handleSaveQuickEdit = async () => {
   padding: 0.75rem 1rem;
 }
 
+.dropdown-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Avatar wrapper: tamaño fijo, NO se estira */
+.dropdown-avatar-wrap {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Columna de texto: ocupa el resto, con overflow oculto */
+.dropdown-user-texts {
+  flex: 1;
+  min-width: 0;
+}
+
 .dropdown-user-name {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 800;
   color: var(--text-primary);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dropdown-user-email {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--text-secondary);
   margin: 2px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dropdown-user-role {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--color_button);
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-weight: 800;
   text-transform: uppercase;
 }

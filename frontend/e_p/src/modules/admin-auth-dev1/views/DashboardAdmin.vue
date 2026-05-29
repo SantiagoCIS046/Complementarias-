@@ -160,7 +160,7 @@
                   <tr v-for="user in users.filter(u => u && u._id)" :key="user._id">
                     <td>
                       <div class="user-cell">
-                        <div v-if="user" class="avatar" :class="getAvatarColor(user.role)">{{ getInitials(user.name) }}</div>
+                        <AvatarDisplay v-if="user" :user="user" size="sm" />
                         <div class="user-info">
                           <p class="u-name">{{ user.name }}</p>
                           <p class="u-email">{{ user.email }}</p>
@@ -668,6 +668,7 @@ import { useNotificationsStore } from '../../../core/store/notifications.store';
 import Sidebar from '../../../components/layout/Sidebar.vue';
 import Header from '../../../components/layout/Header.vue';
 import SkeletonLoader from '../../../components/ui/SkeletonLoader.vue';
+import AvatarDisplay from '../../../components/shared/AvatarDisplay.vue';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';

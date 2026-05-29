@@ -2,11 +2,14 @@
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../../core/store/auth.store';
+import AvatarDisplay from '../shared/AvatarDisplay.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 
+// Reactive so it updates when photo changes
+const currentUser  = computed(() => authStore.user);
 const userRole        = computed(() => authStore.user?.role || 'APRENDIZ');
 const tipoInstructor  = computed(() => authStore.tipoInstructor);
 
@@ -116,7 +119,17 @@ const handleLogout = () => {
       </router-link>
     </nav>
 
+    <!-- Sidebar Footer: mini user card + logout -->
     <div class="sidebar-footer">
+      <router-link to="/perfil" class="sidebar-user-card">
+        <AvatarDisplay :user="currentUser" size="sm" />
+        <div class="sidebar-user-info">
+          <span class="sidebar-user-name">{{ currentUser?.name?.split(' ')[0] }}</span>
+          <span class="sidebar-user-role">{{ currentUser?.role }}</span>
+        </div>
+        <span class="material-symbols-outlined sidebar-profile-icon">chevron_right</span>
+      </router-link>
+
       <button @click="handleLogout" class="nav-item logout-btn">
         <span class="material-symbols-outlined">logout</span> Cerrar Sesión
       </button>
@@ -125,5 +138,56 @@ const handleLogout = () => {
 </template>
 
 <style scoped>
-/* Los estilos del sidebar se han movido globalmente a style.css */
+/* Los estilos globales del sidebar están en style.css */
+
+/* ── Sidebar user card (foto de perfil en sidebar) ── */
+.sidebar-user-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  background: var(--bg-hover, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.06));
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-user-card:hover {
+  background: var(--bg-active, rgba(255,255,255,0.1));
+  border-color: var(--color_button, #2e7d32);
+}
+
+.sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sidebar-user-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--color_button, #4ade80);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.sidebar-profile-icon {
+  font-size: 1rem;
+  color: var(--text-muted, #64748b);
+  flex-shrink: 0;
+}
 </style>

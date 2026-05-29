@@ -35,5 +35,6 @@ router.post('/reassign-instructor', checkRole(['ADMIN']),       controller.reass
 router.get('/me/logs', controller.getMyLogs);
 router.get('/:id',  controller.getById);
 router.put('/:id',  controller.actualizar);
+router.put('/:id/foto-perfil', controller.updateFotoPerfil);
 
 module.exports = router;

@@ -160,7 +160,7 @@ const getAll = async (filtros = {}) => {
   const stages = await ProductiveStage.find(query)
     .populate({
       path: 'apprenticeId',
-      select: 'name email role documento instructorAsignado fechaAsignacionInstructor',
+      select: 'name email role documento instructorAsignado fechaAsignacionInstructor fotoPerfil',
       populate: { path: 'instructorAsignado', select: 'name' }
     })
     .populate('companyId', 'razonSocial nit')
@@ -184,7 +184,7 @@ const getById = async (id) => {
   const stage = await ProductiveStage.findById(id)
     .populate({
       path: 'apprenticeId',
-      select: 'name email role documento ficha modalidades historialInstructores',
+      select: 'name email role documento ficha modalidades historialInstructores fotoPerfil',
       populate: { path: 'historialInstructores.instructorId', select: 'name email' }
     })
     .populate('companyId', 'razonSocial nit jefeInmediato')

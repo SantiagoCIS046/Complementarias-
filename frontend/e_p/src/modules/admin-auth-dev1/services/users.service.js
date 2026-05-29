@@ -41,5 +41,12 @@ export const usersService = {
      * Reasignación masiva de aprendices e instructores
      */
     reassignInstructor: (oldInstructorId, newInstructorId, motivo = '') => 
-        http.post('/users/reassign-instructor', { oldInstructorId, newInstructorId, motivo })
+        http.post('/users/reassign-instructor', { oldInstructorId, newInstructorId, motivo }),
+
+    /**
+     * Actualizar foto de perfil (Base64 optimizada)
+     * @param {string} id     - ID del usuario
+     * @param {string} base64 - Data URI WebP en Base64
+     */
+    updateFotoPerfil: (id, base64) => http.put(`/users/${id}/foto-perfil`, { base64 }),
 }

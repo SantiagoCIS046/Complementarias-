@@ -212,9 +212,10 @@
               <div v-if="selectedBitacora" class="mt-4">
                 <header class="revision-header">
                   <div class="user-profile">
-                    <div class="avatar-large" :style="selectedBitacora.esAdicional ? 'color: #d97706; background: #fffbeb; border: 1px solid #fde68a;' : ''">
-                      {{ selectedBitacora.esAdicional ? '⭐' : getInitials(apprenticeName) }}
+                    <div v-if="selectedBitacora.esAdicional" class="avatar-large" style="color: #d97706; background: #fffbeb; border: 1px solid #fde68a;">
+                      ⭐
                     </div>
+                    <AvatarDisplay v-else :user="stageDetails?.apprenticeId" size="sm" />
                     <div class="profile-info">
                       <h2>{{ apprenticeName }}</h2>
                       <p>Ficha {{ ficha }}</p>
@@ -1020,6 +1021,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
+import AvatarDisplay from '@/components/shared/AvatarDisplay.vue'
 import { bitacoraService } from '../services/bitacora.service'
 import { trackingService } from '../services/tracking.service'
 import { useAuthStore } from '../../../core/store/auth.store'

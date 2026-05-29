@@ -150,6 +150,11 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Foto de Perfil (Base64 optimizado, máx ~150 KB)
+    fotoPerfil: {
+      type: String,
+      default: null,
+    },
     // Recuperación de Contraseña
     resetPasswordToken: {
       type: String,

@@ -7,6 +7,7 @@ import http from '../../../core/api/http'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
+import AvatarDisplay from '@/components/shared/AvatarDisplay.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -92,6 +93,7 @@ const fetchApprentices = async () => {
         doc: item.apprenticeId?.documento || 'S/N',
         name: item.apprenticeId?.name || 'Aprendiz sin nombre',
         initials: (item.apprenticeId?.name || 'A').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
+        fotoPerfil: item.apprenticeId?.fotoPerfil || null,
         avatarColor: '#E6F4EA',
         company: item.companyId?.razonSocial || item.companySnapshot?.razonSocial || item.razonSocial || 'Sin empresa',
         hours: item.horasCompletadas || 0,
@@ -466,7 +468,7 @@ const getPhaseStyle = (phase) => {
                     <tr v-for="app in filteredApprentices" :key="app.id">
                       <td>
                         <div class="user-cell">
-                          <div class="avatar" :style="{ backgroundColor: '#E6F4EA' }">{{ app.initials }}</div>
+                          <AvatarDisplay :user="app" size="sm" />
                           <div class="user-info">
                             <p class="user-name">{{ app.name }}</p>
                             <p class="user-sub">
@@ -566,9 +568,7 @@ const getPhaseStyle = (phase) => {
                   <tr v-for="hour in additionalHours" :key="hour._id">
                     <td>
                       <div class="user-cell">
-                        <div class="avatar" style="background-color: #f3e8ff; color: #7c3aed;">
-                          {{ (hour.apprenticeId?.name || 'A').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() }}
-                        </div>
+                        <AvatarDisplay :user="hour.apprenticeId" size="sm" />
                         <div class="user-info">
                           <p class="user-name">{{ hour.apprenticeId?.name || 'Aprendiz sin nombre' }}</p>
                           <p class="user-sub">Doc: {{ hour.apprenticeId?.documento || 'S/N' }}</p>

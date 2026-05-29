@@ -3,23 +3,29 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../core/store/auth.store';
 import { usersService } from '../services/users.service';
-import { authService } from '../services/auth.service';
+import { useProfilePhoto } from '../../../core/composables/useProfilePhoto';
+import { useAlert } from '../../../core/composables/useAlert';
+import AvatarDisplay from '../../../components/shared/AvatarDisplay.vue';
+import PhotoUploadModal from '../../../components/shared/PhotoUploadModal.vue';
 import Sidebar from '../../../components/layout/Sidebar.vue';
 import Header from '../../../components/layout/Header.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
-const user = authStore.user;
+const { showSuccess, showError } = useAlert();
+
+// El usuario se lee del store de forma reactiva
+const user = computed(() => authStore.user);
 
 const formData = ref({
-  name: user?.name || '',
-  email: user?.email || '',
-  documento: user?.documento || '',
-  ficha: user?.ficha || '',
-  programa: user?.programa || '',
-  telefono: user?.telefono || '',
-  areaConocimiento: user?.areaConocimiento || '',
-  tipoInstructor: user?.tipoInstructor || ''
+  name: user.value?.name || '',
+  email: user.value?.email || '',
+  documento: user.value?.documento || '',
+  ficha: user.value?.ficha || '',
+  programa: user.value?.programa || '',
+  telefono: user.value?.telefono || '',
+  areaConocimiento: user.value?.areaConocimiento || '',
+  tipoInstructor: user.value?.tipoInstructor || ''
 });
 
 const isSubmitting = ref(false);
@@ -30,6 +36,66 @@ const tempEmail = ref('');
 const tempTelefono = ref('');
 const confirmCheck = ref(false);
 
+// ── Foto de perfil ──────────────────────────────────────────────────────────
+const {
+  preview,
+  isProcessing,
+  isUploading,
+  error: photoError,
+  processFile,
+  uploadPhoto,
+  clearPreview,
+} = useProfilePhoto();
+
+/** Referencia al input file oculto */
+const fileInputRef = ref(null);
+
+/** Muestra u oculta el modal de foto */
+const showPhotoModal = ref(false);
+
+/** Abre el selector de archivos del sistema */
+const openFilePicker = () => {
+  fileInputRef.value?.click();
+};
+
+/** Maneja el archivo seleccionado */
+const handleFileSelected = async (event) => {
+  const file = event.target.files?.[0];
+  // Limpiar el input para que el mismo archivo pueda seleccionarse de nuevo
+  event.target.value = '';
+  if (!file) return;
+
+  showPhotoModal.value = true;
+  await processFile(file);
+};
+
+/** Confirma la subida de la foto */
+const handleConfirmPhoto = async () => {
+  const ok = await uploadPhoto();
+  if (ok) {
+    showPhotoModal.value = false;
+    clearPreview();
+    showSuccess('¡Foto actualizada!', 'Tu foto de perfil se guardó correctamente.');
+  } else {
+    showError('Error', photoError.value || 'No se pudo guardar la foto. Intenta de nuevo.');
+  }
+};
+
+/** Cancela el modal de foto */
+const handleCancelPhoto = () => {
+  if (!isProcessing.value && !isUploading.value) {
+    showPhotoModal.value = false;
+    clearPreview();
+  }
+};
+
+/** Permite elegir otra imagen sin cerrar el modal */
+const handleSelectAnother = () => {
+  clearPreview();
+  openFilePicker();
+};
+
+// ── Contacto ────────────────────────────────────────────────────────────────
 const openModal = () => {
   tempEmail.value = formData.value.email;
   tempTelefono.value = formData.value.telefono;
@@ -50,7 +116,7 @@ const saveContactDetails = async () => {
   message.value = { text: '', type: '' };
 
   try {
-    const response = await usersService.update(user._id, {
+    const response = await usersService.update(user.value._id, {
       email: tempEmail.value,
       telefono: tempTelefono.value
     });
@@ -74,12 +140,6 @@ const saveContactDetails = async () => {
     isSubmitting.value = false;
   }
 };
-
-// --- Auxiliares ---
-const getInitials = (name) => {
-  if (!name) return '??';
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-};
 </script>
 
 <template>
@@ -89,159 +149,200 @@ const getInitials = (name) => {
       <Header title="Mi Perfil" />
       <main class="content">
         <div class="profile-container">
-    <div class="profile-card">
-      <div class="profile-header">
-        <div class="avatar-large">
-          {{ getInitials(formData.name) }}
-        </div>
-        <div class="header-info">
-          <h1>Mi Perfil</h1>
-          <p class="role-badge">{{ user?.role }}</p>
-        </div>
-      </div>
+          <div class="profile-card">
+            <div class="profile-header">
 
-      <div class="profile-body">
-        <div class="profile-form">
-          <div class="form-grid">
-            <div class="form-group readonly">
-              <label for="name">Nombre Completo</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">person</span>
-                <input id="name" :value="formData.name" type="text" readonly />
+              <!-- Avatar editable con foto de perfil -->
+              <div class="avatar-wrapper">
+                <AvatarDisplay
+                  :user="user"
+                  size="xl"
+                  :editable="true"
+                  @click="openFilePicker"
+                />
+                <button
+                  class="change-photo-btn"
+                  @click="openFilePicker"
+                  title="Cambiar foto de perfil"
+                >
+                  <span class="material-symbols-outlined">photo_camera</span>
+                  Cambiar Foto
+                </button>
               </div>
-              <small>No se puede cambiar el nombre por seguridad.</small>
-            </div>
 
-            <div class="form-group readonly">
-              <label for="email">Correo Electrónico</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">mail</span>
-                <input id="email" :value="formData.email" type="email" readonly />
-              </div>
-            </div>
-
-            <div class="form-group readonly">
-              <label for="telefono">Teléfono / Celular</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">phone</span>
-                <input id="telefono" :value="formData.telefono" type="text" readonly />
+              <div class="header-info">
+                <h1>Mi Perfil</h1>
+                <p class="role-badge">{{ user?.role }}</p>
+                <p v-if="user?.fotoPerfil" class="photo-status">
+                  <span class="material-symbols-outlined status-icon">verified</span>
+                  Foto de perfil configurada
+                </p>
               </div>
             </div>
 
-            <div class="form-group readonly">
-              <label>Documento de Identidad</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">badge</span>
-                <input :value="formData.documento" type="text" readonly />
-              </div>
-              <small>No se puede cambiar el documento por seguridad.</small>
-            </div>
+            <div class="profile-body">
+              <div class="profile-form">
+                <div class="form-grid">
+                  <div class="form-group readonly">
+                    <label for="name">Nombre Completo</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">person</span>
+                      <input id="name" :value="formData.name" type="text" readonly />
+                    </div>
+                    <small>No se puede cambiar el nombre por seguridad.</small>
+                  </div>
 
-            <div class="form-group readonly">
-              <label>Contraseña</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">lock</span>
-                <input value="••••••••" type="password" readonly />
-              </div>
-              <small>Por seguridad, la contraseña está encriptada.</small>
-            </div>
+                  <div class="form-group readonly">
+                    <label for="email">Correo Electrónico</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">mail</span>
+                      <input id="email" :value="formData.email" type="email" readonly />
+                    </div>
+                  </div>
 
-            <div v-if="user?.role === 'APRENDIZ'" class="form-group readonly">
-              <label>Ficha</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">tag</span>
-                <input :value="formData.ficha" type="text" readonly />
-              </div>
-            </div>
+                  <div class="form-group readonly">
+                    <label for="telefono">Teléfono / Celular</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">phone</span>
+                      <input id="telefono" :value="formData.telefono" type="text" readonly />
+                    </div>
+                  </div>
 
-            <div v-if="user?.role === 'APRENDIZ'" class="form-group readonly">
-              <label>Programa</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">school</span>
-                <input :value="formData.programa" type="text" readonly />
-              </div>
-            </div>
+                  <div class="form-group readonly">
+                    <label>Documento de Identidad</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">badge</span>
+                      <input :value="formData.documento" type="text" readonly />
+                    </div>
+                    <small>No se puede cambiar el documento por seguridad.</small>
+                  </div>
 
-            <div v-if="user?.role === 'INSTRUCTOR'" class="form-group readonly">
-              <label>Área de Conocimiento</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">menu_book</span>
-                <input :value="formData.areaConocimiento" type="text" readonly />
-              </div>
-            </div>
+                  <div class="form-group readonly">
+                    <label>Contraseña</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">lock</span>
+                      <input value="••••••••" type="password" readonly />
+                    </div>
+                    <small>Por seguridad, la contraseña está encriptada.</small>
+                  </div>
 
-            <div v-if="user?.role === 'INSTRUCTOR'" class="form-group readonly">
-              <label>Tipo de Instructor</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">support_agent</span>
-                <input :value="formData.tipoInstructor" type="text" readonly />
+                  <div v-if="user?.role === 'APRENDIZ'" class="form-group readonly">
+                    <label>Ficha</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">tag</span>
+                      <input :value="formData.ficha" type="text" readonly />
+                    </div>
+                  </div>
+
+                  <div v-if="user?.role === 'APRENDIZ'" class="form-group readonly">
+                    <label>Programa</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">school</span>
+                      <input :value="formData.programa" type="text" readonly />
+                    </div>
+                  </div>
+
+                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group readonly">
+                    <label>Área de Conocimiento</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">menu_book</span>
+                      <input :value="formData.areaConocimiento" type="text" readonly />
+                    </div>
+                  </div>
+
+                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group readonly">
+                    <label>Tipo de Instructor</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">support_agent</span>
+                      <input :value="formData.tipoInstructor" type="text" readonly />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions" style="display: flex; gap: 1rem; justify-content: space-between; flex-wrap: wrap; width: 100%;">
+                  <button type="button" class="cancel-btn" @click="router.push('/')">
+                    <span>Volver al Inicio</span>
+                  </button>
+                  <button type="button" class="submit-btn" @click="openModal">
+                    <span>Modificar Datos de Contacto</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="form-actions" style="display: flex; gap: 1rem; justify-content: space-between; flex-wrap: wrap; width: 100%;">
-            <button type="button" class="cancel-btn" @click="router.push('/')">
-              <span>Volver al Inicio</span>
-            </button>
-            <button type="button" class="submit-btn" @click="openModal">
-              <span>Modificar Datos de Contacto</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+          <!-- Modal de Edición de Contacto (RF-APR-14) -->
+          <Transition name="fade">
+            <div v-if="showModal" class="modal-overlay">
+              <div class="modal-card">
+                <div class="modal-header">
+                  <h3>Actualizar Datos de Contacto</h3>
+                  <button class="close-btn" @click="closeModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <div class="form-group">
+                    <label for="modal-email">Nuevo Correo Electrónico</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">mail</span>
+                      <input id="modal-email" v-model="tempEmail" type="email" placeholder="tu@correo.com" required />
+                    </div>
+                  </div>
+                  
+                  <div class="form-group" style="margin-top: 1.5rem;">
+                    <label for="modal-telefono">Nuevo Teléfono / Celular</label>
+                    <div class="input-wrapper">
+                      <span class="material-symbols-outlined">phone</span>
+                      <input id="modal-telefono" v-model="tempTelefono" type="text" placeholder="Número de contacto" />
+                    </div>
+                  </div>
 
-    <!-- Modal de Edición de Contacto (RF-APR-14) -->
-    <Transition name="fade">
-      <div v-if="showModal" class="modal-overlay">
-        <div class="modal-card">
-          <div class="modal-header">
-            <h3>Actualizar Datos de Contacto</h3>
-            <button class="close-btn" @click="closeModal">×</button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label for="modal-email">Nuevo Correo Electrónico</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">mail</span>
-                <input id="modal-email" v-model="tempEmail" type="email" placeholder="tu@correo.com" required />
+                  <div class="confirmation-checkbox" style="margin-top: 1.5rem;">
+                    <label class="checkbox-label">
+                      <input type="checkbox" v-model="confirmCheck" />
+                      <span>Confirmo que deseo actualizar mis datos de contacto.</span>
+                    </label>
+                  </div>
+
+                  <div v-if="message.text" :class="['message', message.type]" style="margin-top: 1.5rem;">
+                    {{ message.text }}
+                  </div>
+                </div>
+                <div class="modal-actions">
+                  <button type="button" class="cancel-btn" @click="closeModal" :disabled="isSubmitting">Cancelar</button>
+                  <button type="button" class="save-btn" :disabled="isSubmitting || !confirmCheck" @click="saveContactDetails">
+                    <span v-if="!isSubmitting">Guardar</span>
+                    <span v-else class="loader"></span>
+                  </button>
+                </div>
               </div>
             </div>
-            
-            <div class="form-group" style="margin-top: 1.5rem;">
-              <label for="modal-telefono">Nuevo Teléfono / Celular</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined">phone</span>
-                <input id="modal-telefono" v-model="tempTelefono" type="text" placeholder="Número de contacto" />
-              </div>
-            </div>
-
-            <div class="confirmation-checkbox" style="margin-top: 1.5rem;">
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="confirmCheck" />
-                <span>Confirmo que deseo actualizar mis datos de contacto.</span>
-              </label>
-            </div>
-
-            <div v-if="message.text" :class="['message', message.type]" style="margin-top: 1.5rem;">
-              {{ message.text }}
-            </div>
-          </div>
-          <div class="modal-actions">
-            <button type="button" class="cancel-btn" @click="closeModal" :disabled="isSubmitting">Cancelar</button>
-            <button type="button" class="save-btn" :disabled="isSubmitting || !confirmCheck" @click="saveContactDetails">
-              <span v-if="!isSubmitting">Guardar</span>
-              <span v-else class="loader"></span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
+          </Transition>
 
         </div>
       </main>
     </div>
   </div>
+
+  <!-- Input de archivo oculto -->
+  <input
+    ref="fileInputRef"
+    type="file"
+    accept="image/jpeg,image/jpg,image/png,image/webp"
+    style="display: none;"
+    @change="handleFileSelected"
+  />
+
+  <!-- Modal de foto de perfil -->
+  <PhotoUploadModal
+    v-if="showPhotoModal"
+    :preview="preview"
+    :is-processing="isProcessing"
+    :is-uploading="isUploading"
+    :error="photoError"
+    @confirm="handleConfirmPhoto"
+    @cancel="handleCancelPhoto"
+    @select="handleSelectAnother"
+  />
 </template>
 
 <style scoped>
@@ -271,6 +372,7 @@ const getInitials = (name) => {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Profile Header ── */
 .profile-header {
   background: linear-gradient(135deg, var(--color_button, #2e7d32) 0%, #1b5e20 100%);
   padding: 3rem 2rem;
@@ -280,19 +382,36 @@ const getInitials = (name) => {
   color: white;
 }
 
-.avatar-large {
-  width: 100px;
-  height: 100px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
+.avatar-wrapper {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  font-weight: 800;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Botón "Cambiar Foto" bajo el avatar */
+.change-photo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.change-photo-btn .material-symbols-outlined { font-size: 0.9rem; }
+.change-photo-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
 }
 
 .header-info h1 {
@@ -315,6 +434,18 @@ const getInitials = (name) => {
   color: white;
 }
 
+.photo-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+.status-icon { font-size: 0.9rem; color: #86efac; }
+
+/* ── Profile Body ── */
 .profile-body {
   padding: 3rem 2rem;
 }
@@ -458,27 +589,17 @@ const getInitials = (name) => {
 }
 
 @media (max-width: 640px) {
-  .profile-container {
-    padding: 1rem;
-  }
+  .profile-container { padding: 1rem; }
   .profile-header {
     flex-direction: column;
     text-align: center;
     padding: 2rem 1rem;
   }
-  .avatar-large {
-    width: 80px;
-    height: 80px;
-    font-size: 2rem;
-  }
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-  .submit-btn {
-    width: 100%;
-  }
+  .form-grid { grid-template-columns: 1fr; }
+  .submit-btn { width: 100%; }
 }
 
+/* ── Contact Modal ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -508,7 +629,6 @@ const getInitials = (name) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: none;
 }
 
 .modal-header h3 {
@@ -527,14 +647,9 @@ const getInitials = (name) => {
   line-height: 1;
 }
 
-.modal-body {
-  padding: 2rem 1.5rem;
-}
+.modal-body { padding: 2rem 1.5rem; }
 
-.confirmation-checkbox {
-  display: flex;
-  align-items: center;
-}
+.confirmation-checkbox { display: flex; align-items: center; }
 
 .checkbox-label {
   display: flex;
@@ -572,10 +687,7 @@ const getInitials = (name) => {
   cursor: pointer;
   transition: all 0.2s;
 }
-
-.cancel-btn:hover:not(:disabled) {
-  background: var(--bg-active);
-}
+.cancel-btn:hover:not(:disabled) { background: var(--bg-active); }
 
 .save-btn {
   background: var(--color_button, #2e7d32);
@@ -591,35 +703,10 @@ const getInitials = (name) => {
   justify-content: center;
   min-width: 100px;
 }
+.save-btn:hover:not(:disabled) { background: #1b5e20; }
+.save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.save-btn:hover:not(:disabled) {
-  background: #1b5e20;
-}
-
-.save-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.requirements {
-  margin-top: 10px;
-  background: var(--bg-secondary);
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  text-align: left;
-  border: 1px solid var(--border-primary);
-}
-
-.requirements p {
-  margin: 4px 0;
-  color: var(--text-muted);
-  font-weight: 500;
-  transition: color 0.2s;
-}
-
-.requirements p.met {
-  color: #16a34a;
-  font-weight: 700;
-}
+/* Fade transition */
+.fade-enter-active { animation: fadeIn 0.25s ease; }
+.fade-leave-active { animation: fadeIn 0.15s ease reverse; }
 </style>

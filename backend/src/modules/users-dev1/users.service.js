@@ -551,6 +551,36 @@ const getMyLogs = async (userId) => {
 };
 
 /**
+ * Actualizar la foto de perfil de un usuario.
+ * Solo almacena el Base64 optimizado enviado por el cliente.
+ * @param {string} id         - ID del usuario
+ * @param {string} base64     - Data URI en formato data:image/webp;base64,...
+ */
+const actualizarFotoPerfil = async (id, base64) => {
+  if (!base64 || typeof base64 !== 'string') {
+    throw new Error('La imagen enviada no es válida.');
+  }
+  // Validar que sea un data URI válido (webp, png o jpeg)
+  if (!base64.startsWith('data:image/')) {
+    throw new Error('Formato de imagen no soportado. Usa WEBP, PNG o JPEG.');
+  }
+  // Limitar tamaño en el servidor (~200 KB en Base64 ≈ 150 KB binario)
+  const MAX_BASE64_BYTES = 270_000; // ~200 KB base64
+  if (Buffer.byteLength(base64, 'utf8') > MAX_BASE64_BYTES) {
+    throw new Error('La imagen optimizada supera el límite máximo permitido.');
+  }
+
+  const usuario = await User.findByIdAndUpdate(
+    id,
+    { fotoPerfil: base64 },
+    { new: true, runValidators: false }
+  );
+
+  if (!usuario) throw new Error('Usuario no encontrado.');
+  return usuario;
+};
+
+/**
  * Obtener control de horas para todos los instructores
  */
 const getInstructorsHours = async () => {
@@ -739,4 +769,5 @@ module.exports = {
   getMyLogs,
   getInstructorsHours,
   payInstructorsHours,
+  actualizarFotoPerfil,
 };

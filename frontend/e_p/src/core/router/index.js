@@ -76,6 +76,19 @@ const routes = [
     component: () => import('../../modules/admin-auth-dev1/views/ResetMandatory.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/perfil',
+    name: 'Profile',
+    component: () => import('../../modules/admin-auth-dev1/views/ProfileView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/cambiar-clave',
+    name: 'ChangePassword',
+    component: () => import('../../modules/admin-auth-dev1/views/ChangePassword.vue'),
+    meta: { requiresAuth: true },
+  },
+
 
   // ── 🔵 DEV 2: EP Management ─────────────────────────
   {

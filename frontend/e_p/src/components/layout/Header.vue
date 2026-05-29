@@ -178,7 +178,7 @@ const handleLogout = () => {
 
 const handleChangePassword = () => {
   showProfileMenu.value = false;
-  router.push('/perfil');
+  router.push('/cambiar-clave');
 };
 
 const handleViewProfile = () => {

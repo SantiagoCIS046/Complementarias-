@@ -1362,12 +1362,6 @@ const handleLogout = () => {
 }
 .head-premium .head-info h2 { font-size: 1.1rem; font-weight: 800; margin: 0 0 4px 0; }
 .head-premium .head-info .u-email { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
-.modal-close-premium {
-  background: none; border: none; font-size: 1.4rem;
-  color: var(--text-muted); cursor: pointer; line-height: 1;
-  padding: 2px 6px; border-radius: 6px; transition: 0.2s;
-}
-.modal-close-premium:hover { color: var(--text-primary); background: var(--bg-hover); }
 .modal-body-scroll {
   flex: 1;
   overflow-y: auto;

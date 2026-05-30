@@ -880,14 +880,7 @@ body,
   }
 
   .topbar-actions .user-profile-wrapper {
-    display: block !important;
-  }
-
-  .topbar-actions .user-profile {
-    display: flex !important;
-    flex-direction: row-reverse !important;
-    align-items: center !important;
-    gap: 8px !important;
+    display: none !important;
   }
 
   .topbar-actions .user-avatar {

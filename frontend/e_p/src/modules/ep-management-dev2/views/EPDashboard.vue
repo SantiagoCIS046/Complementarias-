@@ -189,7 +189,13 @@ async function enviarRevision() {
     await load()
   } catch (e) {
     msgRevision.value = { type: 'err', text: e.response?.data?.message || 'Error al enviar.' }
-  } finally { enviando.value = false }
+  } finally { 
+    enviando.value = false 
+    // Auto-hide alert after 15 seconds
+    setTimeout(() => {
+      msgRevision.value = null
+    }, 15000)
+  }
 }
 
 async function crearBitacora() {
@@ -244,11 +250,17 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
             <button v-else class="btn-new" style="display: none;" disabled>Enviar</button>
             <button @click="showModal = true" class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
           </div>
-          <div v-if="msgRevision" class="revision-msg-banner" :class="msgRevision.type">{{ msgRevision.text }}</div>
         </template>
       </Header>
 
       <main class="content">
+        <!-- Banner de mensaje de revisión (auto-ocultable y sutil) -->
+        <transition name="toast">
+          <div v-if="msgRevision" class="revision-msg-banner" :class="[msgRevision.type, { 'marquee-mode': msgRevision.text.length > 40 }]">
+            <span :class="{ 'marquee-text': msgRevision.text.length > 40 }">{{ msgRevision.text }}</span>
+          </div>
+        </transition>
+
         <!-- SECCIÓN INFO + PROGRESO INTEGRADO -->
         <div class="info-grid">
           <div class="company-card">
@@ -941,27 +953,67 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
 
 /* --- Revision Message Banner --- */
 .revision-msg-banner {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 8px;
-  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  display: block;
+  text-align: center;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  position: relative;
+}
+.revision-msg-banner::-webkit-scrollbar {
+  display: none;
+}
+.revision-msg-banner.marquee-mode {
+  text-align: left;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+.revision-msg-banner .marquee-text {
+  display: inline-block;
+  padding-left: 100%;
+  animation: marquee-scroll 15s linear infinite;
+  flex-shrink: 0;
+}
+.revision-msg-banner:hover .marquee-text {
+  animation-play-state: paused;
+}
+@keyframes marquee-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
 }
 .revision-msg-banner.ok {
-  background: #F0FDF4;
+  background: transparent;
   color: #16A34A;
+  border: 1px solid rgba(22, 163, 74, 0.2);
 }
 .revision-msg-banner.err {
-  background: #FFF1F2;
+  background: transparent;
   color: #E11D48;
+  border: 1px solid rgba(225, 29, 72, 0.2);
 }
 [data-theme="dark"] .revision-msg-banner.ok {
-  background: rgba(22, 163, 74, 0.15);
+  background: transparent;
   color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
 }
 [data-theme="dark"] .revision-msg-banner.err {
-  background: rgba(225, 29, 72, 0.15);
+  background: transparent;
   color: #fda4af;
+  border: 1px solid rgba(253, 164, 175, 0.3);
 }
 
 /* --- Search Bar --- */
@@ -1445,14 +1497,24 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
 
 @media (max-width: 1024px) {
   .checklist-grid {
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    gap: 10px;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+    width: 100%;
+    grid-template-columns: none;
+  }
+
+  .checklist-grid::-webkit-scrollbar {
+    display: none;
   }
 }
 
 @media (max-width: 768px) {
-  .checklist-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .checklist-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1474,6 +1536,24 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
   border: 1px dashed var(--color-gray-400);
   background: transparent;
   cursor: default;
+}
+
+@media (max-width: 1024px) {
+  .checklist-card {
+    flex: 0 0 130px;
+    min-width: 130px;
+    max-width: 130px;
+  }
+}
+
+@media (max-width: 768px) {
+  .checklist-card {
+    flex: 0 0 110px;
+    min-width: 110px;
+    max-width: 110px;
+    min-height: 64px;
+    padding: 8px 10px;
+  }
 }
 
 .checklist-card.is-clickable {

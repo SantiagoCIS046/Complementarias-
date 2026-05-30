@@ -215,6 +215,15 @@ const handleSaveQuickEdit = async () => {
       <!-- Slot for custom actions per view -->
       <slot name="actions"></slot>
       
+      <!-- Botón de Salir para Móvil/Tablet en el centro del header -->
+      <button 
+        class="header-logout-btn mobile-only-inline" 
+        @click="handleLogout"
+        title="Cerrar Sesión"
+      >
+        <span class="material-symbols-outlined">logout</span>
+      </button>
+      
       <div class="divider"></div>
 
       <!-- ═══ Campanita de Notificaciones (Interactiva) ═══ -->
@@ -437,6 +446,30 @@ const handleSaveQuickEdit = async () => {
 .notification-bell:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.header-logout-btn {
+  display: none; /* Solo visible en móvil */
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--text-muted);
+}
+
+@media (max-width: 780px) {
+  .header-logout-btn {
+    display: inline-flex;
+  }
+}
+
+.header-logout-btn:hover {
+  background: var(--bg-hover);
+  color: #ef4444;
 }
 
 .notification-bell.has-unread {
@@ -990,10 +1023,11 @@ const handleSaveQuickEdit = async () => {
     border-radius: 12px;
   }
   .profile-dropdown {
-    position: fixed;
-    top: 52px;
-    right: 8px;
-    width: 220px;
+    position: absolute;
+    top: calc(100% + 12px);
+    left: -16px;
+    right: auto;
+    width: 240px;
   }
 }
 
@@ -1012,8 +1046,10 @@ const handleSaveQuickEdit = async () => {
     font-size: 0.75rem;
   }
   .profile-dropdown {
-    top: 48px;
-    right: 4px;
+    top: calc(100% + 10px);
+    left: -16px;
+    right: auto;
+    width: 230px;
   }
 }
 </style>

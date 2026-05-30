@@ -127,7 +127,6 @@ const handleLogout = () => {
           <span class="sidebar-user-name">{{ currentUser?.name?.split(' ')[0] }}</span>
           <span class="sidebar-user-role">{{ currentUser?.role }}</span>
         </div>
-        <span class="material-symbols-outlined sidebar-profile-icon">chevron_right</span>
       </router-link>
 
       <button @click="handleLogout" class="nav-item logout-btn">

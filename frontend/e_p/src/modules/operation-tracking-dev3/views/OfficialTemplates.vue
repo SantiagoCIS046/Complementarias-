@@ -477,4 +477,69 @@ const descargarPlantilla = async (type, format) => {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* ── Dark Mode Overrides (cards only) ── */
+[data-theme="dark"] .glass-card {
+  background: rgba(26, 31, 46, 0.92);
+  border-color: #2d3748;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .template-card:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  border-color: rgba(124, 58, 237, 0.4);
+}
+
+[data-theme="dark"] .card-title  { color: #f1f5f9; }
+[data-theme="dark"] .card-text   { color: #94a3b8; }
+
+[data-theme="dark"] .form-code-badge {
+  background: #1e2535;
+  color: #9ca3af;
+  border: 1px solid #374151;
+}
+
+[data-theme="dark"] .icon-violet {
+  background: #2e235a;
+  color: #a78bfa;
+}
+[data-theme="dark"] .icon-emerald {
+  background: #0f3222;
+  color: #34d399;
+}
+
+[data-theme="dark"] .feature-item       { color: #d1d5db; }
+[data-theme="dark"] .feature-item .f-icon { color: #34d399; }
+
+[data-theme="dark"] .btn-word {
+  background: #0f1f3a;
+  border-color: #1e3a6e;
+  color: #60a5fa;
+}
+[data-theme="dark"] .btn-word:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+[data-theme="dark"] .btn-pdf {
+  background: #2d1010;
+  border-color: #5b1a1a;
+  color: #f87171;
+}
+[data-theme="dark"] .btn-pdf:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+}
+
+[data-theme="dark"] .sena-alert-banner {
+  background: rgba(5, 40, 25, 0.6);
+  border-color: #059669;
+}
+[data-theme="dark"] .alert-banner-text h4 { color: #34d399; }
+[data-theme="dark"] .alert-banner-text p  { color: #6ee7b7; }
+[data-theme="dark"] .alert-banner-icon    { color: #34d399; }
 </style>

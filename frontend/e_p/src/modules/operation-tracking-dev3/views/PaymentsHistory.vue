@@ -486,4 +486,103 @@ const calculoPorcentaje = (mesItem) => {
 .checkbox-control input:disabled {
   cursor: not-allowed;
 }
+
+/* ── Dark Mode Overrides (cards only) ── */
+[data-theme="dark"] .kpi-card {
+  background: #1e2535;
+  border-color: #2d3748;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+[data-theme="dark"] .kpi-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .kpi-cobradas {
+  background: linear-gradient(135deg, #1e2535, #221c3a);
+  border-color: #3d2f6b;
+}
+[data-theme="dark"] .kpi-pendientes {
+  background: linear-gradient(135deg, #1e2535, #2a1f18);
+  border-color: #5a3a1a;
+}
+[data-theme="dark"] .kpi-visitas {
+  background: linear-gradient(135deg, #1e2535, #17291f);
+  border-color: #1a4731;
+}
+
+[data-theme="dark"] .kpi-cobradas .kpi-icon-wrap { background: #2e235a; color: #a78bfa; }
+[data-theme="dark"] .kpi-pendientes .kpi-icon-wrap { background: #3b2010; color: #fb923c; }
+[data-theme="dark"] .kpi-visitas .kpi-icon-wrap   { background: #0f3222; color: #34d399; }
+
+[data-theme="dark"] .kpi-value  { color: #f1f5f9; }
+[data-theme="dark"] .kpi-label  { color: #94a3b8; }
+[data-theme="dark"] .kpi-unit   { color: #94a3b8; }
+
+[data-theme="dark"] .history-card {
+  background: #1a1f2e;
+  border-color: #2d3748;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .mes-block {
+  border-bottom-color: #2d3748;
+}
+
+[data-theme="dark"] .mes-header {
+  background: #1a1f2e;
+}
+[data-theme="dark"] .mes-header:hover {
+  background: #1e2535;
+}
+[data-theme="dark"] .mes-header.expanded {
+  background: #1e1a35;
+  border-left-color: #7c3aed;
+}
+
+[data-theme="dark"] .mes-nombre { color: #f1f5f9; }
+[data-theme="dark"] .expand-chevron { color: #6b7280; }
+[data-theme="dark"] .expand-chevron.rotated { color: #a78bfa; }
+
+[data-theme="dark"] .progress-bar-container { background: #374151; }
+[data-theme="dark"] .progress-percent { color: #a78bfa; }
+
+[data-theme="dark"] .badge-cobradas   { background: #2e235a; color: #c4b5fd; }
+[data-theme="dark"] .badge-pendientes { background: #3b2010; color: #fb923c; }
+
+[data-theme="dark"] .mes-body {
+  background: #151a27;
+  border-top-color: #2d3748;
+}
+
+[data-theme="dark"] .desglose-table th {
+  background: #1e2535;
+  color: #94a3b8;
+  border-bottom-color: #374151;
+}
+[data-theme="dark"] .desglose-table td {
+  background: #1a1f2e;
+  color: #d1d5db;
+  border-bottom-color: #242b3d;
+}
+[data-theme="dark"] .desglose-table tbody tr:hover td {
+  background: #1e2535;
+}
+
+[data-theme="dark"] .user-info-cell .name     { color: #f1f5f9; }
+[data-theme="dark"] .user-info-cell .document { color: #6b7280; }
+
+[data-theme="dark"] .ficha-badge   { background: #0c2a3d; color: #38bdf8; }
+[data-theme="dark"] .visita-badge  { background: #2e235a; color: #c4b5fd; }
+
+[data-theme="dark"] .state-container { color: #6b7280; }
+[data-theme="dark"] .empty-title     { color: #9ca3af; }
+
+[data-theme="dark"] .admin-filter-group {
+  background: #1e2535;
+  border-color: #374151;
+}
+[data-theme="dark"] .premium-select { color: #f1f5f9; }
+[data-theme="dark"] .admin-filter-group .filter-icon { color: #9ca3af; }
+
+[data-theme="dark"] .checkbox-control       { color: #9ca3af; }
+[data-theme="dark"] .checkbox-control:hover:not(.disabled) { color: #c4b5fd; }
 </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../core/store/auth.store';
 import { usersService } from '../services/users.service';
@@ -26,6 +26,33 @@ const formData = ref({
   telefono: user.value?.telefono || '',
   areaConocimiento: user.value?.areaConocimiento || '',
   tipoInstructor: user.value?.tipoInstructor || ''
+});
+
+// Sincronizar formData con cambios del usuario (del store o de peticiones)
+watch(user, (newUser) => {
+  if (newUser) {
+    formData.value.name = newUser.name || '';
+    formData.value.email = newUser.email || '';
+    formData.value.documento = newUser.documento || '';
+    formData.value.ficha = newUser.ficha || '';
+    formData.value.programa = newUser.programa || '';
+    formData.value.telefono = newUser.telefono || '';
+    formData.value.areaConocimiento = newUser.areaConocimiento || '';
+    formData.value.tipoInstructor = newUser.tipoInstructor || '';
+  }
+}, { immediate: true });
+
+onMounted(async () => {
+  if (user.value?._id) {
+    try {
+      const res = await usersService.getById(user.value._id);
+      if (res.data && res.data.success && res.data.data) {
+        authStore.updateUser(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error al obtener los datos actualizados del perfil:', err);
+    }
+  }
 });
 
 const isSubmitting = ref(false);

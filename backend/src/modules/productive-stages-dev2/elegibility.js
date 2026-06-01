@@ -9,17 +9,30 @@
 // =============================================
 
 const ProductiveStage = require('./productive-stage.model');
+const User = require('../users-dev1/user.model');
 
 // Plazo máximo en días para registrar la EP después de la etapa lectiva
 const PLAZO_MAXIMO_DIAS = 30;
 
 /**
  * Verifica si un aprendiz es elegible para registrar su EP.
- * @param {Object} aprendiz - Objeto del usuario aprendiz
- * @param {Date}   aprendiz.fechaFinLectiva - Fecha de fin de etapa lectiva
+ * @param {Object} aprendizInput - Objeto del usuario aprendiz
+ * @param {Date}   [aprendizInput.fechaFinLectiva] - Fecha de fin de etapa lectiva
  * @returns {Object} { elegible: boolean, mensaje: string, diasRestantes?: number }
  */
-const verificarElegibilidad = async (aprendiz) => {
+const verificarElegibilidad = async (aprendizInput) => {
+  let aprendiz = aprendizInput;
+  if (aprendizInput && aprendizInput._id) {
+    try {
+      const dbUser = await User.findById(aprendizInput._id);
+      if (dbUser) {
+        aprendiz = dbUser;
+      }
+    } catch (err) {
+      // Ignorar error de base de datos en tests
+    }
+  }
+
   // 1. Verificar que el aprendiz tenga rol correcto
   if (aprendiz.role !== 'APRENDIZ') {
     return {

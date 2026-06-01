@@ -241,11 +241,16 @@
           </div>
           <div v-if="editModal.data.role === 'APRENDIZ'" class="field-sm">
             <label>Ficha</label>
-            <input v-model="editModal.data.ficha" />
+            <select v-model="editModal.data.ficha" @change="onEditFichaChange">
+              <option value="">Seleccione una ficha...</option>
+              <option v-for="f in activeFichas" :key="f._id" :value="f.codigo_ficha">
+                {{ f.codigo_ficha }} - {{ f.programa }}
+              </option>
+            </select>
           </div>
           <div v-if="editModal.data.role === 'APRENDIZ'" class="field-sm">
             <label>Programa</label>
-            <input v-model="editModal.data.programa" />
+            <input v-model="editModal.data.programa" readonly style="background: var(--bg-secondary); cursor: not-allowed; opacity: 0.8;" />
           </div>
           <div class="field-sm">
             <label>Documento</label>
@@ -590,11 +595,16 @@
             <div class="form-grid-2">
               <div class="field-group">
                 <label class="label-premium">Ficha #</label>
-                <input type="text" v-model="newUserForm.ficha" placeholder="Ej: 2670687" class="input-premium" />
+                <select v-model="newUserForm.ficha" @change="onNewUserFichaChange" class="select-premium">
+                  <option value="">Seleccione una ficha...</option>
+                  <option v-for="f in activeFichas" :key="f._id" :value="f.codigo_ficha">
+                    {{ f.codigo_ficha }} - {{ f.programa }}
+                  </option>
+                </select>
               </div>
               <div class="field-group">
                 <label class="label-premium">Programa de Formación</label>
-                <input type="text" v-model="newUserForm.programa" placeholder="Ej: ADSO" class="input-premium" />
+                <input type="text" v-model="newUserForm.programa" placeholder="Ej: ADSO" class="input-premium" readonly style="background: var(--bg-secondary); cursor: not-allowed; opacity: 0.8;" />
               </div>
             </div>
           </div>
@@ -663,6 +673,7 @@ import { useAuthStore } from '../../../core/store/auth.store';
 import { useUiStore } from '../../../core/store/ui.store';
 import { usersService } from '../services/users.service';
 import { authService } from '../services/auth.service';
+import { batchesService } from '../services/batches.service';
 import { notificationsService } from '../services/notifications.service';
 import { useNotificationsStore } from '../../../core/store/notifications.store';
 import Sidebar from '../../../components/layout/Sidebar.vue';
@@ -819,6 +830,34 @@ const selectedInstructor = ref(null);
 const newInstructorId = ref('');
 const reassignMotivo = ref('');
 const allInstructors = ref([]);
+const activeFichas = ref([]);
+
+const fetchActiveFichas = async () => {
+  try {
+    const res = await batchesService.getAll();
+    activeFichas.value = res.data?.data || res.data || [];
+  } catch (err) {
+    console.error('Error cargando las fichas en el sistema:', err);
+  }
+};
+
+const onEditFichaChange = () => {
+  const selected = activeFichas.value.find(f => f.codigo_ficha === editModal.value.data.ficha);
+  if (selected) {
+    editModal.value.data.programa = selected.programa;
+  } else {
+    editModal.value.data.programa = '';
+  }
+};
+
+const onNewUserFichaChange = () => {
+  const selected = activeFichas.value.find(f => f.codigo_ficha === newUserForm.value.ficha);
+  if (selected) {
+    newUserForm.value.programa = selected.programa;
+  } else {
+    newUserForm.value.programa = '';
+  }
+};
 
 const fetchAllInstructors = async () => {
   try {
@@ -954,6 +993,7 @@ onMounted(() => {
   fetchUsers();
   fetchStats();
   fetchAllInstructors();
+  fetchActiveFichas();
 });
 
 // ── Filtros & Paginación ─────────────────────────────

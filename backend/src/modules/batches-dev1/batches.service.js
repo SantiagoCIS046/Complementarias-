@@ -86,8 +86,23 @@ const getAprendices = async (batchId) => {
  * Crear una nueva ficha.
  */
 const crear = async (data) => {
-  const existe = await Batch.findOne({ codigo_ficha: data.codigo_ficha });
-  if (existe) throw new Error('Ya existe una ficha con el código: ' + data.codigo_ficha);
+  // Validar código de ficha duplicado
+  if (data.codigo_ficha) {
+    const existeFicha = await Batch.findOne({ codigo_ficha: data.codigo_ficha });
+    if (existeFicha) {
+      throw new Error('Ya existe una ficha registrada con el código: ' + data.codigo_ficha);
+    }
+  }
+
+  // Validar nombre de programa duplicado (insensible a mayúsculas/minúsculas)
+  if (data.programa) {
+    const existePrograma = await Batch.findOne({
+      programa: { $regex: new RegExp('^' + data.programa.trim() + '$', 'i') }
+    });
+    if (existePrograma) {
+      throw new Error('Ya existe un programa de formación registrado con el nombre: ' + data.programa);
+    }
+  }
   
   return await Batch.create(data);
 };

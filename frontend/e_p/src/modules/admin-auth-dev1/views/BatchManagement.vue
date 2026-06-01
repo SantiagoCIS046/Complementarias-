@@ -439,6 +439,23 @@ const handleAddFicha = async () => {
     return;
   }
 
+  // Validación local para evitar duplicados en la interfaz antes de enviar
+  const codigoExiste = fichas.value.some(
+    f => f.codigo_ficha.toString().trim() === nuevaFicha.value.codigo_ficha.toString().trim()
+  );
+  if (codigoExiste) {
+    showError('Código Duplicado', 'Ya existe una ficha registrada con el código: ' + nuevaFicha.value.codigo_ficha);
+    return;
+  }
+
+  const programaExiste = fichas.value.some(
+    f => f.programa.toLowerCase().trim() === nuevaFicha.value.programa.toLowerCase().trim()
+  );
+  if (programaExiste) {
+    showError('Programa Duplicado', 'Ya existe un programa de formación registrado con el nombre: ' + nuevaFicha.value.programa);
+    return;
+  }
+
   isSubmitting.value = true;
   try {
     await batchesService.create(nuevaFicha.value);

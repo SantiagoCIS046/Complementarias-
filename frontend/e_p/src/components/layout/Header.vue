@@ -21,7 +21,7 @@ const notifStore = useNotificationsStore();
 const themeStore = useThemeStore();
 const router = useRouter();
 const route = useRoute();
-const { showInfo } = useAlert();
+const { showInfo, showConfirm } = useAlert();
 
 const breadcrumbs = computed(() => {
   const pathArray = route.path.split('/').filter(p => p);
@@ -167,10 +167,21 @@ const toggleProfileMenu = () => {
   showNotifDropdown.value = false;
 };
 
-const handleLogout = () => {
-  notifStore.reset();
-  authStore.logout();
-  router.push('/login');
+const handleLogout = async () => {
+  const confirmed = await showConfirm(
+    'Cerrar Sesión',
+    '¿Está seguro de que desea cerrar su sesión en el sistema?',
+    null,
+    {
+      okText: 'Cerrar Sesión',
+      cancelText: 'Cancelar'
+    }
+  );
+  if (confirmed) {
+    notifStore.reset();
+    authStore.logout();
+    router.push('/login');
+  }
 };
 
 const handleChangePassword = () => {

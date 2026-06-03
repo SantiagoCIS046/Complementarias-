@@ -6,23 +6,74 @@
 
 const service = require('./productive-stages.service');
 
+const driveService = require('../documents-dev2/drive.service');
+
+const MAPA_MODALIDADES = {
+  'Contrato de Aprendizaje': 'CONTRATO_APRENDIZAJE',
+  'Vínculo Laboral': 'VINCULACION_LABORAL',
+  'Pasantía': 'PASANTIA',
+};
+
 /**
  * POST /api/productive-stages
  * Registrar una nueva Etapa Productiva.
- * Body: { companyId, tipoFormacion, modalidad, documentos[], observaciones }
  */
 const registrar = async (req, res) => {
   try {
     const aprendiz = req.user; // Viene del middleware verifyToken
-    const { companyId, tipoFormacion, modalidad, documentos, observaciones } = req.body;
+    const { companyId, tipoFormacion, modalidad, observaciones, jefeInmediato, emailContacto, telefonoJefe } = req.body;
+
+    let documentos = [];
+    
+    // Si se enviaron archivos en formato Multipart
+    if (req.files) {
+      if (req.files.rutFile && req.files.rutFile[0]) {
+        const file = req.files.rutFile[0];
+        const driveResult = await driveService.subirDocumentoEP(file.buffer, file.originalname);
+        documentos.push({
+          tipoDocumento: 'RUT',
+          nombreArchivo: file.originalname,
+          url: driveResult.viewUrl,
+        });
+      }
+      if (req.files.camaraFile && req.files.camaraFile[0]) {
+        const file = req.files.camaraFile[0];
+        const driveResult = await driveService.subirDocumentoEP(file.buffer, file.originalname);
+        documentos.push({
+          tipoDocumento: 'CAMARA_COMERCIO',
+          nombreArchivo: file.originalname,
+          url: driveResult.viewUrl,
+        });
+      }
+    }
+
+    // Soporte para pruebas de integración (JSON payload)
+    if (req.body.documentos) {
+      try {
+        const docs = typeof req.body.documentos === 'string'
+          ? JSON.parse(req.body.documentos)
+          : req.body.documentos;
+        if (Array.isArray(docs) && docs.length > 0) {
+          documentos = docs;
+        }
+      } catch (e) {}
+    }
+
+    let modalidadMapped = modalidad;
+    if (MAPA_MODALIDADES[modalidad]) {
+      modalidadMapped = MAPA_MODALIDADES[modalidad];
+    }
 
     const resultado = await service.registrar({
       aprendiz,
       companyId,
-      tipoFormacion,
-      modalidad,
+      tipoFormacion: tipoFormacion || 'PRESENCIAL',
+      modalidad: modalidadMapped,
       documentos,
       observaciones,
+      jefeInmediato,
+      emailContacto,
+      telefonoJefe,
     });
 
     res.status(201).json({

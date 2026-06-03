@@ -36,7 +36,7 @@ async function runSeed() {
       name: 'Administrador del Sistema Santiago Cisneros',
       email: 'santiagocisneros046@gmail.com',
       password: PASSWORD,
-      role: 'ADMIN',
+      role: 'ADMIN', 1
       documento: '1037658690'
     });
     console.log('✅ Admin creado:', admin.email);
@@ -72,6 +72,7 @@ async function runSeed() {
       password: PASSWORD,
       role: 'APRENDIZ',
       documento: '1037000111',
+      ficha: '2670687',
       instructorAsignado: instructor._id,
       fechaAsignacionInstructor: new Date()
     });
@@ -82,6 +83,7 @@ async function runSeed() {
       password: PASSWORD,
       role: 'APRENDIZ',
       documento: '1037000333',
+      ficha: '2558342',
       instructorAsignado: instructor._id,
       fechaAsignacionInstructor: new Date()
     });
@@ -151,7 +153,7 @@ async function runSeed() {
       estado: 'REGISTRO',
       tipoFormacion: 'PRESENCIAL',
       modalidad: 'CONTRATO_APRENDIZAJE',
-      horasCompletadas: 320,
+      horasCompletadas: 0,
       horasRequeridas: 864
     });
 
@@ -163,7 +165,7 @@ async function runSeed() {
       estado: 'REGISTRO',
       tipoFormacion: 'PRESENCIAL',
       modalidad: 'VINCULACION_LABORAL',
-      horasCompletadas: 864,
+      horasCompletadas: 0,
       horasRequeridas: 864
     });
     console.log('✅ Etapas productivas vinculadas.');

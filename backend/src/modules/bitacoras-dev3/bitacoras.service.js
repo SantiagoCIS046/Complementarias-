@@ -37,6 +37,13 @@ const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportad
     if (count >= maxBitacoras) {
       throw new Error(`Se ha alcanzado el número máximo permitido de bitácoras (${maxBitacoras}).`);
     }
+
+    if (semana !== undefined && semana !== null) {
+      const existeBitacora = await Bitacora.findOne({ stageId, semana: Number(semana), esAdicional: { $ne: true } });
+      if (existeBitacora) {
+        throw new Error(`Ya existe una bitácora registrada para la semana ${semana}. Recuerda que la entrega de bitácoras es cada 15 días.`);
+      }
+    }
   }
 
   let finalEvidencias = evidencias || [];
@@ -51,18 +58,26 @@ const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportad
     }];
   }
 
-  const bitacora = await Bitacora.create({
-    stageId,
-    apprenticeId,
-    semana,
-    descripcion,
-    horasReportadas,
-    evidencias: finalEvidencias,
-    esAdicional: esAdicional || false,
-    motivo: esAdicional ? motivo : null,
-    fechaEspecial: esAdicional ? fechaEspecial : null,
-    responsable: responsable || null,
-  });
+  let bitacora;
+  try {
+    bitacora = await Bitacora.create({
+      stageId,
+      apprenticeId,
+      semana,
+      descripcion,
+      horasReportadas,
+      evidencias: finalEvidencias,
+      esAdicional: esAdicional || false,
+      motivo: esAdicional ? motivo : null,
+      fechaEspecial: esAdicional ? fechaEspecial : null,
+      responsable: responsable || null,
+    });
+  } catch (error) {
+    if (error.code === 11000 || error.message.includes('E11000')) {
+      throw new Error(`Ya existe una bitácora registrada para la semana ${semana}. Recuerda que la entrega de bitácoras es cada 15 días.`);
+    }
+    throw error;
+  }
 
   // Actualizar horas completadas en la EP
   stage.horasCompletadas = (stage.horasCompletadas || 0) + horasReportadas;
@@ -180,14 +195,36 @@ const actualizar = async (bitacoraId, data) => {
     bitacora.horasReportadas = data.horasReportadas;
   }
 
-  if (data.semana !== undefined && !isNaN(data.semana)) bitacora.semana = data.semana;
+  if (data.semana !== undefined && !isNaN(data.semana)) {
+    const targetSemana = Number(data.semana);
+    const finalEsAdicional = data.esAdicional !== undefined ? (data.esAdicional === true || data.esAdicional === 'true') : bitacora.esAdicional;
+    if (!finalEsAdicional && targetSemana !== bitacora.semana) {
+      const existeBitacora = await Bitacora.findOne({
+        stageId: bitacora.stageId,
+        semana: targetSemana,
+        esAdicional: { $ne: true },
+        _id: { $ne: bitacoraId }
+      });
+      if (existeBitacora) {
+        throw new Error(`Ya existe una bitácora registrada para la semana ${targetSemana}. Recuerda que la entrega de bitácoras es cada 15 días.`);
+      }
+    }
+    bitacora.semana = data.semana;
+  }
   if (data.descripcion !== undefined) bitacora.descripcion = data.descripcion;
   if (data.esAdicional !== undefined) bitacora.esAdicional = data.esAdicional;
   if (data.motivo !== undefined) bitacora.motivo = data.motivo;
   if (data.fechaEspecial !== undefined) bitacora.fechaEspecial = data.fechaEspecial;
   if (data.responsable !== undefined) bitacora.responsable = data.responsable;
 
-  await bitacora.save();
+  try {
+    await bitacora.save();
+  } catch (error) {
+    if (error.code === 11000 || error.message.includes('E11000')) {
+      throw new Error(`Ya existe una bitácora registrada para la semana ${bitacora.semana}. Recuerda que la entrega de bitácoras es cada 15 días.`);
+    }
+    throw error;
+  }
   
   const populated = await Bitacora.findById(bitacora._id)
     .populate('apprenticeId', 'name email')

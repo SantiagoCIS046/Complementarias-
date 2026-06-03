@@ -27,6 +27,14 @@ router.get(
   controller.getReportStats
 );
 
+const multer     = require('multer');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // Máximo 10MB por archivo
+  }
+});
+
 // --- CRUD de Etapas Productivas ---
 
 // POST /api/productive-stages - Registrar nueva EP (solo APRENDIZ)
@@ -34,6 +42,10 @@ router.post(
   '/',
   verifyToken,
   checkRole(['APRENDIZ']),
+  upload.fields([
+    { name: 'rutFile', maxCount: 1 },
+    { name: 'camaraFile', maxCount: 1 }
+  ]),
   controller.registrar
 );
 

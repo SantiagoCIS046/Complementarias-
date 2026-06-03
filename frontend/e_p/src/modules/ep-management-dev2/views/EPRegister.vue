@@ -22,7 +22,7 @@ const formData = reactive({
   modalidad: 'Contrato de Aprendizaje',
   nit: '',
   empresaSeleccionada: null,
-  supervisor: { nombre: '', email: '' },
+  supervisor: { nombre: '', email: '', telefono: '' },
   observaciones: '',
   rutFile: null,
   camaraFile: null
@@ -55,6 +55,7 @@ const errors = reactive({
   empresa: '',
   supervisorNombre: '',
   supervisorEmail: '',
+  supervisorTelefono: '',
   files: ''
 })
 
@@ -165,6 +166,10 @@ const onNameInput = (e) => {
   formData.supervisor.nombre = e.target.value.replace(/[^a-zA-Z\s]/g, '') // Solo letras y espacios
 }
 
+const onPhoneInput = (e) => {
+  formData.supervisor.telefono = e.target.value.replace(/\D/g, '') // Solo números
+}
+
 const validateStep = () => {
   let isValid = true
   // Reset errors
@@ -185,6 +190,13 @@ const validateStep = () => {
       isValid = false
     } else if (!validateEmail(formData.supervisor.email)) {
       errors.supervisorEmail = 'Formato de correo inválido.'
+      isValid = false
+    }
+    if (!formData.supervisor.telefono) {
+      errors.supervisorTelefono = 'El teléfono es obligatorio.'
+      isValid = false
+    } else if (formData.supervisor.telefono.length < 7) {
+      errors.supervisorTelefono = 'El teléfono debe tener al menos 7 dígitos.'
       isValid = false
     }
   } else if (currentStep.value === 3) {
@@ -220,12 +232,21 @@ const handleFinish = async () => {
     fData.append('modalidad', formData.modalidad)
     fData.append('jefeInmediato', formData.supervisor.nombre)
     fData.append('emailContacto', formData.supervisor.email)
+    fData.append('telefonoJefe', formData.supervisor.telefono)
     fData.append('observaciones', formData.observaciones)
     fData.append('rutFile', formData.rutFile)
     fData.append('camaraFile', formData.camaraFile)
 
-    await epService.create(fData)
-    notify('¡Etapa Productiva registrada con éxito!', 'success')
+    const res = await epService.create(fData)
+    const stageId = res.data?.data?.stage?._id;
+    if (stageId) {
+      try {
+        await epService.enviarARevision(stageId)
+      } catch (err) {
+        console.error('Error auto-submitting to validation:', err)
+      }
+    }
+    notify('¡Etapa Productiva registrada y enviada a revisión con éxito!', 'success')
     setTimeout(() => router.push('/mi-ep'), 2000)
   } catch (e) { 
     const msg = e.response?.data?.message || 'Error al procesar el registro.'
@@ -367,12 +388,24 @@ onMounted(loadData)
                       <input v-model="formData.supervisor.email" :class="['search-input no-icon', { 'has-error': errors.supervisorEmail }]" placeholder="correo@empresa.com">
                       <span v-if="errors.supervisorEmail" class="error-text">{{ errors.supervisorEmail }}</span>
                     </div>
+                    <div class="form-group mt-32">
+                      <label>TELÉFONO DE CONTACTO</label>
+                      <input 
+                        v-model="formData.supervisor.telefono" 
+                        type="tel"
+                        :class="['search-input no-icon', { 'has-error': errors.supervisorTelefono }]" 
+                        @input="onPhoneInput"
+                        placeholder="Ej: 3001234567"
+                      >
+                      <span v-if="errors.supervisorTelefono" class="error-text">{{ errors.supervisorTelefono }}</span>
+                    </div>
                   </div>
                   <div v-if="currentStep === 3">
                     <div class="summary-card">
                       <p><strong>Empresa:</strong> {{ formData.empresaSeleccionada?.nombre }}</p>
                       <p><strong>Modalidad:</strong> {{ formData.modalidad }}</p>
                       <p><strong>Jefe:</strong> {{ formData.supervisor.nombre }}</p>
+                      <p><strong>Teléfono:</strong> {{ formData.supervisor.telefono }}</p>
                     </div>
 
                     <!-- Requisitos según modalidad (RF-APR-04) -->

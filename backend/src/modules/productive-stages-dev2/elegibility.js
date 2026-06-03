@@ -22,9 +22,10 @@ const PLAZO_MAXIMO_DIAS = 30;
  */
 const verificarElegibilidad = async (aprendizInput) => {
   let aprendiz = aprendizInput;
-  if (aprendizInput && aprendizInput._id) {
+  const userId = aprendizInput?._id || aprendizInput?.id;
+  if (userId) {
     try {
-      const dbUser = await User.findById(aprendizInput._id);
+      const dbUser = await User.findById(userId);
       if (dbUser) {
         aprendiz = dbUser;
       }
@@ -90,7 +91,7 @@ const verificarElegibilidad = async (aprendizInput) => {
 
   // 2. Verificar que no tenga ya una EP activa
   const epActiva = await ProductiveStage.findOne({
-    apprenticeId: aprendiz._id,
+    apprenticeId: aprendiz._id || aprendiz.id,
     estado: { $nin: ['FINALIZADO', 'CERTIFICADO', 'RECHAZADO'] },
   });
 

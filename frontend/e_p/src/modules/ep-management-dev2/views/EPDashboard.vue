@@ -46,16 +46,17 @@ function animateProgress(targetPct) {
 const aprendiz = computed(() => {
   if (!stage.value) return { nombre: '---', estadoActual: '---', horasCompletadas: 0, horasTotales: 864, progresoPorcentaje: 0, razonSocial: '---', nit: '---', jefe: '---', telefono: '---' }
   const s = stage.value
+  const hasStarted = ['EN_CURSO', 'FINALIZADO', 'CERTIFICADO'].includes(s.estado)
   return {
     nombre: s.apprenticeId?.name || currentUser.value.name,
     estadoActual: s.estado || '---',
-    horasCompletadas: s.horasCompletadas || 0,
+    horasCompletadas: hasStarted ? (s.horasCompletadas || 0) : 0,
     horasTotales: s.horasRequeridas || 864,
-    progresoPorcentaje: s.horasRequeridas > 0 ? Math.round((s.horasCompletadas / s.horasRequeridas) * 100) : 0,
-    razonSocial: s.companyId?.razonSocial || s.companySnapshot?.razonSocial || '---',
+    progresoPorcentaje: (hasStarted && s.horasRequeridas > 0) ? Math.round((s.horasCompletadas / s.horasRequeridas) * 100) : 0,
+    razonSocial: s.companyId?.razon_social || s.companyId?.razonSocial || s.companySnapshot?.razonSocial || '---',
     nit: s.companyId?.nit || s.companySnapshot?.nit || '---',
-    jefe: s.companySnapshot?.jefeInmediato || '---',
-    telefono: s.companySnapshot?.telefonoJefe || s.companySnapshot?.telefonoContacto || '---'
+    jefe: s.companySnapshot?.jefeInmediato || s.companyId?.jefe_inmediato?.nombre_completo || s.companyId?.jefeInmediato || '---',
+    telefono: s.companySnapshot?.telefonoJefe || s.companySnapshot?.telefono || s.companyId?.jefe_inmediato?.telefono || s.companyId?.datos_contacto?.telefono || s.companyId?.telefono || '---'
   }
 })
 
@@ -160,6 +161,7 @@ const form = ref({ semana: '', descripcion: '', horasReportadas: '' })
 const enviando = ref(false)
 const msgRevision = ref(null)
 const puedeEnviarRevision = computed(() => stage.value?.estado === 'REGISTRO')
+const puedeCrearBitacora = computed(() => stage.value?.estado === 'EN_CURSO')
 
 async function load() {
   loading.value = true; error.value = null
@@ -247,8 +249,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
         <template #actions>
           <div class="desktop-actions-only">
             <button v-if="puedeEnviarRevision" @click="enviarRevision" :disabled="enviando" class="btn-new" style="background:#3B82F6">{{ enviando ? 'Enviando...' : 'Enviar a Revisión' }}</button>
-            <button v-else class="btn-new" style="display: none;" disabled>Enviar</button>
-            <button @click="showModal = true" class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
+            <button v-if="puedeCrearBitacora" @click="showModal = true" class="btn-new"><span class="material-symbols-outlined">add</span> Nueva Bitácora</button>
           </div>
         </template>
       </Header>
@@ -492,6 +493,33 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
               <button @click="prevPage" :disabled="currentPage === 1" class="pag-btn" :class="{ disabled: currentPage === 1 }">Anterior</button>
               <button @click="nextPage" :disabled="currentPage === totalPages" class="pag-btn" :class="{ disabled: currentPage === totalPages }">Siguiente</button>
             </div>
+          </div>
+        </div>
+
+        <!-- BANNER DE ESTADO CONTEXTUAL -->
+        <div v-if="stage && stage.estado !== 'EN_CURSO' && !loading" class="estado-banner" :class="stage.estado?.toLowerCase()">
+          <div class="estado-banner-icon">
+            <span class="material-symbols-outlined">
+              {{ stage.estado === 'REGISTRO' ? 'assignment' : stage.estado === 'VALIDACION' ? 'pending' : stage.estado === 'RECHAZADO' ? 'cancel' : stage.estado === 'FINALIZADO' ? 'task_alt' : 'info' }}
+            </span>
+          </div>
+          <div class="estado-banner-text">
+            <span class="estado-banner-title">
+              {{ stage.estado === 'REGISTRO' ? '📋 Tu solicitud está en REGISTRO' :
+                 stage.estado === 'VALIDACION' ? '⏳ En espera de revisión del instructor' :
+                 stage.estado === 'RECHAZADO' ? '⚠️ Tu Etapa Productiva fue RECHAZADA' :
+                 stage.estado === 'FINALIZADO' ? '🎉 Etapa Productiva FINALIZADA' :
+                 stage.estado === 'CERTIFICADO' ? '🏆 Etapa Productiva CERTIFICADA' :
+                 'Estado: ' + stage.estado }}
+            </span>
+            <p class="estado-banner-desc">
+              {{ stage.estado === 'REGISTRO' ? 'Cuando tengas todos tus documentos listos, haz clic en "Enviar a Revisión" para que el instructor valide tu solicitud.' :
+                 stage.estado === 'VALIDACION' ? 'El instructor está revisando tus documentos. Recibirás una notificación cuando se tome una decisión.' :
+                 stage.estado === 'RECHAZADO' ? 'Revisa las observaciones del instructor y corrige los documentos necesarios para volver a enviar.' :
+                 stage.estado === 'FINALIZADO' ? 'La etapa ha terminado. Espera la certificación final.' :
+                 stage.estado === 'CERTIFICADO' ? '¡Felicitaciones! Has completado exitosamente tu Etapa Productiva.' :
+                 '' }}
+            </p>
           </div>
         </div>
 
@@ -1789,6 +1817,72 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
     padding: 16px 20px;
     text-align: center;
   }
+}
+</style>
+
+<style scoped>
+/* ── Banner Estado Contextual de la EP ── */
+.estado-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 1px solid;
+  margin: 0 0 16px 0;
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.estado-banner.registro {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+.estado-banner.validacion {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.estado-banner.rechazado {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+.estado-banner.finalizado,
+.estado-banner.certificado {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+.estado-banner-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.estado-banner.registro .estado-banner-icon { background: rgba(59,130,246,0.15); color: #3B82F6; }
+.estado-banner.validacion .estado-banner-icon { background: rgba(245,158,11,0.15); color: #d97706; }
+.estado-banner.rechazado .estado-banner-icon { background: rgba(239,68,68,0.15); color: #ef4444; }
+.estado-banner.finalizado .estado-banner-icon,
+.estado-banner.certificado .estado-banner-icon { background: rgba(34,197,94,0.15); color: #16a34a; }
+.estado-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.estado-banner-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.estado-banner-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
 }
 </style>
 

@@ -32,16 +32,22 @@ const dialogStyles = computed(() => {
         iconClass: 'text-sky-600 bg-sky-50 border-sky-100',
         btnClass: 'bg-sky-600 hover:bg-sky-700 text-white shadow-sky-200 focus:ring-sky-500'
       };
-    case 'confirm':
+    case 'confirm': {
+      const isLogout = alertStore.title?.toLowerCase().includes('sesión') || alertStore.title?.toLowerCase().includes('cerrar');
       return {
-        icon: alertStore.isDanger ? 'delete_forever' : 'help',
-        iconClass: alertStore.isDanger 
-          ? 'text-rose-600 bg-rose-50 border-rose-100' 
-          : 'text-emerald-600 bg-emerald-50 border-emerald-100',
-        btnClass: alertStore.isDanger
-          ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200 focus:ring-rose-500'
-          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 focus:ring-emerald-500'
+        icon: isLogout ? 'logout' : (alertStore.isDanger ? 'delete_forever' : 'help'),
+        iconClass: isLogout 
+          ? 'text-amber-600 bg-amber-50 border-amber-100'
+          : (alertStore.isDanger 
+            ? 'text-rose-600 bg-rose-50 border-rose-100' 
+            : 'text-emerald-600 bg-emerald-50 border-emerald-100'),
+        btnClass: isLogout
+          ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-200 focus:ring-amber-500'
+          : (alertStore.isDanger
+            ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200 focus:ring-rose-500'
+            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 focus:ring-emerald-500')
       };
+    }
     default:
       return {
         icon: 'info',
@@ -355,7 +361,7 @@ onUnmounted(() => {
 
 /* Transiciones */
 .dialog-fade-enter-active, .dialog-fade-leave-active {
-  transition: opacity 0.25s ease;
+  transition: opacity 0.2s ease;
 }
 
 .dialog-fade-enter-from, .dialog-fade-leave-to {
@@ -363,21 +369,21 @@ onUnmounted(() => {
 }
 
 .dialog-fade-enter-active .dialog-card {
-  animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
 }
 
 .dialog-fade-leave-active .dialog-card {
-  animation: modalOut 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.15s ease;
 }
 
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.9) translateY(24px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+.dialog-fade-enter-from .dialog-card {
+  opacity: 0;
+  transform: scale(0.95) translateY(12px);
 }
 
-@keyframes modalOut {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.9) translateY(24px); }
+.dialog-fade-leave-to .dialog-card {
+  opacity: 0;
+  transform: scale(0.95) translateY(12px);
 }
 
 @keyframes slideInUp {

@@ -68,6 +68,8 @@ const certData = ref(null)
 const isLoadingCert = ref(false)
 const eligibilityInfo = ref(null)
 const isCheckingEligibility = ref(false)
+const activeEP = ref(null)
+const isLoadingActiveEP = ref(false)
 
 // --- Notificaciones ---
 const notifications = ref([])
@@ -87,6 +89,7 @@ const loadData = async () => {
   isLoadingCompanies.value = true
   isLoadingCert.value = true
   isCheckingEligibility.value = true
+  isLoadingActiveEP.value = true
 
   // Carga de empresas (no crítica)
   epService.getCompanies()
@@ -106,6 +109,22 @@ const loadData = async () => {
       certData.value = { estado: 'Pendiente', mensaje: 'Debes formalizar para continuar.', habilitado: false }
     })
     .finally(() => { isLoadingCert.value = false })
+
+  // Carga de EP activa
+  epService.getAll()
+    .then(res => {
+      const stages = res.data?.data || res.data || []
+      const active = stages.find(s => s.estado !== 'RECHAZADO')
+      if (active) {
+        activeEP.value = active
+      }
+    })
+    .catch(err => {
+      console.error('Error fetching active EP:', err)
+    })
+    .finally(() => {
+      isLoadingActiveEP.value = false
+    })
 
   // Verificación de elegibilidad (CRÍTICA — siempre debe ejecutarse)
   try {
@@ -314,8 +333,54 @@ onMounted(loadData)
             <div class="page-header-text"><h1>Registro de Etapa Productiva</h1><p>Formaliza tu proceso institucional ante el SENA.</p></div>
 
             <!-- Cargando elegibilidad -->
-            <div v-if="isCheckingEligibility" class="card mt-16" style="padding: 24px; text-align: center;">
+            <div v-if="isCheckingEligibility || isLoadingActiveEP" class="card mt-16" style="padding: 24px; text-align: center;">
               <p style="font-weight: 600; color: #64748B; margin: 0;">Validando elegibilidad temporal en el sistema institucional...</p>
+            </div>
+
+            <!-- VINCULADO A UNA EMPRESA (EP ACTIVA) -->
+            <div v-else-if="activeEP" class="card mt-16 active-ep-card" style="border: 2px solid #10B981; background: #ECFDF5; color: #065F46; margin-bottom: 24px; border-radius: 20px; padding: 32px;">
+              <div style="display: flex; align-items: flex-start; gap: 24px;">
+                <span class="material-symbols-outlined" style="font-size: 48px; color: #10B981; margin-top: 2px; flex-shrink: 0; font-variation-settings: 'FILL' 1;">
+                  domain_verification
+                </span>
+                <div style="flex: 1;">
+                  <h2 style="font-weight: 800; font-size: 20px; margin: 0 0 8px 0; color: #064E3B; display: flex; align-items: center; gap: 8px;">
+                    Vinculado a una Empresa
+                    <span style="font-size: 11px; font-weight: 700; background: #D1FAE5; color: #065F46; padding: 4px 12px; border-radius: 9999px; text-transform: uppercase; border: 1px solid #A7F3D0;">
+                      {{ activeEP.estado.replace('_', ' ') }}
+                    </span>
+                  </h2>
+                  <p style="margin: 0 0 20px 0; font-size: 14px; font-weight: 600; line-height: 1.6; color: #047857;">
+                    Ya cuentas con un registro de Etapa Productiva y estás vinculado a una empresa en el sistema. A continuación se presentan los detalles del vínculo actual:
+                  </p>
+                  
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; background: rgba(255, 255, 255, 0.7); padding: 20px; border-radius: 14px; border: 1px solid #A7F3D0;">
+                    <div>
+                      <span style="font-size: 10px; font-weight: 800; color: #065F46; text-transform: uppercase; display: block; margin-bottom: 4px;">Empresa</span>
+                      <strong style="font-size: 14px; color: #064E3B;">{{ activeEP.companyId?.razon_social || activeEP.companySnapshot?.razonSocial || 'N/A' }}</strong>
+                    </div>
+                    <div>
+                      <span style="font-size: 10px; font-weight: 800; color: #065F46; text-transform: uppercase; display: block; margin-bottom: 4px;">NIT</span>
+                      <strong style="font-size: 14px; color: #064E3B;">{{ activeEP.companyId?.nit || activeEP.companySnapshot?.nit || 'N/A' }}</strong>
+                    </div>
+                    <div>
+                      <span style="font-size: 10px; font-weight: 800; color: #065F46; text-transform: uppercase; display: block; margin-bottom: 4px;">Modalidad</span>
+                      <strong style="font-size: 14px; color: #064E3B;">{{ activeEP.modalidad?.replace('_', ' ') || 'N/A' }}</strong>
+                    </div>
+                    <div>
+                      <span style="font-size: 10px; font-weight: 800; color: #065F46; text-transform: uppercase; display: block; margin-bottom: 4px;">Radicado / Ficha</span>
+                      <strong style="font-size: 14px; color: #064E3B;">{{ activeEP.radicado || activeEP.ficha || 'N/A' }}</strong>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 16px; align-items: center;">
+                    <button class="btn-primary" @click="router.push('/mi-ep')" style="min-width: 200px; background: #059669; color: #fff;">
+                      <span class="material-symbols-outlined" style="margin-right: 8px;">dashboard</span>
+                      Ir a Mi Panel de EP
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- BANNER DE ELEGIBILIDAD (No Elegible) -->

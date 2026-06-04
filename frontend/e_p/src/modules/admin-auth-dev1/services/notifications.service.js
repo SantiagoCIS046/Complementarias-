@@ -1,60 +1,53 @@
 // notifications.service.js — Servicio de notificaciones para el frontend
-import axios from 'axios';
-
-const API = import.meta.env.VITE_API_URL;
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('repfora_token');
-  return { headers: { Authorization: `Bearer ${token}` } };
-};
+import http from '../../../core/api/http';
 
 export const notificationsService = {
   /**
    * Obtener las notificaciones del usuario autenticado.
    */
   getAll(params = {}) {
-    return axios.get(`${API}/notifications`, { ...getAuthHeaders(), params });
+    return http.get('/notifications', { params });
   },
 
   /**
    * Obtener el conteo de no leídas (para el badge).
    */
   getUnreadCount() {
-    return axios.get(`${API}/notifications/count`, getAuthHeaders());
+    return http.get('/notifications/count');
   },
 
   /**
    * Marcar una notificación como leída.
    */
   markAsRead(id) {
-    return axios.patch(`${API}/notifications/${id}/read`, {}, getAuthHeaders());
+    return http.patch(`/notifications/${id}/read`);
   },
 
   /**
    * Marcar una notificación como resuelta.
    */
   markAsResolved(id) {
-    return axios.patch(`${API}/notifications/${id}/resolve`, {}, getAuthHeaders());
+    return http.patch(`/notifications/${id}/resolve`);
   },
 
   /**
    * Marcar todas como leídas.
    */
   markAllAsRead() {
-    return axios.patch(`${API}/notifications/read-all`, {}, getAuthHeaders());
+    return http.patch('/notifications/read-all');
   },
 
   /**
    * ⚠️ TEMPORAL — Enviar correo de prueba.
    */
   sendTestEmail(to) {
-    return axios.post(`${API}/test-email`, { to }, getAuthHeaders());
+    return http.post('/test-email', { to });
   },
 
   /**
    * ⚠️ TEMPORAL — Ejecutar escaneo de alertas manualmente.
    */
   triggerAlerts() {
-    return axios.post(`${API}/test-email/trigger-alerts`, {}, getAuthHeaders());
+    return http.post('/test-email/trigger-alerts');
   },
 };

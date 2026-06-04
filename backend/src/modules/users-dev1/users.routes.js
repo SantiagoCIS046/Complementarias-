@@ -34,7 +34,7 @@ router.post('/reassign-instructor', checkRole(['ADMIN']),       controller.reass
 // Rutas accesibles por cualquier usuario autenticado (ver/editar su propio perfil)
 router.get('/me/logs', controller.getMyLogs);
 router.get('/:id',  controller.getById);
-router.put('/:id',  controller.actualizar);
 router.put('/:id/foto-perfil', controller.updateFotoPerfil);
+router.put('/:id',  controller.actualizar);
 
 module.exports = router;

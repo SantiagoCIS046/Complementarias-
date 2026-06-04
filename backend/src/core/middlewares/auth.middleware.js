@@ -17,6 +17,14 @@ const verifyToken = async (req, res, next) => {
   if (token) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
+      
+      // Verificar si el usuario existe en la base de datos (evita sesiones fantasmas tras re-seed o eliminación)
+      const User = require('../../modules/users-dev1/user.model');
+      const userExists = await User.exists({ _id: decoded._id });
+      if (!userExists) {
+        return res.status(401).json({ message: 'Usuario no encontrado, token inválido o expirado' });
+      }
+
       req.user = decoded; // Guardamos id y role en el request
       return next();
     } catch (error) {

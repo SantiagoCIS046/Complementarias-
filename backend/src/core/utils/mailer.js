@@ -1,14 +1,17 @@
 // mailer.js 🟢 DEV 1 | Utilidad para envío de correos reales
 const nodemailer = require('nodemailer');
-require('dotenv').config();
+const env = require('../config/env');
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false, // true para 465, false para otros puertos
+  host: env.SMTP_HOST,
+  port: parseInt(env.SMTP_PORT) || 587,
+  secure: env.SMTP_PORT === 465 || env.SMTP_PORT === '465', // true para 465, false para otros puertos
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS, // Aquí va el código de 16 letras
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS, // Código de 16 letras / contraseña de la app
+  },
+  tls: {
+    rejectUnauthorized: false, // Permite conexiones locales/desarrollo sin fallos de certificado
   },
 });
 
@@ -18,7 +21,7 @@ const transporter = nodemailer.createTransport({
 const sendEmail = async ({ to, subject, html, attachments }) => {
   try {
     const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: env.SMTP_FROM || env.SMTP_USER,
       to,
       subject,
       html,
@@ -34,3 +37,4 @@ const sendEmail = async ({ to, subject, html, attachments }) => {
 };
 
 module.exports = { sendEmail };
+

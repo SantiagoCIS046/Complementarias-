@@ -343,7 +343,7 @@
                   </div>
                   <div class="field-group">
                     <label class="label-premium">Teléfono Empresa</label>
-                    <input type="number" v-model="nuevaEmpresa.telefono" placeholder="Ej: 300..." class="input-premium" />
+                    <input type="text" v-model="nuevaEmpresa.telefono" placeholder="Ej: 300..." class="input-premium" inputmode="numeric" pattern="[0-9]*" />
                   </div>
                   <div class="field-group">
                     <label class="label-premium">Correo Corporativo</label>
@@ -369,7 +369,7 @@
                   </div>
                   <div class="field-group">
                     <label class="label-premium">Celular de Contacto</label>
-                    <input type="number" v-model="nuevaEmpresa.jefe_telefono" placeholder="Móvil personal" class="input-premium" />
+                    <input type="text" v-model="nuevaEmpresa.jefe_telefono" placeholder="Móvil personal" class="input-premium" inputmode="numeric" pattern="[0-9]*" />
                   </div>
                   <div class="field-group">
                     <label class="label-premium">Correo del Jefe</label>

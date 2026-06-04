@@ -59,7 +59,20 @@ const steps = [
 const currentStepIdx = computed(() => {
   if (!stage.value) return 0
   const estado = stage.value.estado || 'REGISTRO'
-  const idx = steps.findIndex(s => s.key === estado)
+  
+  const stateMapping = {
+    'SOLICITUD': 'REGISTRO',
+    'REGISTRO': 'REGISTRO',
+    'VALIDACION': 'VALIDACION',
+    'APROBADO': 'EN_PROGRESO',
+    'EN_CURSO': 'EN_PROGRESO',
+    'FINALIZADO': 'EVALUACION',
+    'CERTIFICADO': 'CERTIFICACION',
+    'RECHAZADO': 'REGISTRO'
+  }
+  
+  const mappedKey = stateMapping[estado] || 'REGISTRO'
+  const idx = steps.findIndex(s => s.key === mappedKey)
   return idx !== -1 ? idx : 0
 })
 
@@ -242,18 +255,18 @@ onMounted(async () => {
                   <span class="label-text">INFORMACIÓN DE LA EMPRESA</span>
                 </div>
                 <div class="company-mini-logo">
-                  <img :src="`https://ui-avatars.com/api/?name=${stage?.companyId?.razonSocial || 'EP'}&background=${themeStore.isDark ? '1f2937' : 'F8FAFC'}&color=${themeStore.isDark ? 'f3f4f6' : '1A4D2E'}&bold=true`" alt="Logo">
+                  <img :src="`https://ui-avatars.com/api/?name=${stage?.companyId?.razon_social || stage?.companyId?.razonSocial || 'EP'}&background=${themeStore.isDark ? '1f2937' : 'F8FAFC'}&color=${themeStore.isDark ? 'f3f4f6' : '1A4D2E'}&bold=true`" alt="Logo">
                 </div>
               </div>
 
               <div class="info-details-grid">
                 <div class="info-item">
                   <label>Razón Social</label>
-                  <p>{{ stage?.companyId?.razonSocial || stage?.companySnapshot?.razonSocial || '---' }}</p>
+                  <p>{{ stage?.companyId?.razon_social || stage?.companyId?.razonSocial || stage?.companySnapshot?.razonSocial || '---' }}</p>
                 </div>
                 <div class="info-item">
                   <label>Email de Contacto</label>
-                  <p>{{ stage?.companySnapshot?.emailContacto || '---' }}</p>
+                  <p>{{ stage?.companySnapshot?.emailContacto || stage?.companyId?.datos_contacto?.correo_corporativo || stage?.companyId?.emailContacto || '---' }}</p>
                 </div>
                 <div class="info-item">
                   <label>NIT</label>
@@ -261,11 +274,11 @@ onMounted(async () => {
                 </div>
                 <div class="info-item">
                   <label>Ubicación</label>
-                  <p>{{ stage?.companySnapshot?.ubicacion || '---' }}</p>
+                  <p>{{ stage?.companySnapshot?.direccion || stage?.companySnapshot?.ubicacion || stage?.companyId?.direccion || '---' }}</p>
                 </div>
                 <div class="info-item">
                   <label>Jefe Inmediato</label>
-                  <p>{{ stage?.companySnapshot?.jefeInmediato || '---' }}</p>
+                  <p>{{ stage?.companySnapshot?.jefeInmediato || stage?.companyId?.jefe_inmediato?.nombre_completo || stage?.companyId?.jefeInmediato || '---' }}</p>
                 </div>
                 <div class="info-item">
                   <label>Modalidad</label>

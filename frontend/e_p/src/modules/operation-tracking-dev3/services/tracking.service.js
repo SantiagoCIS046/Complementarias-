@@ -65,5 +65,12 @@ export const trackingService = {
      */
     updateAdditionalHourStatus: (id, payload) => {
         return http.patch(`/hours/${id}/estado`, payload);
+    },
+
+    /**
+     * Evaluar etapa productiva (Aprobar o Rechazar)
+     */
+    evaluarEP: (stageId, payload) => {
+        return http.put(`/productive-stages/evaluar/${stageId}`, payload);
     }
 }

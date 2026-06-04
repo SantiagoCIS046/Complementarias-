@@ -89,7 +89,7 @@ const sizeStyle = computed(() => {
 
     <!-- Overlay cámara (solo editable) -->
     <div v-if="editable" class="avatar-camera-overlay">
-      <span class="material-symbols-outlined camera-icon">photo_camera</span>
+      <span class="material-symbols-outlined camera-icon">visibility</span>
     </div>
 
     <!-- Efecto de brillo al actualizar foto -->

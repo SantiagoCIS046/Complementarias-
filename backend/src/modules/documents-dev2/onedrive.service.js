@@ -18,6 +18,8 @@
 
 const https = require('https');
 const { Readable } = require('stream');
+const path = require('path');
+const fs = require('fs');
 
 const TENANT_ID = process.env.ONEDRIVE_TENANT_ID || '';
 const CLIENT_ID = process.env.ONEDRIVE_CLIENT_ID || '';
@@ -160,10 +162,23 @@ const subirArchivo = async (fileBuffer, fileName, folderId) => {
     // Modo desarrollo: simular
     const fakeId = 'dev_od_file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     console.log('[ONEDRIVE-DEV] Archivo simulado: ' + fileName + ' -> carpeta ' + parent);
+    
+    try {
+      const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const filePath = path.join(uploadsDir, `${fakeId}_${fileName}`);
+      fs.writeFileSync(filePath, fileBuffer);
+      console.log(`[ONEDRIVE-DEV] Archivo guardado localmente en: ${filePath}`);
+    } catch (err) {
+      console.error('[ONEDRIVE-DEV] Error guardando archivo localmente:', err);
+    }
+
     return {
       id: fakeId,
       name: fileName,
-      webViewLink: 'https://onedrive.live.com/view?id=' + fakeId,
+      webViewLink: `/api/documents/view/${fakeId}_${fileName}`,
     };
   }
 

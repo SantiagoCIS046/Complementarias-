@@ -27,7 +27,7 @@ const driveService = require('../documents-dev2/drive.service');
  * 5. Verifica documentos obligatorios (RUT, Camara de Comercio)
  * 6. Crea la EP en estado SOLICITUD y la transiciona a REGISTRO
  */
-const registrar = async ({ aprendiz, companyId, tipoFormacion, modalidad, documentos, observaciones }) => {
+const registrar = async ({ aprendiz, companyId, tipoFormacion, modalidad, documentos, observaciones, jefeInmediato, emailContacto, telefonoJefe }) => {
   // 1. Verificar elegibilidad
   const elegibilidad = await verificarElegibilidad(aprendiz);
   if (!elegibilidad.elegible) {
@@ -59,13 +59,13 @@ const registrar = async ({ aprendiz, companyId, tipoFormacion, modalidad, docume
   // 4. Crear snapshot de la empresa (denormalizacion)
   const companySnapshot = {
     nit:           empresa.nit,
-    razonSocial:   empresa.razonSocial,
+    razonSocial:   empresa.razon_social || empresa.razonSocial,
     direccion:     empresa.direccion,
-    telefono:      empresa.telefono,
-    emailContacto: empresa.emailContacto,
-    jefeInmediato: empresa.jefeInmediato,
-    telefonoJefe:  empresa.telefonoJefe,
-    emailJefe:     empresa.emailJefe,
+    telefono:      empresa.datos_contacto?.telefono || empresa.telefono,
+    emailContacto: emailContacto || empresa.datos_contacto?.correo_corporativo || empresa.emailContacto,
+    jefeInmediato: jefeInmediato || empresa.jefe_inmediato?.nombre_completo || empresa.jefeInmediato,
+    telefonoJefe:  telefonoJefe || empresa.jefe_inmediato?.telefono || empresa.telefonoJefe,
+    emailJefe:     emailContacto || empresa.jefe_inmediato?.correo || empresa.emailJefe,
   };
 
   // 5. Generar radicado
@@ -163,7 +163,7 @@ const getAll = async (filtros = {}) => {
       select: 'name email role documento instructorAsignado fechaAsignacionInstructor fotoPerfil',
       populate: { path: 'instructorAsignado', select: 'name' }
     })
-    .populate('companyId', 'razonSocial nit')
+    .populate('companyId', 'razon_social nit')
     .populate('seguimientos')
     .sort({ createdAt: -1 });
 
@@ -187,7 +187,7 @@ const getById = async (id) => {
       select: 'name email role documento ficha modalidades historialInstructores fotoPerfil',
       populate: { path: 'historialInstructores.instructorId', select: 'name email' }
     })
-    .populate('companyId', 'razonSocial nit jefeInmediato')
+    .populate('companyId', 'razon_social nit jefe_inmediato')
     .populate('historialEstados.realizadoPor', 'name email')
     .populate('seguimientos');
 
@@ -199,7 +199,7 @@ const getById = async (id) => {
   const etapasPrevias = await ProductiveStage.find({ 
     apprenticeId: stage.apprenticeId._id,
     _id: { $ne: id }
-  }).populate('companyId', 'razonSocial nit');
+  }).populate('companyId', 'razon_social nit');
 
   // Traer documentos asociados
   const documentos = await Document.find({ stageId: id })
@@ -391,6 +391,24 @@ const enviarARevision = async (stageId, userId) => {
     'EP enviada a revision por el aprendiz'
   );
 
+  // --- Notificar al instructor de seguimiento ---
+  try {
+    const Notification = require('../system-config-dev1/Notification.model');
+    const User = require('../users-dev1/user.model');
+    const aprendiz = await User.findById(stage.apprenticeId);
+    if (aprendiz && aprendiz.instructorAsignado) {
+      await Notification.create({
+        usuario: aprendiz.instructorAsignado,
+        mensaje: `El aprendiz ${aprendiz.name} ha enviado su Etapa Productiva (${stageActualizada.radicado}) a revisión. Por favor revisa los documentos adjuntos.`,
+        tipo: 'WARNING',
+        referencia: stageActualizada._id,
+        referenciaModelo: 'ProductiveStage'
+      });
+    }
+  } catch (notifErr) {
+    console.error('[NOTIF] Error al notificar al instructor en enviarARevision:', notifErr.message);
+  }
+
   return {
     stage: stageActualizada,
     estado: 'EN_REVISION',
@@ -493,18 +511,66 @@ const evaluarEP = async (stageId, { decision, comentario, documentosRevisados },
   }
 
   // Ejecutar transicion en la maquina de estados
-  const stageActualizada = await ejecutarTransicion(
+  let stageActualizada = await ejecutarTransicion(
     stage,
     nuevoEstado,
     userId,
     comentario || 'Evaluacion completada: ' + decision
   );
 
+  // Si fue aprobada, transitionar automaticamente a EN_CURSO configurando jornada y fechas por defecto
+  if (nuevoEstado === ESTADO_EP.APROBADO) {
+    if (!stageActualizada.cronogramaConfigurado) {
+      const jornadaDefault = 'TIEMPO_COMPLETO';
+      const fechaInicioDefault = new Date();
+      stageActualizada.jornada = jornadaDefault;
+      stageActualizada.fechaInicio = fechaInicioDefault;
+      stageActualizada.fechaProyectadaFin = calcularFechaProyectadaFin(fechaInicioDefault, jornadaDefault);
+      stageActualizada.horasRequeridas = await calcularHorasRequeridas(jornadaDefault);
+      stageActualizada.cronogramaConfigurado = true;
+    }
+    
+    // Transicionar de APROBADO -> EN_CURSO
+    stageActualizada = await ejecutarTransicion(
+      stageActualizada,
+      ESTADO_EP.EN_CURSO,
+      userId,
+      'Transición automática de aprobación de etapa'
+    );
+  }
+
   // Guardar el comentario en las observaciones de la EP
   if (comentario) {
     stageActualizada.observaciones = (stageActualizada.observaciones || '') +
       '\n[' + new Date().toISOString().split('T')[0] + ' - Evaluacion] ' + comentario;
     await stageActualizada.save();
+  }
+
+  // --- Notificar al aprendiz sobre el resultado de la evaluación ---
+  try {
+    const Notification = require('../system-config-dev1/Notification.model');
+    const aprendizId = stage.apprenticeId?._id || stage.apprenticeId;
+    if (aprendizId) {
+      if (decision === 'APROBADA') {
+        await Notification.create({
+          usuario: aprendizId,
+          mensaje: `¡Tu Etapa Productiva (${stageActualizada.radicado}) ha sido APROBADA! Ya puedes comenzar a registrar tus bitácoras quincenales.`,
+          tipo: 'SUCCESS',
+          referencia: stageActualizada._id,
+          referenciaModelo: 'ProductiveStage'
+        });
+      } else {
+        await Notification.create({
+          usuario: aprendizId,
+          mensaje: `Tu Etapa Productiva (${stageActualizada.radicado}) ha sido RECHAZADA. Motivo: ${comentario || 'Ver observaciones del instructor.'}`,
+          tipo: 'WARNING',
+          referencia: stageActualizada._id,
+          referenciaModelo: 'ProductiveStage'
+        });
+      }
+    }
+  } catch (notifErr) {
+    console.error('[NOTIF] Error al notificar al aprendiz en evaluarEP:', notifErr.message);
   }
 
   // Obtener documentos actualizados

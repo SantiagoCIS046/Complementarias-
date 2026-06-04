@@ -474,7 +474,7 @@
         <div class="modal-head head-premium">
           <div class="head-info">
             <h2>Registrar Nuevo Usuario</h2>
-            <p class="u-email">La identificación será su contraseña inicial para el primer ingreso.</p>
+            <p class="u-email">La identificación (o la contraseña ingresada) será la contraseña inicial para el primer ingreso.</p>
           </div>
           <button class="modal-close-premium" @click="showAddUserModal = false">&times;</button>
         </div>
@@ -499,7 +499,7 @@
               </div>
               <div class="field-group">
                 <label class="label-premium">Número de Documento</label>
-                <input type="number" v-model="newUserForm.documento" placeholder="Número (Sin puntos ni comas)" class="input-premium" />
+                <input type="text" v-model="newUserForm.documento" placeholder="Número (Sin puntos ni comas)" class="input-premium" inputmode="numeric" pattern="[0-9]*" />
               </div>
             </div>
           </div>
@@ -525,6 +525,10 @@
               <div class="field-group">
                 <label class="label-premium">Teléfono / Celular</label>
                 <input type="text" v-model="newUserForm.telefono" placeholder="Número de contacto" class="input-premium" />
+              </div>
+              <div class="field-group">
+                <label class="label-premium">Contraseña (Opcional - por defecto será el documento)</label>
+                <input type="password" v-model="newUserForm.password" placeholder="Contraseña personalizada" class="input-premium" />
               </div>
             </div>
           </div>
@@ -709,11 +713,12 @@ const newUserForm = ref({
   role: 'APRENDIZ',
   ficha: '',
   programa: '',
-  areaConocimiento: ''
+  areaConocimiento: '',
+  password: ''
 });
 
 const openAddUserModal = () => {
-  newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', role: 'APRENDIZ', ficha: '', programa: '' };
+  newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', telefono: '', role: 'APRENDIZ', ficha: '', programa: '', areaConocimiento: '', password: '' };
   showAddUserModal.value = true;
 };
 
@@ -733,7 +738,19 @@ const handleAddUser = async () => {
   if (newUserForm.value.documento.toString().length < 6) {
     alertBox.value = { 
       show: true, 
-      message: 'El número de documento debe tener al menos 6 dígitos (será la clave inicial).', 
+      message: 'El número de documento debe tener al menos 6 dígitos.', 
+      type: 'danger' 
+    };
+    setTimeout(() => alertBox.value.show = false, 5000);
+    return;
+  }
+
+  // Validación de contraseña personalizada
+  const customPassword = newUserForm.value.password ? newUserForm.value.password.trim() : '';
+  if (customPassword && customPassword.length < 6) {
+    alertBox.value = { 
+      show: true, 
+      message: 'La contraseña personalizada debe tener al menos 6 caracteres.', 
       type: 'danger' 
     };
     setTimeout(() => alertBox.value.show = false, 5000);
@@ -744,10 +761,11 @@ const handleAddUser = async () => {
   uiStore.showLoader(); // Loader real mientras consulta al backend
 
   try {
-    // LÓGICA OCULTA: Password = Documento, firstLogin = true, status = ACTIVO
+    // LÓGICA: Password = password ó Documento, firstLogin = true, status = ACTIVO
+    const passwordValue = newUserForm.value.password ? newUserForm.value.password.trim() : newUserForm.value.documento.toString();
     const userData = {
       ...newUserForm.value,
-      password: newUserForm.value.documento.toString(),
+      password: passwordValue,
       isFirstLogin: true,
       status: 'ACTIVO'
     };
@@ -764,12 +782,15 @@ const handleAddUser = async () => {
       
       // 3. Cerrar modal y limpiar formulario
       showAddUserModal.value = false;
-      newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', telefono: '', role: 'APRENDIZ', ficha: '', programa: '', areaConocimiento: '' };
+      const isCustomPasswordUsed = !!newUserForm.value.password;
+      newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', telefono: '', role: 'APRENDIZ', ficha: '', programa: '', areaConocimiento: '', password: '' };
 
       // 4. Mostrar alerta de éxito
       alertBox.value = { 
         show: true, 
-        message: '¡Usuario creado con éxito! La clave inicial es su número de documento.', 
+        message: isCustomPasswordUsed
+          ? '¡Usuario creado con éxito! La clave inicial es la contraseña ingresada.'
+          : '¡Usuario creado con éxito! La clave inicial es su número de documento.', 
         type: 'success' 
       };
     }

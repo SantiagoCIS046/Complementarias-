@@ -32,16 +32,22 @@ const dialogStyles = computed(() => {
         iconClass: 'text-sky-600 bg-sky-50 border-sky-100',
         btnClass: 'bg-sky-600 hover:bg-sky-700 text-white shadow-sky-200 focus:ring-sky-500'
       };
-    case 'confirm':
+    case 'confirm': {
+      const isLogout = alertStore.title?.toLowerCase().includes('sesión') || alertStore.title?.toLowerCase().includes('cerrar');
       return {
-        icon: alertStore.isDanger ? 'delete_forever' : 'help',
-        iconClass: alertStore.isDanger 
-          ? 'text-rose-600 bg-rose-50 border-rose-100' 
-          : 'text-emerald-600 bg-emerald-50 border-emerald-100',
-        btnClass: alertStore.isDanger
-          ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200 focus:ring-rose-500'
-          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 focus:ring-emerald-500'
+        icon: isLogout ? 'logout' : (alertStore.isDanger ? 'delete_forever' : 'help'),
+        iconClass: isLogout 
+          ? 'text-amber-600 bg-amber-50 border-amber-100'
+          : (alertStore.isDanger 
+            ? 'text-rose-600 bg-rose-50 border-rose-100' 
+            : 'text-emerald-600 bg-emerald-50 border-emerald-100'),
+        btnClass: isLogout
+          ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-200 focus:ring-amber-500'
+          : (alertStore.isDanger
+            ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200 focus:ring-rose-500'
+            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 focus:ring-emerald-500')
       };
+    }
     default:
       return {
         icon: 'info',

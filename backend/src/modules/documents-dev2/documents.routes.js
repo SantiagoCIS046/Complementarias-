@@ -85,4 +85,18 @@ router.get(
   controller.downloadOfficialTemplate
 );
 
+// GET /api/documents/view/:filename - Visualizar archivo local en desarrollo
+router.get(
+  '/view/:filename',
+  verifyToken,
+  controller.viewFile
+);
+
+// GET /api/documents/download/:filename - Descargar archivo local en desarrollo
+router.get(
+  '/download/:filename',
+  verifyToken,
+  controller.downloadFile
+);
+
 module.exports = router;

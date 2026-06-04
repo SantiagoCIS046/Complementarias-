@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../core/store/auth.store';
 import { usersService } from '../services/users.service';
+import { authService } from '../services/auth.service';
 import { useProfilePhoto } from '../../../core/composables/useProfilePhoto';
 import { useAlert } from '../../../core/composables/useAlert';
 import AvatarDisplay from '../../../components/shared/AvatarDisplay.vue';
@@ -58,10 +59,64 @@ onMounted(async () => {
 const isSubmitting = ref(false);
 const message = ref({ text: '', type: '' });
 
-const showModal = ref(false);
-const tempEmail = ref('');
-const tempTelefono = ref('');
-const confirmCheck = ref(false);
+// ── Edición inline por campo ────────────────────────────────────────────────
+const editingField = ref(null);
+const editValue    = ref('');
+const confirmValue = ref('');  // solo para contraseña
+const isSavingField = ref(false);
+
+const startEdit = (field) => {
+  editingField.value = field;
+  editValue.value    = field === 'password' ? '' : (formData.value[field] || '');
+  confirmValue.value = '';
+};
+
+const cancelEdit = () => {
+  editingField.value = null;
+  editValue.value    = '';
+  confirmValue.value = '';
+};
+
+/** Guarda cualquier campo genérico en el backend */
+const saveField = async (field) => {
+  if (isSavingField.value) return;
+  isSavingField.value = true;
+  try {
+    const payload  = { [field]: editValue.value };
+    const response = await usersService.update(user.value._id, payload);
+    if (response.data.success) {
+      formData.value[field] = editValue.value;
+      authStore.updateUser(response.data.data);
+      cancelEdit();
+      showSuccess('¡Guardado!', 'El campo se actualizó correctamente.');
+    }
+  } catch (error) {
+    showError('Error', error.response?.data?.message || 'No se pudo guardar. Intenta de nuevo.');
+  } finally {
+    isSavingField.value = false;
+  }
+};
+
+/** Guarda la nueva contraseña (endpoint dedicado) */
+const savePassword = async () => {
+  if (isSavingField.value) return;
+  if (!editValue.value || editValue.value.length < 6) {
+    return showError('Error', 'La contraseña debe tener mínimo 6 caracteres.');
+  }
+  if (editValue.value !== confirmValue.value) {
+    return showError('Error', 'Las contraseñas no coinciden.');
+  }
+  isSavingField.value = true;
+  try {
+    await authService.changePassword(editValue.value, authStore.token);
+    cancelEdit();
+    showSuccess('¡Contraseña actualizada!', 'Tu nueva contraseña quedó guardada.');
+  } catch (error) {
+    showError('Error', error.response?.data?.message || 'No se pudo cambiar la contraseña.');
+  } finally {
+    isSavingField.value = false;
+  }
+};
 
 // ── Foto de perfil ──────────────────────────────────────────────────────────
 const {
@@ -82,6 +137,34 @@ const showPhotoModal = ref(false);
 
 /** Controla el efecto de brillo en el avatar tras actualizar foto */
 const photoShine = ref(false);
+
+/** Muestra u oculta el lightbox de la foto */
+const showLightbox = ref(false);
+
+/** Abre el lightbox si hay foto, si no abre el selector */
+const handleAvatarClick = () => {
+  if (user.value?.fotoPerfil) {
+    showLightbox.value = true;
+  } else {
+    openFilePicker();
+  }
+};
+
+/** Cierra el lightbox */
+const closeLightbox = () => {
+  showLightbox.value = false;
+};
+
+/** Referencia al overlay del lightbox para hacer foco (ESC) */
+const lightboxRef = ref(null);
+
+/** Al abrir el lightbox, hacer foco automático para capturar ESC */
+watch(showLightbox, async (val) => {
+  if (val) {
+    await nextTick();
+    lightboxRef.value?.focus();
+  }
+});
 
 /** Abre el selector de archivos del sistema */
 const openFilePicker = () => {
@@ -128,51 +211,7 @@ const handleSelectAnother = () => {
   openFilePicker();
 };
 
-// ── Contacto ────────────────────────────────────────────────────────────────
-const openModal = () => {
-  tempEmail.value = formData.value.email;
-  tempTelefono.value = formData.value.telefono;
-  confirmCheck.value = false;
-  showModal.value = true;
-};
 
-const closeModal = () => {
-  if (!isSubmitting.value) {
-    showModal.value = false;
-    message.value = { text: '', type: '' };
-  }
-};
-
-const saveContactDetails = async () => {
-  if (!confirmCheck.value) return;
-  isSubmitting.value = true;
-  message.value = { text: '', type: '' };
-
-  try {
-    const response = await usersService.update(user.value._id, {
-      email: tempEmail.value,
-      telefono: tempTelefono.value
-    });
-
-    if (response.data.success) {
-      formData.value.email = tempEmail.value;
-      formData.value.telefono = tempTelefono.value;
-      authStore.updateUser(response.data.data);
-      message.value = { text: '¡Datos de contacto actualizados correctamente!', type: 'success' };
-      setTimeout(() => {
-        closeModal();
-      }, 1500);
-    }
-  } catch (error) {
-    console.error('Error al actualizar datos de contacto:', error);
-    message.value = { 
-      text: error.response?.data?.message || 'Error al actualizar. Intenta de nuevo.', 
-      type: 'error' 
-    };
-  } finally {
-    isSubmitting.value = false;
-  }
-};
 </script>
 
 <template>
@@ -192,7 +231,7 @@ const saveContactDetails = async () => {
                   size="xl"
                   :editable="true"
                   :shine="photoShine"
-                  @click="openFilePicker"
+                  @click="handleAvatarClick"
                 />
                 <button
                   class="change-photo-btn"
@@ -226,131 +265,247 @@ const saveContactDetails = async () => {
                     <small>No se puede cambiar el nombre por seguridad.</small>
                   </div>
 
-                  <div class="form-group readonly">
-                    <label for="email">Correo Electrónico</label>
+                  <!-- Correo Electrónico (editable inline) -->
+                  <div class="form-group" :class="{ editing: editingField === 'email' }">
+                    <label for="email">
+                      Correo Electrónico
+                      <button
+                        v-if="editingField !== 'email'"
+                        class="edit-field-btn"
+                        @click="startEdit('email')"
+                        title="Editar correo"
+                      >
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">mail</span>
-                      <input id="email" :value="formData.email" type="email" readonly />
+                      <input
+                        id="email"
+                        v-if="editingField === 'email'"
+                        v-model="editValue"
+                        type="email"
+                        class="field-active"
+                        placeholder="tu@correo.com"
+                        @keydown.enter="saveField('email')"
+                        @keydown.esc="cancelEdit"
+                        autofocus
+                      />
+                      <input v-else :value="formData.email" type="email" readonly />
+                      <div v-if="editingField === 'email'" class="field-actions">
+                        <button class="field-save-btn" @click="saveField('email')" :disabled="isSavingField" title="Guardar">
+                          <span v-if="isSavingField" class="field-spinner"></span>
+                          <span v-else class="material-symbols-outlined">thumb_up</span>
+                        </button>
+                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField" title="Cancelar">
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div class="form-group readonly">
-                    <label for="telefono">Teléfono / Celular</label>
+                  <!-- Teléfono / Celular (editable inline) -->
+                  <div class="form-group" :class="{ editing: editingField === 'telefono' }">
+                    <label for="telefono">
+                      Teléfono / Celular
+                      <button
+                        v-if="editingField !== 'telefono'"
+                        class="edit-field-btn"
+                        @click="startEdit('telefono')"
+                        title="Editar teléfono"
+                      >
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">phone</span>
-                      <input id="telefono" :value="formData.telefono" type="text" readonly />
+                      <input
+                        id="telefono"
+                        v-if="editingField === 'telefono'"
+                        v-model="editValue"
+                        type="text"
+                        class="field-active"
+                        placeholder="Número de contacto"
+                        @keydown.enter="saveField('telefono')"
+                        @keydown.esc="cancelEdit"
+                        autofocus
+                      />
+                      <input v-else :value="formData.telefono" type="text" readonly />
+                      <div v-if="editingField === 'telefono'" class="field-actions">
+                        <button class="field-save-btn" @click="saveField('telefono')" :disabled="isSavingField" title="Guardar">
+                          <span v-if="isSavingField" class="field-spinner"></span>
+                          <span v-else class="material-symbols-outlined">thumb_up</span>
+                        </button>
+                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField" title="Cancelar">
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div class="form-group readonly">
-                    <label>Documento de Identidad</label>
+                  <!-- Documento de Identidad (editable) -->
+                  <div class="form-group" :class="{ editing: editingField === 'documento' }">
+                    <label>
+                      Documento de Identidad
+                      <button v-if="editingField !== 'documento'" class="edit-field-btn" @click="startEdit('documento')" title="Editar documento">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">badge</span>
-                      <input :value="formData.documento" type="text" readonly />
+                      <input v-if="editingField === 'documento'" v-model="editValue" type="text" class="field-active" placeholder="Número de documento" @keydown.enter="saveField('documento')" @keydown.esc="cancelEdit" autofocus />
+                      <input v-else :value="formData.documento" type="text" readonly />
+                      <div v-if="editingField === 'documento'" class="field-actions">
+                        <button class="field-save-btn" @click="saveField('documento')" :disabled="isSavingField">
+                          <span v-if="isSavingField" class="field-spinner"></span>
+                          <span v-else class="material-symbols-outlined">thumb_up</span>
+                        </button>
+                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
                     </div>
-                    <small>No se puede cambiar el documento por seguridad.</small>
                   </div>
 
-                  <div class="form-group readonly">
-                    <label>Contraseña</label>
-                    <div class="input-wrapper">
+                  <!-- Contraseña (editable con confirmación) -->
+                  <div class="form-group" :class="{ editing: editingField === 'password' }">
+                    <label>
+                      Contraseña
+                      <button v-if="editingField !== 'password'" class="edit-field-btn" @click="startEdit('password')" title="Cambiar contraseña">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </label>
+                    <div v-if="editingField === 'password'" class="password-edit-group">
+                      <div class="input-wrapper">
+                        <span class="material-symbols-outlined">lock</span>
+                        <input v-model="editValue" type="password" class="field-active" placeholder="Nueva contraseña" @keydown.esc="cancelEdit" autofocus />
+                      </div>
+                      <div class="input-wrapper" style="margin-top:0.5rem">
+                        <span class="material-symbols-outlined">lock_reset</span>
+                        <input v-model="confirmValue" type="password" class="field-active" placeholder="Confirmar contraseña" @keydown.enter="savePassword" @keydown.esc="cancelEdit" />
+                      </div>
+                      <div class="field-actions" style="margin-top:0.5rem; justify-content:flex-end">
+                        <button class="field-save-btn" @click="savePassword" :disabled="isSavingField">
+                          <span v-if="isSavingField" class="field-spinner"></span>
+                          <span v-else class="material-symbols-outlined">thumb_up</span>
+                        </button>
+                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div v-else class="input-wrapper">
                       <span class="material-symbols-outlined">lock</span>
                       <input value="••••••••" type="password" readonly />
                     </div>
-                    <small>Por seguridad, la contraseña está encriptada.</small>
                   </div>
 
-                  <div v-if="user?.role === 'APRENDIZ'" class="form-group readonly">
-                    <label>Ficha</label>
+                  <!-- Ficha (editable, solo APRENDIZ) -->
+                  <div v-if="user?.role === 'APRENDIZ'" class="form-group" :class="{ editing: editingField === 'ficha' }">
+                    <label>
+                      Ficha
+                      <button v-if="editingField !== 'ficha'" class="edit-field-btn" @click="startEdit('ficha')" title="Editar ficha">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">tag</span>
-                      <input :value="formData.ficha" type="text" readonly />
+                      <input v-if="editingField === 'ficha'" v-model="editValue" type="text" class="field-active" placeholder="Código de ficha" @keydown.enter="saveField('ficha')" @keydown.esc="cancelEdit" autofocus />
+                      <input v-else :value="formData.ficha" type="text" readonly />
+                      <div v-if="editingField === 'ficha'" class="field-actions">
+                        <button class="field-save-btn" @click="saveField('ficha')" :disabled="isSavingField">
+                          <span v-if="isSavingField" class="field-spinner"></span>
+                          <span v-else class="material-symbols-outlined">thumb_up</span>
+                        </button>
+                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div v-if="user?.role === 'APRENDIZ'" class="form-group readonly">
-                    <label>Programa</label>
+                  <!-- Programa (editable, solo APRENDIZ) -->
+                  <div v-if="user?.role === 'APRENDIZ'" class="form-group" :class="{ editing: editingField === 'programa' }">
+                    <label>
+                      Programa
+                      <button v-if="editingField !== 'programa'" class="edit-field-btn" @click="startEdit('programa')" title="Editar programa">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">school</span>
-                      <input :value="formData.programa" type="text" readonly />
+                      <input v-if="editingField === 'programa'" v-model="editValue" type="text" class="field-active" placeholder="Nombre del programa" @keydown.enter="saveField('programa')" @keydown.esc="cancelEdit" autofocus />
+                      <input v-else :value="formData.programa" type="text" readonly />
+                      <div v-if="editingField === 'programa'" class="field-actions">
+                        <button class="field-save-btn" @click="saveField('programa')" :disabled="isSavingField">
+                          <span v-if="isSavingField" class="field-spinner"></span>
+                          <span v-else class="material-symbols-outlined">thumb_up</span>
+                        </button>
+                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group readonly">
-                    <label>Área de Conocimiento</label>
+                  <!-- Área de Conocimiento (editable, solo INSTRUCTOR) -->
+                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group" :class="{ editing: editingField === 'areaConocimiento' }">
+                    <label>
+                      Área de Conocimiento
+                      <button v-if="editingField !== 'areaConocimiento'" class="edit-field-btn" @click="startEdit('areaConocimiento')" title="Editar área">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">menu_book</span>
-                      <input :value="formData.areaConocimiento" type="text" readonly />
+                      <input v-if="editingField === 'areaConocimiento'" v-model="editValue" type="text" class="field-active" placeholder="Área de conocimiento" @keydown.enter="saveField('areaConocimiento')" @keydown.esc="cancelEdit" autofocus />
+                      <input v-else :value="formData.areaConocimiento" type="text" readonly />
+                      <div v-if="editingField === 'areaConocimiento'" class="field-actions">
+                        <button class="field-save-btn" @click="saveField('areaConocimiento')" :disabled="isSavingField">
+                          <span v-if="isSavingField" class="field-spinner"></span>
+                          <span v-else class="material-symbols-outlined">thumb_up</span>
+                        </button>
+                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group readonly">
-                    <label>Tipo de Instructor</label>
+                  <!-- Tipo de Instructor (editable, solo INSTRUCTOR) -->
+                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group" :class="{ editing: editingField === 'tipoInstructor' }">
+                    <label>
+                      Tipo de Instructor
+                      <button v-if="editingField !== 'tipoInstructor'" class="edit-field-btn" @click="startEdit('tipoInstructor')" title="Editar tipo">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">support_agent</span>
-                      <input :value="formData.tipoInstructor" type="text" readonly />
+                      <input v-if="editingField === 'tipoInstructor'" v-model="editValue" type="text" class="field-active" placeholder="Tipo de instructor" @keydown.enter="saveField('tipoInstructor')" @keydown.esc="cancelEdit" autofocus />
+                      <input v-else :value="formData.tipoInstructor" type="text" readonly />
+                      <div v-if="editingField === 'tipoInstructor'" class="field-actions">
+                        <button class="field-save-btn" @click="saveField('tipoInstructor')" :disabled="isSavingField">
+                          <span v-if="isSavingField" class="field-spinner"></span>
+                          <span v-else class="material-symbols-outlined">thumb_up</span>
+                        </button>
+                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div class="form-actions" style="display: flex; gap: 1rem; justify-content: space-between; flex-wrap: wrap; width: 100%;">
-                  <button type="button" class="cancel-btn" @click="router.push('/')">
-                    <span>Volver al Inicio</span>
-                  </button>
-                  <button type="button" class="submit-btn" @click="openModal">
-                    <span>Modificar Datos de Contacto</span>
+                <div class="form-actions">
+                  <button type="button" class="back-btn" @click="router.push('/')">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    Volver al Inicio
                   </button>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- Modal de Edición de Contacto (RF-APR-14) -->
-          <Transition name="fade">
-            <div v-if="showModal" class="modal-overlay">
-              <div class="modal-card">
-                <div class="modal-header">
-                  <h3>Actualizar Datos de Contacto</h3>
-                  <button class="close-btn" @click="closeModal">×</button>
-                </div>
-                <div class="modal-body">
-                  <div class="form-group">
-                    <label for="modal-email">Nuevo Correo Electrónico</label>
-                    <div class="input-wrapper">
-                      <span class="material-symbols-outlined">mail</span>
-                      <input id="modal-email" v-model="tempEmail" type="email" placeholder="tu@correo.com" required />
-                    </div>
-                  </div>
-                  
-                  <div class="form-group" style="margin-top: 1.5rem;">
-                    <label for="modal-telefono">Nuevo Teléfono / Celular</label>
-                    <div class="input-wrapper">
-                      <span class="material-symbols-outlined">phone</span>
-                      <input id="modal-telefono" v-model="tempTelefono" type="text" placeholder="Número de contacto" />
-                    </div>
-                  </div>
-
-                  <div class="confirmation-checkbox" style="margin-top: 1.5rem;">
-                    <label class="checkbox-label">
-                      <input type="checkbox" v-model="confirmCheck" />
-                      <span>Confirmo que deseo actualizar mis datos de contacto.</span>
-                    </label>
-                  </div>
-
-                  <div v-if="message.text" :class="['message', message.type]" style="margin-top: 1.5rem;">
-                    {{ message.text }}
-                  </div>
-                </div>
-                <div class="modal-actions">
-                  <button type="button" class="cancel-btn" @click="closeModal" :disabled="isSubmitting">Cancelar</button>
-                  <button type="button" class="save-btn" :disabled="isSubmitting || !confirmCheck" @click="saveContactDetails">
-                    <span v-if="!isSubmitting">Guardar</span>
-                    <span v-else class="loader"></span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Transition>
 
         </div>
       </main>
@@ -378,6 +533,31 @@ const saveContactDetails = async () => {
       @cancel="handleCancelPhoto"
       @select="handleSelectAnother"
     />
+  </Transition>
+
+  <!-- Lightbox: ver foto en pantalla completa -->
+  <Transition name="lightbox-fade">
+    <div
+      v-if="showLightbox && user?.fotoPerfil"
+      class="lightbox-overlay"
+      @click.self="closeLightbox"
+      @keydown.esc="closeLightbox"
+      tabindex="0"
+      ref="lightboxRef"
+    >
+      <button class="lightbox-close" @click="closeLightbox" aria-label="Cerrar">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="lightbox-img-wrapper">
+        <img
+          :src="user.fotoPerfil"
+          :alt="user?.name"
+          class="lightbox-img"
+          draggable="false"
+        />
+        <p class="lightbox-caption">{{ user?.name }}</p>
+      </div>
+    </div>
   </Transition>
 </template>
 
@@ -508,6 +688,9 @@ const saveContactDetails = async () => {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .input-wrapper {
@@ -580,35 +763,129 @@ const saveContactDetails = async () => {
 
 .form-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-top: 1rem;
 }
 
-.submit-btn {
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: var(--color_button, #2e7d32);
-  color: white;
+  color: #fff;
   border: none;
-  padding: 14px 32px;
+  padding: 11px 22px;
   border-radius: 12px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.25s ease;
+  letter-spacing: 0.2px;
+}
+.back-btn .material-symbols-outlined { font-size: 1.1rem; }
+.back-btn:hover {
+  background: #1b5e20;
+  transform: translateX(-3px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25);
+}
+
+/* ── Inline field editing ── */
+
+/** Botón lápiz junto al label */
+.edit-field-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+  line-height: 1;
+  margin-left: 2px;
+}
+.edit-field-btn .material-symbols-outlined { font-size: 0.95rem; }
+.edit-field-btn:hover {
+  color: var(--color_button, #2e7d32);
+  background: rgba(46, 125, 50, 0.08);
+}
+
+/** Campo activo en edición */
+.field-active {
+  border-color: var(--color_button, #2e7d32) !important;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15) !important;
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  cursor: text !important;
+  opacity: 1 !important;
+}
+
+/** Contenedor de botones guardar/cancelar dentro del input-wrapper */
+.field-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.field-save-btn,
+.field-cancel-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 180px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.field-save-btn .material-symbols-outlined,
+.field-cancel-btn .material-symbols-outlined { font-size: 1rem; }
+
+.field-save-btn {
+  background: var(--color_button, #2e7d32);
+  color: #fff;
+}
+.field-save-btn:hover:not(:disabled) { background: #1b5e20; }
+.field-save-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.field-cancel-btn {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+}
+.field-cancel-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
-.submit-btn:hover:not(:disabled) {
-  background: #1b5e20;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+/** Spinner dentro del botón guardar */
+.field-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
 }
 
-.submit-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+/** Borde sutil cuando el grupo está en modo edición */
+.form-group.editing {
+  background: rgba(46, 125, 50, 0.03);
+  border-radius: 12px;
+  padding: 8px;
+  margin: -8px;
+}
+
+/** Grupo especial para el doble input de contraseña */
+.password-edit-group {
+  display: flex;
+  flex-direction: column;
 }
 
 .loader {
@@ -745,4 +1022,83 @@ const saveContactDetails = async () => {
 /* Fade transition */
 .fade-enter-active { animation: fadeIn 0.25s ease; }
 .fade-leave-active { animation: fadeIn 0.15s ease reverse; }
+
+/* ── Lightbox ── */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 1.5rem;
+  outline: none;
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 3001;
+  backdrop-filter: blur(8px);
+}
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1) rotate(90deg);
+}
+.lightbox-close .material-symbols-outlined {
+  font-size: 1.4rem;
+}
+
+.lightbox-img-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: lightboxIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lightbox-img {
+  max-width: min(480px, 90vw);
+  max-height: min(480px, 80vh);
+  width: auto;
+  height: auto;
+  border-radius: 20px;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.08),
+    0 32px 80px rgba(0, 0, 0, 0.7);
+  user-select: none;
+}
+
+.lightbox-caption {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+@keyframes lightboxIn {
+  from { opacity: 0; transform: scale(0.82); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Lightbox transition */
+.lightbox-fade-enter-active { animation: fadeIn 0.2s ease; }
+.lightbox-fade-leave-active { animation: fadeIn 0.15s ease reverse; }
 </style>

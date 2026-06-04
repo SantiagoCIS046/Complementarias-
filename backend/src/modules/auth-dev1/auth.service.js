@@ -7,7 +7,7 @@
 const jwt    = require('jsonwebtoken');
 const crypto = require('crypto');
 const User   = require('../users-dev1/user.model');
-const { JWT_SECRET, JWT_EXPIRES_IN } = require('../../core/config/env');
+const { JWT_SECRET, JWT_EXPIRES_IN, FRONTEND_URL } = require('../../core/config/env');
 const { sendEmail } = require('../../core/utils/mailer');
 const onedriveService = require('../documents-dev2/onedrive.service');
 const driveService = require('../documents-dev2/drive.service');
@@ -15,11 +15,12 @@ const driveService = require('../documents-dev2/drive.service');
 /**
  * Registrar un nuevo usuario.
  */
-const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa, fechaFinLectiva, instructorAsignado, instructorTecnico, instructorProyecto, tipoProyecto, modalidades, tipoInstructor }) => {
+const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa, fechaFinLectiva, instructorAsignado, instructorTecnico, instructorProyecto, tipoProyecto, modalidades, tipoInstructor, isFirstLogin }) => {
   // Verificar que no exista el email
-  const existe = await User.findOne({ email });
+  const emailQuery = email ? email.toLowerCase().trim() : '';
+  const existe = await User.findOne({ email: emailQuery });
   if (existe) {
-    throw new Error('Ya existe un usuario registrado con el email: ' + email);
+    throw new Error('Ya existe un usuario registrado con el email: ' + emailQuery);
   }
 
   // RF-ADM-15 Verificación de estado activo para instructores asignados
@@ -55,6 +56,7 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
     tipoProyecto: tipoProyecto || null,
     modalidades: modalidades || [],
     tipoInstructor: (role === 'INSTRUCTOR') ? (tipoInstructor || null) : null,
+    isFirstLogin: isFirstLogin !== undefined ? isFirstLogin : true,
   });
 
   // Si es un instructor, crear su carpeta de almacenamiento en OneDrive y Google Drive
@@ -86,6 +88,55 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
     }
   }
 
+  // Enviar correo de bienvenida/registro
+  try {
+    await sendEmail({
+      to: email.toLowerCase().trim(),
+      subject: '¡Habilitación de cuenta en RepFora! Credenciales de acceso',
+      html: `
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+          <div style="background: #1b5e20; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 1.2rem;">🎉 ¡Bienvenido a RepFora!</h1>
+            <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Gestión de Etapas Productivas — SENA</p>
+          </div>
+          <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              Hola <strong>${name.trim()}</strong>,
+            </p>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              Tu cuenta ha sido creada en la plataforma RepFora para que gestiones tus procesos formativos.
+            </p>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              A continuación, tus credenciales de acceso:
+            </p>
+            <div style="background: #f8fafc; border-left: 4px solid #1b5e20; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Usuario:</strong> ${email.toLowerCase().trim()}</p>
+              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Contraseña:</strong> ${password}</p>
+            </div>
+            <p style="color: #ea580c; font-size: 0.85rem; font-weight: 700; margin-top: 16px;">
+              ⚠️ Por motivos de seguridad, el sistema te solicitará cambiar esta contraseña en tu primer ingreso.
+            </p>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6; margin-top: 20px;">
+              Puedes acceder a la plataforma haciendo clic en el siguiente enlace:
+            </p>
+            <a href="${FRONTEND_URL}/login"
+               style="display:inline-block;padding:12px 24px;background:#1b5e20;
+                      color:#fff;text-decoration:none;border-radius:6px;margin:16px 0;font-weight:700;">
+              Ingresar a la Plataforma
+            </a>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+            <p style="color: #94a3b8; font-size: 0.75rem; text-align: center;">
+              Este correo fue generado automáticamente por el sistema REPFORA.<br>
+              No responda a este mensaje.
+            </p>
+          </div>
+        </div>
+      `
+    });
+  } catch (emailErr) {
+    console.error('Error enviando correo de registro:', emailErr.message);
+  }
+
   // Generar token
   const token = generarToken(usuario);
 
@@ -106,8 +157,9 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
  * Login de usuario.
  */
 const login = async ({ email, password }) => {
+  const emailQuery = email ? email.toLowerCase().trim() : '';
   // Buscar usuario (incluyendo el campo password que tiene select: false)
-  const usuario = await User.findOne({ email }).select('+password');
+  const usuario = await User.findOne({ email: emailQuery }).select('+password');
   if (!usuario) {
     throw new Error('Credenciales inválidas.');
   }
@@ -192,7 +244,11 @@ const generarToken = (usuario) => {
  * Genera un token temporal y envía email al usuario.
  */
 const forgotPassword = async ({ email }) => {
-  const usuario = await User.findOne({ email });
+  if (!email) {
+    throw new Error('El correo electrónico es requerido.');
+  }
+  const emailQuery = email.toLowerCase().trim();
+  const usuario = await User.findOne({ email: emailQuery });
   if (!usuario) {
     // Respondemos igual aunque no exista por seguridad (no revelar si el email existe)
     return { message: 'Si ese correo existe, recibirás un enlace para restablecer tu contraseña.' };
@@ -208,8 +264,8 @@ const forgotPassword = async ({ email }) => {
   await usuario.save({ validateBeforeSave: false });
 
   // Enviar email
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-  await sendEmail({
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
+  const sendResult = await sendEmail({
     to:      usuario.email,
     subject: 'Restablecer contraseña — RepFora',
     html: `
@@ -229,6 +285,10 @@ const forgotPassword = async ({ email }) => {
       </div>
     `,
   });
+
+  if (!sendResult) {
+    throw new Error('No se pudo enviar el correo de recuperación. Verifique la configuración SMTP en el archivo .env del servidor.');
+  }
 
   return { message: 'Si ese correo existe, recibirás un enlace para restablecer tu contraseña.' };
 };

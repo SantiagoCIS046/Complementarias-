@@ -1522,3 +1522,15 @@ body,
     padding: 1px 4px !important;
   }
 }
+
+/* Chrome, Safari, Edge, Opera: Hide spin-buttons globally */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox: Hide spin-buttons globally */
+input[type=number] {
+  -moz-appearance: textfield;
+}

@@ -95,13 +95,15 @@ const fetchApprentices = async () => {
         initials: (item.apprenticeId?.name || 'A').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
         fotoPerfil: item.apprenticeId?.fotoPerfil || null,
         avatarColor: '#E6F4EA',
-        company: item.companyId?.razonSocial || item.companySnapshot?.razonSocial || item.razonSocial || 'Sin empresa',
+        company: item.companyId?.razon_social || item.companyId?.razonSocial || item.companySnapshot?.razonSocial || item.razonSocial || 'Sin empresa',
         hours: item.horasCompletadas || 0,
         limit: item.horasRequeridas || 864,
         progress: item.horasRequeridas > 0 ? Math.min(Math.round(((item.horasCompletadas || 0) / item.horasRequeridas) * 100), 100) : 0,
-        status: item.estado === 'COMPLETADA' ? 'AL DÍA' : 'EN CURSO',
+        status: ['SOLICITUD', 'REGISTRO', 'VALIDACION', 'APROBADO', 'RECHAZADO'].includes(item.estado)
+          ? 'PENDIENTE'
+          : (item.estado === 'COMPLETADA' ? 'AL DÍA' : 'EN CURSO'),
         lastReport: item.seguimientos?.length || 0,
-        phase: item.estadoEP || 'ACTIVO',
+        phase: item.estado || 'ACTIVO',
         modality: item.modalidad || 'CONTRATO',
         ficha: item.ficha || item.apprenticeId?.ficha || 'S/F',
         fechaAsignacion: item.apprenticeId?.fechaAsignacionInstructor ? new Date(item.apprenticeId.fechaAsignacionInstructor).toLocaleString('es-CO') : null,
@@ -313,6 +315,7 @@ const resetFilters = () => {
 
 const getStatusStyle = (status) => {
   if (status === 'AL DÍA' || status === 'COMPLETADA') return { bg: '#dcfce7', text: '#15803d', dot: '#22c55e' }
+  if (status === 'PENDIENTE') return { bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' }
   return { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' }
 }
 
@@ -324,8 +327,23 @@ const getModalityIcon = (modality) => {
 }
 
 const getPhaseStyle = (phase) => {
-  if (phase === 'ACTIVO') return { backgroundColor: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }
-  return { backgroundColor: '#f1f5f9', color: '#475569', borderColor: '#e2e8f0' }
+  const normalized = (phase || '').toUpperCase();
+  if (normalized === 'VALIDACION') {
+    return { backgroundColor: '#fff7ed', color: '#ea580c', borderColor: '#ffedd5', border: '1px solid #ffedd5' }
+  }
+  if (['APROBADO', 'EN_CURSO', 'ACTIVO'].includes(normalized)) {
+    return { backgroundColor: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0', border: '1px solid #bbf7d0' }
+  }
+  if (normalized === 'RECHAZADO') {
+    return { backgroundColor: '#fef2f2', color: '#dc2626', borderColor: '#fecaca', border: '1px solid #fecaca' }
+  }
+  if (['SOLICITUD', 'REGISTRO'].includes(normalized)) {
+    return { backgroundColor: '#f8fafc', color: '#64748b', borderColor: '#cbd5e1', border: '1px solid #cbd5e1' }
+  }
+  if (['FINALIZADO', 'CERTIFICADO'].includes(normalized)) {
+    return { backgroundColor: '#faf5ff', color: '#7c3aed', borderColor: '#e9d5ff', border: '1px solid #e9d5ff' }
+  }
+  return { backgroundColor: '#f1f5f9', color: '#475569', borderColor: '#e2e8f0', border: '1px solid #e2e8f0' }
 }
 </script>
 
@@ -470,7 +488,12 @@ const getPhaseStyle = (phase) => {
                         <div class="user-cell">
                           <AvatarDisplay :user="app" size="sm" />
                           <div class="user-info">
-                            <p class="user-name">{{ app.name }}</p>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                              <p class="user-name">{{ app.name }}</p>
+                              <span class="phase-badge" :style="getPhaseStyle(app.phase)">
+                                {{ app.phase }}
+                              </span>
+                            </div>
                             <p class="user-sub">
                               Doc: {{ app.doc }}
                               <span v-if="app.fechaAsignacion"> | Asig: {{ app.fechaAsignacion }}</span>
@@ -1015,6 +1038,16 @@ const getPhaseStyle = (phase) => {
   .apprentices-table {
     min-width: 750px;
   }
+}
+
+.phase-badge {
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  display: inline-block;
+  line-height: 1;
 }
 </style>
 

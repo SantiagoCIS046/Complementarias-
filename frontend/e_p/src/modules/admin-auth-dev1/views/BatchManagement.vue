@@ -232,7 +232,7 @@
             <div class="form-grid-2 mb-4">
               <div class="form-group-premium">
                 <label class="label-premium">Código de Ficha</label>
-                <input type="number" v-model="nuevaFicha.codigo_ficha" placeholder="Ej: 2670687" class="select-premium" />
+                <input type="text" v-model="nuevaFicha.codigo_ficha" placeholder="Ej: 2670687" class="select-premium" inputmode="numeric" pattern="[0-9]*" />
               </div>
 
               <div class="form-group-premium">

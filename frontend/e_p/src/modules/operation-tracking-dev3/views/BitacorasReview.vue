@@ -122,6 +122,70 @@
         <section class="column-revision">
           <div class="revision-scroll">
             
+            <!-- CARD DE VALIDACIÓN DE ETAPA PRODUCTIVA (RF-INS-04) -->
+            <div v-if="stageDetails && stageDetails.estado === 'VALIDACION'" class="validation-card-premium">
+              <div class="validation-header">
+                <span class="material-symbols-outlined icon-alert">verified_user</span>
+                <div>
+                  <h4>Validación de Etapa Productiva</h4>
+                  <p>Revise los documentos iniciales cargados para aprobar o rechazar la etapa.</p>
+                </div>
+              </div>
+
+              <!-- Listado de documentos cargados -->
+              <div class="docs-review-section">
+                <h5 class="section-title-sm">DOCUMENTOS REGISTRADOS</h5>
+                <div class="docs-review-list">
+                  <div v-for="doc in documentosEP" :key="doc._id" class="doc-review-item">
+                    <div class="doc-info">
+                      <span class="material-symbols-outlined doc-icon">description</span>
+                      <div class="doc-details">
+                        <span class="doc-type">{{ doc.tipoDocumento }}</span>
+                        <span class="doc-name" :title="doc.nombreArchivo">{{ doc.nombreArchivo }}</span>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-view-pdf-link" @click="viewPdfInline(doc.url)">
+                      <span class="material-symbols-outlined">visibility</span> Ver Documento
+                    </button>
+                  </div>
+                  <div v-if="documentosEP.length === 0" class="no-docs-alert">
+                    <span class="material-symbols-outlined">warning</span> No se encontraron documentos registrados.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Formulario de Evaluación -->
+              <div class="evaluation-form">
+                <label for="validation-comment" class="comment-label">Comentarios / Observaciones de Retroalimentación</label>
+                <textarea 
+                  id="validation-comment" 
+                  v-model="validationComment" 
+                  placeholder="Escriba aquí los detalles de la aprobación o el motivo de rechazo (obligatorio si rechaza)..." 
+                  rows="3"
+                  class="comment-textarea"
+                ></textarea>
+
+                <div class="validation-actions">
+                  <button 
+                    type="button" 
+                    class="btn-reject" 
+                    :disabled="isSubmittingValidation" 
+                    @click="submitValidation('RECHAZADA')"
+                  >
+                    <span class="material-symbols-outlined">cancel</span> Rechazar Etapa
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn-approve" 
+                    :disabled="isSubmittingValidation" 
+                    @click="submitValidation('APROBADA')"
+                  >
+                    <span class="material-symbols-outlined">check_circle</span> Aprobar Etapa
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Historial de Aprendiz: Modalidades e Instructores Anteriores (RF-INS-21) -->
             <div class="instructor-checklist-container" style="margin-bottom: 16px; background: var(--bg-elevated); border: 1px solid var(--border-primary);">
               <div class="instructor-checklist-header" style="border-bottom: 1px solid var(--border-primary); padding-bottom: 8px; margin-bottom: 10px;">
@@ -939,12 +1003,15 @@
         </button>
       </div>
       <div class="modal-body" style="flex: 1; padding: 0; position: relative; background: #525659;">
-        <iframe :src="activePdfUrl" width="100%" height="100%" style="border: none;"></iframe>
+        <iframe :src="resolvePdfUrl(activePdfUrl)" width="100%" height="100%" style="border: none;"></iframe>
       </div>
       <div class="modal-footer-actions" style="padding: 12px 24px; background: var(--bg-secondary); border-top: 1px solid var(--border-primary); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; border-radius: 0;">
         <button @click="showPdfViewer = false" class="btn-cancel-premium">Cerrar Visor</button>
-        <a :href="activePdfUrl" download class="btn-confirm-premium" style="display: flex; align-items: center; gap: 8px; background-color: var(--color_button); color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;">
+        <a :href="resolvePdfUrl(activePdfUrl).replace('/view/', '/download/')" download class="btn-confirm-premium" style="display: flex; align-items: center; gap: 8px; background-color: var(--color_button); color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;">
           <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Descargar PDF
+        </a>
+        <a :href="resolvePdfUrl(activePdfUrl)" target="_blank" class="btn-confirm-premium" style="display: flex; align-items: center; gap: 8px; background-color: #2563eb; color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;">
+          <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span> Abrir en nueva pestaña
         </a>
       </div>
     </div>
@@ -1025,9 +1092,11 @@ import AvatarDisplay from '@/components/shared/AvatarDisplay.vue'
 import { bitacoraService } from '../services/bitacora.service'
 import { trackingService } from '../services/tracking.service'
 import { useAuthStore } from '../../../core/store/auth.store'
+import { useAlert } from '../../../core/composables/useAlert'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const { showSuccess, showError, showWarning, showConfirm } = useAlert()
 
 const currentUser = computed(() => authStore.user || { name: 'Instructor', role: 'INSTRUCTOR' })
 
@@ -1170,12 +1239,12 @@ const submitNewBitacora = async () => {
     }
 
     await bitacoraService.crear(newBitacoraData)
-    alert('¡Bitácora subida y validada por IA con éxito!')
+    showSuccess('Éxito', '¡Bitácora subida y validada por IA con éxito!')
     showNewBitacoraModal.value = false
     await fetchBitacoras()
   } catch (err) {
     console.error('Error al guardar la bitácora:', err)
-    alert('Error al guardar la bitácora: ' + (err.response?.data?.message || err.message))
+    showError('Error', 'Error al guardar la bitácora: ' + (err.response?.data?.message || err.message))
   } finally {
     isSaving.value = false
   }
@@ -1228,7 +1297,7 @@ const handleReview = async (estado) => {
   if (!selectedBitacora.value) return
   
   if (estado === 'RECHAZADA' && !observaciones.value) {
-    alert('Por favor ingrese observaciones para el rechazo.')
+    showWarning('Advertencia', 'Por favor ingrese observaciones para el rechazo.')
     return
   }
 
@@ -1238,11 +1307,11 @@ const handleReview = async (estado) => {
       estado,
       observaciones: observaciones.value
     })
-    alert(`Bitácora ${estado} correctamente.`)
+    showSuccess('Éxito', `Bitácora ${estado} correctamente.`)
     await fetchBitacoras()
   } catch (error) {
     console.error('Error reviewing bitacora:', error)
-    alert('Error al procesar la revisión.')
+    showError('Error', 'Error al procesar la revisión.')
   } finally {
     isSaving.value = false
   }
@@ -1352,7 +1421,7 @@ const submitNewTracking = async () => {
       calificacion: newTrackingForm.value.calificacion,
       observaciones: newTrackingForm.value.observaciones,
       compromisos: newTrackingForm.value.compromisos,
-      evidenciaUrl: 'https://docs.google.com/viewer?url=simulado_' + selectedTrackingFile.value.name,
+      evidenciaUrl: scanTrackingResult.value.evidenciaUrl || ('https://docs.google.com/viewer?url=simulado_' + selectedTrackingFile.value.name),
       evidenciaSize: selectedTrackingFile.value.size,
       isValidatedByIA: true,
       signaturesValidated: scanTrackingResult.value.signatures,
@@ -1360,12 +1429,12 @@ const submitNewTracking = async () => {
     }
 
     await trackingService.createTracking(newTrackingData)
-    alert('¡Visita de seguimiento registrada y validada por IA con éxito!')
+    showSuccess('Éxito', '¡Visita de seguimiento registrada y validada por IA con éxito!')
     showNewTrackingModal.value = false
     await fetchTrackings()
   } catch (err) {
     console.error('Error al guardar seguimiento:', err)
-    alert('Error al registrar seguimiento: ' + (err.response?.data?.message || err.message))
+    showError('Error', 'Error al registrar seguimiento: ' + (err.response?.data?.message || err.message))
   } finally {
     isSaving.value = false
   }
@@ -1376,10 +1445,10 @@ const authorizeStageNow = async () => {
   try {
     await trackingService.authorizeExtraordinary(stageId, true)
     cupo.value.extraordinaryTrackingAuthorized = true
-    alert('¡Seguimientos extraordinarios autorizados correctamente!')
+    showSuccess('Éxito', '¡Seguimientos extraordinarios autorizados correctamente!')
   } catch (err) {
     console.error('Error al autorizar etapa:', err)
-    alert('Error al autorizar: ' + (err.response?.data?.message || err.message))
+    showError('Error', 'Error al autorizar: ' + (err.response?.data?.message || err.message))
   } finally {
     isSaving.value = false
   }
@@ -1395,6 +1464,38 @@ const formatDate = (date) => {
   return new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
+const resolvePdfUrl = (url) => {
+  if (!url) return ''
+  
+  let resolvedUrl = url
+  
+  // Si la URL es una ruta relativa de la API local (ej: /api/documents/view/...)
+  if (url.startsWith('/api/') || url.startsWith('api/')) {
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+    const domainPart = apiBase.replace('/api', '')
+    const relativePath = url.startsWith('/') ? url : '/' + url
+    resolvedUrl = domainPart + relativePath
+  }
+  
+  // Agregar token para autenticación en iframe si es de nuestra API
+  if (resolvedUrl.includes('/api/documents/view/') || resolvedUrl.includes('/api/documents/download/')) {
+    const token = authStore.token
+    if (token) {
+      const sep = resolvedUrl.includes('?') ? '&' : '?'
+      resolvedUrl = `${resolvedUrl}${sep}token=${token}`
+    }
+  } else if (resolvedUrl.includes('drive.google.com')) {
+    // Si es Google Drive, convertir /view a /preview para permitir visualización en iframe
+    if (resolvedUrl.endsWith('/view')) {
+      resolvedUrl = resolvedUrl.substring(0, resolvedUrl.length - 5) + '/preview'
+    } else if (resolvedUrl.includes('/view?')) {
+      resolvedUrl = resolvedUrl.replace('/view?', '/preview?')
+    }
+  }
+  
+  return resolvedUrl
+}
+
 const showPdfViewer = ref(false)
 const activePdfUrl = ref(null)
 
@@ -1405,6 +1506,9 @@ const viewPdfInline = (url) => {
 
 const stageDetails = ref(null)
 const etapasPrevias = ref([])
+const documentosEP = ref([])
+const validationComment = ref('')
+const isSubmittingValidation = ref(false)
 
 const fetchStageDetails = async () => {
   if (!stageId) return
@@ -1412,9 +1516,53 @@ const fetchStageDetails = async () => {
     const res = await trackingService.getStageDetails(stageId)
     stageDetails.value = res.data.data?.stage || null
     etapasPrevias.value = res.data.data?.etapasPrevias || []
+    documentosEP.value = res.data.data?.documentos || []
   } catch (err) {
     console.error('Error fetching stage details:', err)
   }
+}
+
+const submitValidation = async (decision) => {
+  if (decision === 'RECHAZADA' && (!validationComment.value || validationComment.value.trim() === '')) {
+    showWarning('Advertencia', 'Al rechazar una etapa productiva, debe escribir un comentario de retroalimentación detallando el motivo.')
+    return
+  }
+
+  const confirmMsg = decision === 'APROBADA'
+    ? '¿Está seguro de que desea aprobar esta etapa productiva? Esto habilitará el cargue de bitácoras para el aprendiz.'
+    : '¿Está seguro de que desea rechazar esta etapa productiva?'
+  
+  showConfirm(
+    'Confirmar Evaluación',
+    confirmMsg,
+    async () => {
+      isSubmittingValidation.value = true
+      try {
+        const payload = {
+          decision,
+          comentario: validationComment.value.trim(),
+          documentosRevisados: documentosEP.value.map(doc => ({
+            docId: doc._id,
+            estado: decision === 'APROBADA' ? 'APROBADO' : 'RECHAZADO',
+            observacion: validationComment.value.trim()
+          }))
+        }
+        
+        await trackingService.evaluarEP(stageId, payload)
+        showSuccess('Éxito', `¡Etapa productiva ${decision === 'APROBADA' ? 'aprobada' : 'rechazada'} con éxito!`)
+        validationComment.value = ''
+        
+        // Recargar los detalles de la etapa, documentos y bitácoras
+        await fetchStageDetails()
+        await fetchBitacoras()
+      } catch (err) {
+        console.error('Error al evaluar la etapa productiva:', err)
+        showError('Error', 'Error al guardar la evaluación: ' + (err.response?.data?.message || err.message))
+      } finally {
+        isSubmittingValidation.value = false
+      }
+    }
+  )
 }
 
 const apprenticeInstructorsHistory = computed(() => {
@@ -1429,12 +1577,12 @@ const historialModalidades = computed(() => {
       detalle: 'Etapa Actual'
     })
   }
-  etapasPrevias.value.forEach(ep => {
-    list.push({
-      modalidad: ep.modalidad,
-      detalle: ep.companyId?.razonSocial || 'Etapa Histórica'
+    etapasPrevias.value.forEach(ep => {
+      list.push({
+        modalidad: ep.modalidad,
+        detalle: ep.companyId?.razon_social || ep.companyId?.razonSocial || ep.companySnapshot?.razonSocial || 'Etapa Histórica'
+      })
     })
-  })
   const userModalidades = stageDetails.value?.apprenticeId?.modalidades || []
   userModalidades.forEach(m => {
     if (!list.some(item => item.modalidad === m)) {
@@ -1484,7 +1632,7 @@ const sendGeneralChatMessage = async () => {
     generalChatMessageText.value = ''
   } catch (err) {
     console.error('Error al enviar mensaje al chat general:', err)
-    alert('Error al enviar el mensaje de observaciones.')
+    showError('Error', 'Error al enviar el mensaje de observaciones.')
   } finally {
     isSendingGeneralChatMessage.value = false
   }
@@ -2179,5 +2327,237 @@ onMounted(async () => {
     width: 100%;
     margin: 8px;
   }
+}
+
+.validation-card-premium {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.validation-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 0.75rem;
+}
+
+.validation-header h4 {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.validation-header p {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+.icon-alert {
+  font-size: 1.8rem !important;
+  color: #ea580c;
+}
+
+.docs-review-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.section-title-sm {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.docs-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-review-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  padding: 8px 12px;
+  transition: border-color 0.2s;
+}
+
+.doc-review-item:hover {
+  border-color: var(--color_button);
+}
+
+.doc-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.doc-icon {
+  font-size: 1.4rem !important;
+  color: var(--color_button);
+}
+
+.doc-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.doc-type {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+.doc-name {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.btn-view-pdf-link {
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  color: var(--color_button);
+  padding: 4px 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.btn-view-pdf-link:hover {
+  background: var(--color_button);
+  color: white;
+  border-color: var(--color_button);
+}
+
+.btn-view-pdf-link .material-symbols-outlined {
+  font-size: 0.9rem !important;
+}
+
+.no-docs-alert {
+  font-size: 0.7rem;
+  color: #ea580c;
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.no-docs-alert .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.evaluation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: 1px dashed var(--border-primary);
+  padding-top: 0.75rem;
+}
+
+.comment-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.comment-textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 8px 12px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.comment-textarea:focus {
+  border-color: var(--color_button);
+}
+
+.validation-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.btn-reject, .btn-approve {
+  flex: 1;
+  height: 36px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reject {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.btn-reject:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.btn-approve {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.btn-approve:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.btn-reject:disabled, .btn-approve:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-reject .material-symbols-outlined, .btn-approve .material-symbols-outlined {
+  font-size: 1.1rem !important;
 }
 </style>

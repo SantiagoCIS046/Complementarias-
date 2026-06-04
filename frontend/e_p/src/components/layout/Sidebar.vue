@@ -2,7 +2,10 @@
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../../core/store/auth.store';
+import { useAlert } from '../../core/composables/useAlert';
 import AvatarDisplay from '../shared/AvatarDisplay.vue';
+
+const { showConfirm } = useAlert();
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -87,9 +90,20 @@ const menuItems = computed(() => {
   ];
 });
 
-const handleLogout = () => {
-  authStore.logout();
-  router.push('/login');
+const handleLogout = async () => {
+  const confirmed = await showConfirm(
+    'Cerrar Sesión',
+    '¿Está seguro de que desea cerrar su sesión en el sistema?',
+    null,
+    {
+      okText: 'Cerrar Sesión',
+      cancelText: 'Cancelar'
+    }
+  );
+  if (confirmed) {
+    authStore.logout();
+    router.push('/login');
+  }
 };
 </script>
 

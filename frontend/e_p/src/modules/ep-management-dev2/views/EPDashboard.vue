@@ -163,23 +163,38 @@ const msgRevision = ref(null)
 const puedeEnviarRevision = computed(() => stage.value?.estado === 'REGISTRO')
 const puedeCrearBitacora = computed(() => stage.value?.estado === 'EN_CURSO')
 
-async function load() {
-  loading.value = true; error.value = null
-  animatedProgress.value = 0
-  animatedPercentage.value = 0
+async function load(silent = false) {
+  if (!silent) {
+    loading.value = true; error.value = null
+    animatedProgress.value = 0
+    animatedPercentage.value = 0
+  }
   try {
     const res = await epService.getAll()
     const stages = res.data?.data || []
     if (stages.length > 0) {
-      stage.value = stages[0]
+      const newStage = stages[0]
+      const oldProgress = aprendiz.value.progresoPorcentaje
+      const oldEstado = stage.value?.estado
+      
+      stage.value = newStage
       const bRes = await epService.getBitacorasByStage(stage.value._id)
       bitacoras.value = bRes.data?.data || []
+      
+      if (silent && (oldProgress !== aprendiz.value.progresoPorcentaje || oldEstado !== newStage.estado)) {
+        await nextTick()
+        animateProgress(aprendiz.value.progresoPorcentaje)
+      }
     }
-  } catch (e) { error.value = 'No se pudo cargar la información.' }
+  } catch (e) { 
+    if (!silent) error.value = 'No se pudo cargar la información.' 
+  }
   finally {
-    loading.value = false
-    await nextTick()
-    animateProgress(aprendiz.value.progresoPorcentaje)
+    if (!silent) {
+      loading.value = false
+      await nextTick()
+      animateProgress(aprendiz.value.progresoPorcentaje)
+    }
   }
 }
 
@@ -218,6 +233,15 @@ const handleOpenModal = () => {
   showModal.value = true
 }
 
+let intervalId = null
+
+const startPollingData = () => {
+  if (intervalId) clearInterval(intervalId)
+  intervalId = setInterval(async () => {
+    await load(true)
+  }, 20000)
+}
+
 onMounted(async () => {
   await load()
   if (router.currentRoute.value.query.openModal === '1') {
@@ -225,10 +249,14 @@ onMounted(async () => {
     router.replace({ path: '/mi-ep', query: {} })
   }
   window.addEventListener('open-new-bitacora', handleOpenModal)
+  startPollingData()
 })
 
 onUnmounted(() => {
   window.removeEventListener('open-new-bitacora', handleOpenModal)
+  if (intervalId) {
+    clearInterval(intervalId)
+  }
 })
 
 watch(() => router.currentRoute.value.query.openModal, (newVal) => {

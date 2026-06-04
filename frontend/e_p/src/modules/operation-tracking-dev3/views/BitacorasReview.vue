@@ -31,16 +31,47 @@
             <span class="material-symbols-outlined">forum</span> Chat de Observaciones
           </button>
           
-          <div class="fichas-section mt-4">
+          <div class="fichas-section mt-4" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
             <h3 class="section-title">
-              <span class="material-symbols-outlined">person</span> APRENDIZ SELECCIONADO
+              <span class="material-symbols-outlined">groups</span> APRENDICES EN ETAPA
             </h3>
             
-            <div class="ficha-card active">
-              <div class="ficha-header">
-                <span class="ficha-id">Ficha {{ ficha }}</span>
+            <div v-if="isSidebarLoading" style="padding: 10px; text-align: center; font-size: 0.7rem; color: var(--text-muted);">
+              Cargando aprendices...
+            </div>
+            
+            <div v-else-if="myApprentices.length === 0" style="padding: 10px; text-align: center; font-size: 0.7rem; color: var(--text-muted); font-style: italic;">
+              Sin aprendices asignados.
+            </div>
+            
+            <div v-else class="fichas-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; max-height: 50vh;">
+              <div 
+                v-for="item in myApprentices" 
+                :key="item._id"
+                class="ficha-card"
+                :class="{ active: stageId === item._id }"
+                @click="selectApprentice(item)"
+                style="padding: 10px; cursor: pointer; transition: all 0.2s;"
+              >
+                <div class="ficha-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span class="ficha-id" style="font-size: 0.6rem; font-weight: 800; color: var(--color_button);">
+                    Ficha {{ item.ficha || item.apprenticeId?.ficha || 'S/F' }}
+                  </span>
+                  <span 
+                    class="state-indicator-badge" 
+                    style="font-size: 0.55rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;"
+                    :style="getStateBadgeStyle(item.estado)"
+                  >
+                    {{ item.estado }}
+                  </span>
+                </div>
+                <p class="ficha-name" style="font-size: 0.72rem; font-weight: 700; margin: 0; color: var(--text-primary);">
+                  {{ item.apprenticeId?.name || 'Aprendiz sin nombre' }}
+                </p>
+                <p style="font-size: 0.6rem; color: var(--text-muted); margin: 2px 0 0 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ item.companySnapshot?.razonSocial || item.companyId?.razon_social || item.companyId?.razonSocial || 'Sin empresa' }}
+                </p>
               </div>
-              <p class="ficha-name">{{ apprenticeName }}</p>
             </div>
           </div>
         </aside>
@@ -1084,8 +1115,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
 import AvatarDisplay from '@/components/shared/AvatarDisplay.vue'
@@ -1094,15 +1125,20 @@ import { trackingService } from '../services/tracking.service'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { useAlert } from '../../../core/composables/useAlert'
 
+const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const { showSuccess, showError, showWarning, showConfirm } = useAlert()
 
 const currentUser = computed(() => authStore.user || { name: 'Instructor', role: 'INSTRUCTOR' })
 
-const stageId = route.query.id
-const apprenticeName = route.query.name || 'Aprendiz'
-const ficha = route.query.ficha || 'S/N'
+const stageId = ref(route.query.id)
+const apprenticeName = ref(route.query.name || 'Aprendiz')
+const ficha = ref(route.query.ficha || 'S/N')
+
+// --- LISTADO DE APRENDICES ASIGNADOS (BARRA LATERAL) ---
+const myApprentices = ref([])
+const isSidebarLoading = ref(false)
 
 // --- PESTAÑAS (RF-INS-08) ---
 const activeTab = ref('bitacoras')
@@ -1224,7 +1260,7 @@ const submitNewBitacora = async () => {
   isSaving.value = true
   try {
     const newBitacoraData = {
-      stageId: stageId,
+      stageId: stageId.value,
       apprenticeId: stageDetails.value?.apprenticeId?._id || stageDetails.value?.apprenticeId,
       semana: newBitacoraForm.value.esAdicional ? undefined : newBitacoraForm.value.semana,
       descripcion: newBitacoraForm.value.descripcion || 'Registro semanal de actividades',
@@ -1273,10 +1309,10 @@ const openWizardModal = () => {
 }
 
 const fetchBitacoras = async () => {
-  if (!stageId) return
+  if (!stageId.value) return
   isLoading.value = true
   try {
-    const res = await bitacoraService.getByStage(stageId)
+    const res = await bitacoraService.getByStage(stageId.value)
     bitacoras.value = res.data.data || []
     if (bitacoras.value.length > 0) {
       selectedBitacora.value = bitacoras.value[bitacoras.value.length - 1]
@@ -1319,9 +1355,9 @@ const handleReview = async (estado) => {
 
 // --- MÉTODOS SEGUIMIENTOS (RF-INS-08) ---
 const fetchTrackings = async () => {
-  if (!stageId) return
+  if (!stageId.value) return
   try {
-    const res = await trackingService.getAllTrackings({ stageId })
+    const res = await trackingService.getAllTrackings({ stageId: stageId.value })
     trackings.value = res.data.data || []
     if (res.data.cupo) {
       cupo.value = res.data.cupo
@@ -1414,7 +1450,7 @@ const submitNewTracking = async () => {
   isSaving.value = true
   try {
     const newTrackingData = {
-      stageId: stageId,
+      stageId: stageId.value,
       numeroVisita: newTrackingForm.value.numeroVisita,
       fechaVisita: newTrackingForm.value.fechaVisita,
       lugarVisita: newTrackingForm.value.lugarVisita,
@@ -1443,7 +1479,7 @@ const submitNewTracking = async () => {
 const authorizeStageNow = async () => {
   isSaving.value = true
   try {
-    await trackingService.authorizeExtraordinary(stageId, true)
+    await trackingService.authorizeExtraordinary(stageId.value, true)
     cupo.value.extraordinaryTrackingAuthorized = true
     showSuccess('Éxito', '¡Seguimientos extraordinarios autorizados correctamente!')
   } catch (err) {
@@ -1511,9 +1547,9 @@ const validationComment = ref('')
 const isSubmittingValidation = ref(false)
 
 const fetchStageDetails = async () => {
-  if (!stageId) return
+  if (!stageId.value) return
   try {
-    const res = await trackingService.getStageDetails(stageId)
+    const res = await trackingService.getStageDetails(stageId.value)
     stageDetails.value = res.data.data?.stage || null
     etapasPrevias.value = res.data.data?.etapasPrevias || []
     documentosEP.value = res.data.data?.documentos || []
@@ -1548,7 +1584,7 @@ const submitValidation = async (decision) => {
           }))
         }
         
-        await trackingService.evaluarEP(stageId, payload)
+        await trackingService.evaluarEP(stageId.value, payload)
         showSuccess('Éxito', `¡Etapa productiva ${decision === 'APROBADA' ? 'aprobada' : 'rechazada'} con éxito!`)
         validationComment.value = ''
         
@@ -1617,12 +1653,12 @@ const closeGeneralChatDrawer = () => {
 
 const sendGeneralChatMessage = async () => {
   if (!generalChatMessageText.value || generalChatMessageText.value.trim() === '') return
-  if (!stageId) return
+  if (!stageId.value) return
 
   isSendingGeneralChatMessage.value = true
   try {
     const remitente = currentUser.value.role === 'ADMIN' ? 'ADMIN' : 'Instructor'
-    await http.post(`/productive-stages/${stageId}/chat`, {
+    await http.post(`/productive-stages/${stageId.value}/chat`, {
       remitente,
       texto: generalChatMessageText.value.trim()
     })
@@ -1638,12 +1674,106 @@ const sendGeneralChatMessage = async () => {
   }
 }
 
+// Polling de datos cada 20 segundos para actualización en tiempo real
+let intervalId = null
+
+const startPollingData = () => {
+  if (intervalId) clearInterval(intervalId)
+  intervalId = setInterval(async () => {
+    if (!stageId.value) return
+    try {
+      const resB = await bitacoraService.getByStage(stageId.value)
+      bitacoras.value = resB.data.data || []
+      
+      const resT = await trackingService.getAllTrackings({ stageId: stageId.value })
+      trackings.value = resT.data.data || []
+      if (resT.data.cupo) {
+        cupo.value = resT.data.cupo
+      }
+      
+      const resS = await trackingService.getStageDetails(stageId.value)
+      stageDetails.value = resS.data.data?.stage || null
+      etapasPrevias.value = resS.data.data?.etapasPrevias || []
+      documentosEP.value = resS.data.data?.documentos || []
+    } catch (err) {
+      console.error('Error in BitacorasReview background polling:', err)
+    }
+  }, 20000)
+}
+
+watch(() => route.query.id, async (newId) => {
+  stageId.value = newId
+  apprenticeName.value = route.query.name || 'Aprendiz'
+  ficha.value = route.query.ficha || 'S/N'
+  
+  selectedBitacora.value = null
+  selectedTracking.value = null
+  observaciones.value = ''
+  
+  await fetchBitacoras()
+  await fetchTrackings()
+  await fetchStageDetails()
+  
+  if (route.query.openChat === 'true') {
+    showGeneralChatDrawer.value = true
+  }
+})
+const selectApprentice = (item) => {
+  router.push({
+    path: '/bitacoras',
+    query: {
+      id: item._id,
+      name: item.apprenticeId?.name || 'Aprendiz',
+      ficha: item.ficha || item.apprenticeId?.ficha || 'S/F'
+    }
+  })
+}
+
+const fetchMyApprentices = async () => {
+  isSidebarLoading.value = true
+  try {
+    const res = await trackingService.getMyApprentices()
+    myApprentices.value = res.data.data || []
+    
+    // Si no hay un id en la URL, pero tenemos aprendices asignados, preseleccionar el primero
+    if (!stageId.value && myApprentices.value.length > 0) {
+      selectApprentice(myApprentices.value[0])
+    }
+  } catch (err) {
+    console.error('Error fetching apprentices for sidebar:', err)
+  } finally {
+    isSidebarLoading.value = false
+  }
+}
+
+const getStateBadgeStyle = (estado) => {
+  const normalized = (estado || '').toUpperCase()
+  if (normalized === 'VALIDACION') {
+    return { backgroundColor: 'rgba(234, 88, 12, 0.1)', color: '#ea580c' }
+  }
+  if (['APROBADO', 'EN_CURSO'].includes(normalized)) {
+    return { backgroundColor: 'rgba(22, 163, 74, 0.1)', color: '#16a34a' }
+  }
+  if (normalized === 'RECHAZADO') {
+    return { backgroundColor: 'rgba(220, 38, 38, 0.1)', color: '#dc2626' }
+  }
+  return { backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }
+}
+
 onMounted(async () => {
+  await fetchMyApprentices()
   await fetchBitacoras()
   await fetchTrackings()
   await fetchStageDetails()
   if (route.query.openChat === 'true') {
     showGeneralChatDrawer.value = true
+  }
+  startPollingData()
+})
+
+onUnmounted(() => {
+  if (intervalId) {
+    clearInterval(intervalId)
   }
 })
 </script>

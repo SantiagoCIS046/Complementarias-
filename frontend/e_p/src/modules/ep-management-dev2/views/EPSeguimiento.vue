@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { useThemeStore } from '../../../core/store/theme.store'
 import { epService } from '../services/ep.service'
@@ -82,9 +82,11 @@ const stats = computed(() => {
   return { aprobadas, pendientes }
 })
 
-const loadData = async () => {
-  loading.value = true
-  error.value = null
+const loadData = async (silent = false) => {
+  if (!silent) {
+    loading.value = true
+    error.value = null
+  }
   try {
     const res = await epService.getAll()
     const stages = res.data?.data || []
@@ -100,10 +102,14 @@ const loadData = async () => {
       }
     }
   } catch (err) {
-    notify('Error al sincronizar con el servidor', 'error')
-    error.value = 'No se pudo sincronizar con el servidor.'
+    if (!silent) {
+      notify('Error al sincronizar con el servidor', 'error')
+      error.value = 'No se pudo sincronizar con el servidor.'
+    }
   } finally {
-    loading.value = false
+    if (!silent) {
+      loading.value = false
+    }
   }
 }
 
@@ -175,10 +181,33 @@ const openBitacora = (b) => {
   openDialog(`Bitácora Semana ${b.semana}`, b.descripcion || 'No se registraron observaciones detalladas para esta quincena.', 'info')
 }
 
+let intervalId = null
+
+const startPollingData = () => {
+  if (intervalId) clearInterval(intervalId)
+  intervalId = setInterval(async () => {
+    await loadData(true)
+  }, 20000)
+}
+
+watch(() => route.query, (newQuery) => {
+  if (newQuery.openChat === 'true') {
+    showChatDrawer.value = true
+  }
+  loadData(true)
+})
+
 onMounted(async () => {
   await loadData()
   if (route.query.openChat === 'true') {
     showChatDrawer.value = true
+  }
+  startPollingData()
+})
+
+onUnmounted(() => {
+  if (intervalId) {
+    clearInterval(intervalId)
   }
 })
 </script>

@@ -83,29 +83,44 @@ const validateEmail = (email) => {
 
 // --- Servicios ---
 const loadData = async () => {
-  try {
-    isLoadingCompanies.value = true
-    const resComp = await epService.getCompanies()
-    const dataComp = resComp.data?.data || resComp.data || []
-    companies.value = Array.isArray(dataComp) ? dataComp : []
-    
-    isLoadingCert.value = true
-    const resCert = await epService.getEstadoCertificacion('current')
-    certData.value = resCert.data?.data || { estado: 'Pendiente', mensaje: 'Debes formalizar para continuar.', habilitado: false }
+  // Ejecutar carga de empresas y certificación en paralelo (errores no bloquean elegibilidad)
+  isLoadingCompanies.value = true
+  isLoadingCert.value = true
+  isCheckingEligibility.value = true
 
-    isCheckingEligibility.value = true
-    try {
-      const resEleg = await epService.checkElegibility()
-      eligibilityInfo.value = resEleg.data?.data || resEleg.data
-    } catch (err) {
-      eligibilityInfo.value = err.response?.data || { elegible: false, mensaje: 'Error al validar elegibilidad temporal.' }
-    }
-  } catch (e) {
-    console.error(e)
+  // Carga de empresas (no crítica)
+  epService.getCompanies()
+    .then(resComp => {
+      const dataComp = resComp.data?.data || resComp.data || []
+      companies.value = Array.isArray(dataComp) ? dataComp : []
+    })
+    .catch(() => { companies.value = [] })
+    .finally(() => { isLoadingCompanies.value = false })
+
+  // Carga de certificación (no crítica)
+  epService.getEstadoCertificacion('current')
+    .then(resCert => {
+      certData.value = resCert.data?.data || { estado: 'Pendiente', mensaje: 'Debes formalizar para continuar.', habilitado: false }
+    })
+    .catch(() => {
+      certData.value = { estado: 'Pendiente', mensaje: 'Debes formalizar para continuar.', habilitado: false }
+    })
+    .finally(() => { isLoadingCert.value = false })
+
+  // Verificación de elegibilidad (CRÍTICA — siempre debe ejecutarse)
+  try {
+    const resEleg = await epService.checkElegibility()
+    // El backend devuelve { success: true, data: { elegible, mensaje, ... } }
+    eligibilityInfo.value = resEleg.data?.data || resEleg.data
+  } catch (err) {
+    // Si el backend devuelve error HTTP, usar el body del error
+    eligibilityInfo.value = err.response?.data?.data || err.response?.data || { elegible: false, mensaje: 'No se pudo verificar la elegibilidad. Contacta al coordinador.' }
   } finally {
-    isLoadingCompanies.value = false
-    isLoadingCert.value = false
     isCheckingEligibility.value = false
+    // Fail-safe: si eligibilityInfo sigue null, bloquear por seguridad
+    if (!eligibilityInfo.value) {
+      eligibilityInfo.value = { elegible: false, mensaje: 'No se pudo verificar la elegibilidad. Contacta al coordinador académico.' }
+    }
   }
 }
 
@@ -304,18 +319,25 @@ onMounted(loadData)
             </div>
 
             <!-- BANNER DE ELEGIBILIDAD (No Elegible) -->
-            <div v-else-if="eligibilityInfo && !eligibilityInfo.elegible" class="card eligibility-warning-card mt-16" style="border: 2px solid #EF4444; background: #FEF2F2; color: #991B1B; margin-bottom: 24px; border-radius: 16px; padding: 24px; display: flex; align-items: flex-start; gap: 16px;">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: #EF4444; margin-top: 2px;">gpp_maybe</span>
-              <div>
-                <h3 style="font-weight: 800; font-size: 16px; margin: 0 0 6px 0; color: #991B1B;">Registro Bloqueado por Elegibilidad Temporal</h3>
-                <p style="margin: 0; font-size: 14px; font-weight: 600; line-height: 1.5;">{{ eligibilityInfo.mensaje }}</p>
-                <div style="margin-top: 12px; font-size: 13px; font-weight: 500; color: #7F1D1D;">
-                  Comunícate con la coordinación académica o tu instructor asignado para evaluar tu situación.
+            <div v-else-if="eligibilityInfo && !eligibilityInfo.elegible" class="card mt-16" style="border: 2px solid #EF4444; background: #FEF2F2; color: #991B1B; margin-bottom: 24px; border-radius: 16px; padding: 28px; display: flex; align-items: flex-start; gap: 20px;">
+              <span class="material-symbols-outlined" style="font-size: 40px; color: #EF4444; margin-top: 2px; flex-shrink: 0;">
+                {{ eligibilityInfo.mensaje?.includes('Ficha') ? 'badge' : eligibilityInfo.mensaje?.includes('activa') ? 'lock' : 'gpp_maybe' }}
+              </span>
+              <div style="flex:1;">
+                <h3 style="font-weight: 800; font-size: 17px; margin: 0 0 8px 0; color: #991B1B;">
+                  {{ eligibilityInfo.mensaje?.includes('Ficha') ? 'Sin Ficha de Formación Asignada' :
+                     eligibilityInfo.mensaje?.includes('activa') ? 'Registro Bloqueado — EP Activa' :
+                     'Registro Bloqueado por Elegibilidad' }}
+                </h3>
+                <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; line-height: 1.6; color: #7F1D1D;">{{ eligibilityInfo.mensaje }}</p>
+                <div style="background: rgba(239,68,68,0.1); border-radius: 10px; padding: 12px 16px; font-size: 13px; font-weight: 500; color: #991B1B; display: flex; align-items: center; gap: 8px;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">support_agent</span>
+                  Comunícate con la coordinación académica o tu instructor asignado para resolver esta situación.
                 </div>
               </div>
             </div>
 
-            <template v-else>
+            <template v-else-if="eligibilityInfo && eligibilityInfo.elegible">
               <!-- BANNER DE ADVERTENCIA (Elegible pero cerca del límite) -->
               <div v-if="eligibilityInfo && eligibilityInfo.elegible && eligibilityInfo.diasRestantes !== undefined && eligibilityInfo.diasRestantes <= 10" class="card eligibility-warning-card mt-16" style="border: 2px solid #F59E0B; background: #FEF3C7; color: #92400E; margin-bottom: 24px; border-radius: 16px; padding: 24px; display: flex; align-items: flex-start; gap: 16px;">
                 <span class="material-symbols-outlined" style="font-size: 32px; color: #D97706; margin-top: 2px;">warning</span>

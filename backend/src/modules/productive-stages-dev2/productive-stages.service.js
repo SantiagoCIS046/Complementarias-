@@ -520,23 +520,30 @@ const evaluarEP = async (stageId, { decision, comentario, documentosRevisados },
 
   // Si fue aprobada, transitionar automaticamente a EN_CURSO configurando jornada y fechas por defecto
   if (nuevoEstado === ESTADO_EP.APROBADO) {
-    if (!stageActualizada.cronogramaConfigurado) {
-      const jornadaDefault = 'TIEMPO_COMPLETO';
-      const fechaInicioDefault = new Date();
-      stageActualizada.jornada = jornadaDefault;
-      stageActualizada.fechaInicio = fechaInicioDefault;
-      stageActualizada.fechaProyectadaFin = calcularFechaProyectadaFin(fechaInicioDefault, jornadaDefault);
-      stageActualizada.horasRequeridas = await calcularHorasRequeridas(jornadaDefault);
-      stageActualizada.cronogramaConfigurado = true;
+    try {
+      if (!stageActualizada.cronogramaConfigurado) {
+        const jornadaDefault = 'TIEMPO_COMPLETO';
+        const fechaInicioDefault = new Date();
+        stageActualizada.jornada = jornadaDefault;
+        stageActualizada.fechaInicio = fechaInicioDefault;
+        stageActualizada.fechaProyectadaFin = calcularFechaProyectadaFin(fechaInicioDefault, jornadaDefault);
+        stageActualizada.horasRequeridas = await calcularHorasRequeridas(jornadaDefault, stageActualizada.modalidad);
+        stageActualizada.cronogramaConfigurado = true;
+        // Guardar cambios del cronograma ANTES de la transición para evitar conflictos de versión
+        await stageActualizada.save();
+      }
+
+      // Transicionar de APROBADO -> EN_CURSO
+      stageActualizada = await ejecutarTransicion(
+        stageActualizada,
+        ESTADO_EP.EN_CURSO,
+        userId,
+        'Transición automática de aprobación de etapa'
+      );
+    } catch (autoTransErr) {
+      // Si la transición automática falla, no perder la aprobación — solo loguear
+      console.error('[AUTO-TRANSITION] Error al pasar APROBADO → EN_CURSO:', autoTransErr.message);
     }
-    
-    // Transicionar de APROBADO -> EN_CURSO
-    stageActualizada = await ejecutarTransicion(
-      stageActualizada,
-      ESTADO_EP.EN_CURSO,
-      userId,
-      'Transición automática de aprobación de etapa'
-    );
   }
 
   // Guardar el comentario en las observaciones de la EP

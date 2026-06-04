@@ -27,10 +27,10 @@ async function main() {
 
   // 2. Santiago (Tú)
   await User.create({
-    documento: '10203040',
+    documento: '1037658690',
     email: 'santiagocisneros046@gmail.com',
     password: 'admin123',
-    name: 'Santiago Cisneros',
+    name: 'Administrador del Sistema Santiago Cisneros',
     role: 'ADMIN',
     status: 'ACTIVO',
     isFirstLogin: false

@@ -36,7 +36,7 @@ async function runSeed() {
       name: 'Administrador del Sistema Santiago Cisneros',
       email: 'santiagocisneros046@gmail.com',
       password: PASSWORD,
-      role: 'ADMIN', 1
+      role: 'ADMIN',
       documento: '1037658690'
     });
     console.log('✅ Admin creado:', admin.email);

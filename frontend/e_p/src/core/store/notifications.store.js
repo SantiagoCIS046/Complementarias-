@@ -83,18 +83,19 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   /**
-   * Iniciar polling cada 60 segundos.
+   * Iniciar polling cada 15 segundos.
    */
   function startPolling() {
     // Fetch inicial inmediato
     fetchNotifications();
     fetchUnreadCount();
 
-    // Polling cada 60 segundos
+    // Polling cada 15 segundos
     if (pollInterval) clearInterval(pollInterval);
     pollInterval = setInterval(() => {
+      fetchNotifications();
       fetchUnreadCount();
-    }, 60000);
+    }, 15000);
   }
 
   /**

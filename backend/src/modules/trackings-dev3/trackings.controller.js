@@ -174,12 +174,28 @@ const validarPdfIA = async (req, res) => {
       }
     }
 
+    // Guardar el archivo localmente en modo desarrollo
+    const fakeId = 'dev_file_tracking_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const path = require('path');
+    const fs = require('fs');
+    try {
+      const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      fs.writeFileSync(path.join(uploadsDir, `${fakeId}_${req.file.originalname}`), req.file.buffer);
+      console.log(`[TRACKINGS-DEV] Acta de visita guardada localmente: ${fakeId}_${req.file.originalname}`);
+    } catch (err) {
+      console.error('[TRACKINGS-DEV] Error guardando acta de visita localmente:', err);
+    }
+
     res.json({
       success: true,
       fileSize: `${fileSizeMB} MB`,
       signatures,
       valid,
-      message
+      message,
+      evidenciaUrl: `/api/documents/view/${fakeId}_${req.file.originalname}`
     });
   } catch (error) {
     res.status(500).json({

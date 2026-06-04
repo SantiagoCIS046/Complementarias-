@@ -117,11 +117,24 @@ const subirArchivo = async (fileContent, fileName, mimeType, folderId) => {
   if (!drive) {
     const fakeId = 'dev_file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     console.log('[DRIVE-DEV] Archivo simulado: ' + fileName + ' -> carpeta ' + folderId);
+    
+    try {
+      const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const filePath = path.join(uploadsDir, `${fakeId}_${fileName}`);
+      fs.writeFileSync(filePath, fileContent);
+      console.log(`[DRIVE-DEV] Archivo guardado localmente en: ${filePath}`);
+    } catch (err) {
+      console.error('[DRIVE-DEV] Error guardando archivo localmente:', err);
+    }
+
     return {
       id: fakeId,
       name: fileName,
-      webViewLink: 'https://drive.google.com/file/d/' + fakeId + '/view',
-      webContentLink: 'https://drive.google.com/uc?id=' + fakeId,
+      webViewLink: `/api/documents/view/${fakeId}_${fileName}`,
+      webContentLink: `/api/documents/download/${fakeId}_${fileName}`,
     };
   }
 

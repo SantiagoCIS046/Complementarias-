@@ -1003,12 +1003,15 @@
         </button>
       </div>
       <div class="modal-body" style="flex: 1; padding: 0; position: relative; background: #525659;">
-        <iframe :src="activePdfUrl" width="100%" height="100%" style="border: none;"></iframe>
+        <iframe :src="resolvePdfUrl(activePdfUrl)" width="100%" height="100%" style="border: none;"></iframe>
       </div>
       <div class="modal-footer-actions" style="padding: 12px 24px; background: var(--bg-secondary); border-top: 1px solid var(--border-primary); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; border-radius: 0;">
         <button @click="showPdfViewer = false" class="btn-cancel-premium">Cerrar Visor</button>
-        <a :href="activePdfUrl" download class="btn-confirm-premium" style="display: flex; align-items: center; gap: 8px; background-color: var(--color_button); color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;">
+        <a :href="resolvePdfUrl(activePdfUrl).replace('/view/', '/download/')" download class="btn-confirm-premium" style="display: flex; align-items: center; gap: 8px; background-color: var(--color_button); color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;">
           <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Descargar PDF
+        </a>
+        <a :href="resolvePdfUrl(activePdfUrl)" target="_blank" class="btn-confirm-premium" style="display: flex; align-items: center; gap: 8px; background-color: #2563eb; color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;">
+          <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span> Abrir en nueva pestaña
         </a>
       </div>
     </div>
@@ -1418,7 +1421,7 @@ const submitNewTracking = async () => {
       calificacion: newTrackingForm.value.calificacion,
       observaciones: newTrackingForm.value.observaciones,
       compromisos: newTrackingForm.value.compromisos,
-      evidenciaUrl: 'https://docs.google.com/viewer?url=simulado_' + selectedTrackingFile.value.name,
+      evidenciaUrl: scanTrackingResult.value.evidenciaUrl || ('https://docs.google.com/viewer?url=simulado_' + selectedTrackingFile.value.name),
       evidenciaSize: selectedTrackingFile.value.size,
       isValidatedByIA: true,
       signaturesValidated: scanTrackingResult.value.signatures,
@@ -1459,6 +1462,38 @@ const getInitials = (name) => {
 const formatDate = (date) => {
   if (!date) return ''
   return new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
+const resolvePdfUrl = (url) => {
+  if (!url) return ''
+  
+  let resolvedUrl = url
+  
+  // Si la URL es una ruta relativa de la API local (ej: /api/documents/view/...)
+  if (url.startsWith('/api/') || url.startsWith('api/')) {
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+    const domainPart = apiBase.replace('/api', '')
+    const relativePath = url.startsWith('/') ? url : '/' + url
+    resolvedUrl = domainPart + relativePath
+  }
+  
+  // Agregar token para autenticación en iframe si es de nuestra API
+  if (resolvedUrl.includes('/api/documents/view/') || resolvedUrl.includes('/api/documents/download/')) {
+    const token = authStore.token
+    if (token) {
+      const sep = resolvedUrl.includes('?') ? '&' : '?'
+      resolvedUrl = `${resolvedUrl}${sep}token=${token}`
+    }
+  } else if (resolvedUrl.includes('drive.google.com')) {
+    // Si es Google Drive, convertir /view a /preview para permitir visualización en iframe
+    if (resolvedUrl.endsWith('/view')) {
+      resolvedUrl = resolvedUrl.substring(0, resolvedUrl.length - 5) + '/preview'
+    } else if (resolvedUrl.includes('/view?')) {
+      resolvedUrl = resolvedUrl.replace('/view?', '/preview?')
+    }
+  }
+  
+  return resolvedUrl
 }
 
 const showPdfViewer = ref(false)

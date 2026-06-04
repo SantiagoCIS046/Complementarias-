@@ -218,6 +218,104 @@ const downloadOfficialTemplate = async (req, res) => {
   }
 };
 
+/**
+ * Genera un PDF de simulación interactivo en desarrollo
+ */
+const generateMockPdf = (res, filename) => {
+  const PDFDocument = require('pdfkit');
+  const doc = new PDFDocument({ margin: 50 });
+  
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'inline; filename="documento_simulado.pdf"');
+  doc.pipe(res);
+  
+  // Encabezado
+  doc.fillColor('#1A4D2E').fontSize(24).text('REPFORA - SENA', { align: 'center' });
+  doc.moveDown(0.5);
+  doc.fillColor('#333333').fontSize(14).text('MODO DESARROLLO / SIMULACIÓN', { align: 'center' });
+  doc.moveDown(1.5);
+  
+  // Contenido
+  doc.fontSize(12).fillColor('#000000').text('Este es un documento PDF simulado en modo desarrollo para representar el archivo:', { align: 'left' });
+  doc.moveDown(0.5);
+  doc.fontSize(12).fillColor('#2563EB').text(filename, { align: 'center', underline: true });
+  doc.moveDown(1.5);
+  
+  doc.fillColor('#333333').fontSize(10).text(
+    'Debido a que el servidor de desarrollo está ejecutándose sin credenciales reales de almacenamiento en la nube (Google Drive / OneDrive), los archivos cargados se simulan localmente.\n\n' +
+    'Si este archivo fue subido antes de implementar el almacenamiento local, se muestra esta simulación en su lugar para permitir probar la experiencia del visor y la validación.',
+    { align: 'justify', lineGap: 4 }
+  );
+  
+  // Pie de página / Firma
+  doc.moveDown(3);
+  doc.rect(50, doc.y, 500, 80).fillOpacity(0.05).fill('#1A4D2E');
+  doc.fillOpacity(1).fillColor('#1A4D2E').fontSize(10).text('VERIFICACIÓN DEL SISTEMA', 60, doc.y + 10, { bold: true });
+  doc.fillColor('#555555').fontSize(9).text('Estado: SIMULADO OK\nFecha de generación: ' + new Date().toLocaleString(), 60, doc.y + 25);
+  
+  doc.end();
+};
+
+/**
+ * GET /api/documents/view/:filename
+ * Permite visualizar el documento en el visor PDF embebido (iframe)
+ */
+const viewFile = async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const path = require('path');
+    const fs = require('fs');
+    const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
+    const filePath = path.join(uploadsDir, filename);
+
+    if (fs.existsSync(filePath)) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline');
+      return res.sendFile(filePath);
+    }
+
+    // Retrocompatibilidad: Generar un PDF simulado si no existe en disco
+    generateMockPdf(res, filename);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al visualizar el archivo: ' + error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/documents/download/:filename
+ * Descarga el documento
+ */
+const downloadFile = async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const path = require('path');
+    const fs = require('fs');
+    const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
+    const filePath = path.join(uploadsDir, filename);
+
+    let originalName = filename;
+    const match = filename.match(/^dev_(?:od_)?file_\d+_[a-z0-9]+_(.+)$/);
+    if (match && match[1]) {
+      originalName = match[1];
+    }
+
+    if (fs.existsSync(filePath)) {
+      return res.download(filePath, originalName);
+    }
+
+    // Retrocompatibilidad: Generar PDF de descarga simulado
+    generateMockPdf(res, originalName);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al descargar el archivo: ' + error.message,
+    });
+  }
+};
+
 module.exports = {
   subir,
   uploadToDrive,
@@ -225,4 +323,6 @@ module.exports = {
   revisar,
   getAll,
   downloadOfficialTemplate,
+  viewFile,
+  downloadFile,
 };

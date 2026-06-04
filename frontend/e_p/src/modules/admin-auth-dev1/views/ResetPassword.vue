@@ -65,19 +65,19 @@
 
       <!-- Checklist de Requisitos -->
       <div class="requirements" style="margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 0.75rem; border: 1px solid #e2e8f0; text-align: left;">
-        <p :class="{ met: hasMinLength }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+        <p :class="{ met: hasMinLength }">
           {{ hasMinLength ? '✔' : '○' }} Al menos 8 caracteres
         </p>
-        <p :class="{ met: hasUppercase }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+        <p :class="{ met: hasUppercase }">
           {{ hasUppercase ? '✔' : '○' }} Al menos una letra mayúscula
         </p>
-        <p :class="{ met: hasLowercase }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+        <p :class="{ met: hasLowercase }">
           {{ hasLowercase ? '✔' : '○' }} Al menos una letra minúscula
         </p>
-        <p :class="{ met: hasNumber }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+        <p :class="{ met: hasNumber }">
           {{ hasNumber ? '✔' : '○' }} Al menos un número
         </p>
-        <p :class="{ met: hasSpecialChar }" style="margin: 4px 0; color: #94a3b8; font-weight: 500; transition: color 0.2s;">
+        <p :class="{ met: hasSpecialChar }">
           {{ hasSpecialChar ? '✔' : '○' }} Al menos un carácter especial (!@#$%^&*...)
         </p>
       </div>
@@ -103,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authService } from '../services/auth.service'
 
@@ -162,6 +162,27 @@ async function handleReset() {
     loading.value = false
   }
 }
+
+// Limpiar alertas automáticamente después de 5 segundos
+watch(successMsg, (newVal) => {
+  if (newVal) {
+    setTimeout(() => {
+      if (successMsg.value === newVal) {
+        successMsg.value = ''
+      }
+    }, 5000)
+  }
+})
+
+watch(errorMsg, (newVal) => {
+  if (newVal) {
+    setTimeout(() => {
+      if (errorMsg.value === newVal) {
+        errorMsg.value = ''
+      }
+    }, 5000)
+  }
+})
 </script>
 
 <style scoped>

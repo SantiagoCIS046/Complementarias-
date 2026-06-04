@@ -173,6 +173,8 @@ async function runSeed() {
     console.log(`✅ ${createdCompanies.length} Empresas creadas.`);
 
     // 5. ETAPAS PRODUCTIVAS (valores del enum real: enums.js)
+    // Comentado para permitir que los aprendices inicien sin etapas ni empresas vinculadas por defecto y puedan probar el flujo de registro desde cero.
+    /*
     await ProductiveStage.create({
       apprenticeId: a1._id,
       instructorId: instructor._id,
@@ -197,6 +199,7 @@ async function runSeed() {
       horasRequeridas: 864
     });
     console.log('✅ Etapas productivas vinculadas.');
+    */
 
     // 6. FICHAS (NUEVO MODELO)
     await Batch.create({

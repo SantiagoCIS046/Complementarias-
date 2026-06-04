@@ -26,10 +26,9 @@
           <div class="card-body">
             <p class="card-sub text-center q-mb-lg">Ingresa tus credenciales para acceder al sistema</p>
 
-            <!-- Email -->
             <div class="field">
               <label class="field-label" for="login-email">Correo electrónico institucional</label>
-              <div class="input-box-repfora">
+              <div class="input-box-repfora" :class="{ 'input-error': form.email && !isLoginEmailValid }">
                 <span class="material-symbols-outlined icon-prepend">mail</span>
                 <input
                   id="login-email"
@@ -41,6 +40,7 @@
                   class="field-input-native"
                 />
               </div>
+              <p v-if="form.email && !isLoginEmailValid" class="input-error-msg">Formato de correo no válido.</p>
             </div>
 
             <!-- Contraseña -->
@@ -64,7 +64,7 @@
             </div>
 
             <!-- Botón Ingresar -->
-            <button class="submit-btn-repfora" :disabled="loading" @click="handleLogin">
+            <button class="submit-btn-repfora" :disabled="loading || !isLoginEmailValid || !form.password" @click="handleLogin">
               <span v-if="loading" class="spin-ring"></span>
               <span>{{ loading ? 'VERIFICANDO...' : 'INGRESAR AL SISTEMA' }}</span>
             </button>
@@ -82,18 +82,20 @@
 
             <div class="field">
               <label class="field-label">Tu correo registrado</label>
-              <div class="input-box-repfora">
+              <div class="input-box-repfora" :class="{ 'input-error': recoveryEmail && !isEmailValid }">
                 <span class="material-symbols-outlined icon-prepend">mail</span>
                 <input
                   v-model="recoveryEmail"
                   type="email"
                   placeholder="ejemplo@sena.edu.co"
                   class="field-input-native"
+                  @keydown.enter="handleRecovery"
                 />
               </div>
+              <p v-if="recoveryEmail && !isEmailValid" class="input-error-msg">Formato de correo no válido.</p>
             </div>
 
-            <button class="submit-btn-repfora recovery" :disabled="loading" @click="handleRecovery">
+            <button class="submit-btn-repfora recovery" :disabled="loading || !isEmailValid" @click="handleRecovery">
               <span v-if="loading" class="spin-ring"></span>
               <span>{{ loading ? 'ENVIANDO...' : 'ENVIAR ENLACE' }}</span>
             </button>
@@ -130,7 +132,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { useUiStore } from '../../../core/store/ui.store'
@@ -148,6 +150,14 @@ const showRecovery  = ref(false)
 const loading       = ref(false)
 const errorMsg      = ref('')
 const successMsg    = ref('')
+
+const isEmailValid = computed(() => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recoveryEmail.value)
+})
+
+const isLoginEmailValid = computed(() => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)
+})
 
 
 async function handleLogin() {
@@ -187,15 +197,36 @@ async function handleRecovery() {
   successMsg.value = ''
   loading.value    = true
   try {
-    await authService.forgotPassword(recoveryEmail.value)
-    successMsg.value = '¡Enviado! Revisa tu correo electrónico.'
+    const res = await authService.forgotPassword(recoveryEmail.value)
+    successMsg.value = res.data?.message || '¡Enviado! Revisa tu correo electrónico.'
     setTimeout(() => { showRecovery.value = false }, 3000)
   } catch (err) {
-    errorMsg.value = 'No pudimos enviar el correo. Intenta de nuevo.'
+    errorMsg.value = err.response?.data?.message || 'No pudimos enviar el correo. Intenta de nuevo.'
   } finally {
     loading.value = false
   }
 }
+
+// Limpiar alertas automáticamente después de 5 segundos
+watch(successMsg, (newVal) => {
+  if (newVal) {
+    setTimeout(() => {
+      if (successMsg.value === newVal) {
+        successMsg.value = ''
+      }
+    }, 5000)
+  }
+})
+
+watch(errorMsg, (newVal) => {
+  if (newVal) {
+    setTimeout(() => {
+      if (errorMsg.value === newVal) {
+        errorMsg.value = ''
+      }
+    }, 5000)
+  }
+})
 </script>
 
 <style scoped>
@@ -366,6 +397,18 @@ async function handleRecovery() {
 @media (max-width: 900px) {
   .right-panel { display: none; }
   .left-panel { width: 100%; }
+}
+
+.input-box-repfora.input-error {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+.input-error-msg {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  font-weight: 500;
+  text-align: left;
 }
 
 

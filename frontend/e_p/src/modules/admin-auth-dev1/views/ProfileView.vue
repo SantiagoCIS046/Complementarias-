@@ -80,6 +80,9 @@ const fileInputRef = ref(null);
 /** Muestra u oculta el modal de foto */
 const showPhotoModal = ref(false);
 
+/** Controla el efecto de brillo en el avatar tras actualizar foto */
+const photoShine = ref(false);
+
 /** Abre el selector de archivos del sistema */
 const openFilePicker = () => {
   fileInputRef.value?.click();
@@ -102,7 +105,10 @@ const handleConfirmPhoto = async () => {
   if (ok) {
     showPhotoModal.value = false;
     clearPreview();
-    showSuccess('¡Foto actualizada!', 'Tu foto de perfil se guardó correctamente.');
+    // Esperar a que el usuario haga clic en "Aceptar" para activar el brillo
+    await showSuccess('¡Foto actualizada!', 'Tu foto de perfil se guardó correctamente.');
+    photoShine.value = true;
+    setTimeout(() => { photoShine.value = false; }, 1300);
   } else {
     showError('Error', photoError.value || 'No se pudo guardar la foto. Intenta de nuevo.');
   }
@@ -185,6 +191,7 @@ const saveContactDetails = async () => {
                   :user="user"
                   size="xl"
                   :editable="true"
+                  :shine="photoShine"
                   @click="openFilePicker"
                 />
                 <button
@@ -360,16 +367,18 @@ const saveContactDetails = async () => {
   />
 
   <!-- Modal de foto de perfil -->
-  <PhotoUploadModal
-    v-if="showPhotoModal"
-    :preview="preview"
-    :is-processing="isProcessing"
-    :is-uploading="isUploading"
-    :error="photoError"
-    @confirm="handleConfirmPhoto"
-    @cancel="handleCancelPhoto"
-    @select="handleSelectAnother"
-  />
+  <Transition name="photo-modal">
+    <PhotoUploadModal
+      v-if="showPhotoModal"
+      :preview="preview"
+      :is-processing="isProcessing"
+      :is-uploading="isUploading"
+      :error="photoError"
+      @confirm="handleConfirmPhoto"
+      @cancel="handleCancelPhoto"
+      @select="handleSelectAnother"
+    />
+  </Transition>
 </template>
 
 <style scoped>

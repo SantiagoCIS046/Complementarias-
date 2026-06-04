@@ -32,101 +32,93 @@ const isBusy = computed(() => props.isProcessing || props.isUploading)
 </script>
 
 <template>
-  <Transition name="photo-modal">
-    <div class="photo-modal-overlay" @click.self="!isBusy && emit('cancel')">
-      <div class="photo-modal-card" role="dialog" aria-labelledby="photo-modal-title">
+  <div class="photo-modal-overlay" @click.self="!isBusy && emit('cancel')">
+    <div class="photo-modal-card" role="dialog" aria-labelledby="photo-modal-title">
 
-        <!-- Header -->
-        <div class="photo-modal-header">
-          <span class="material-symbols-outlined header-icon">add_a_photo</span>
-          <h3 id="photo-modal-title">Cambiar Foto de Perfil</h3>
-          <button
-            class="photo-modal-close"
-            @click="emit('cancel')"
-            :disabled="isBusy"
-            aria-label="Cerrar"
-          >×</button>
+      <!-- Header -->
+      <div class="photo-modal-header">
+        <span class="material-symbols-outlined header-icon">add_a_photo</span>
+        <h3 id="photo-modal-title">Cambiar Foto de Perfil</h3>
+        <button
+          class="photo-modal-close"
+          @click="emit('cancel')"
+          :disabled="isBusy"
+          aria-label="Cerrar"
+        >×</button>
+      </div>
+
+      <!-- Body -->
+      <div class="photo-modal-body">
+
+        <!-- Estado: procesando (Canvas) -->
+        <div v-if="isProcessing" class="state-center">
+          <div class="spinner-ring"></div>
+          <p class="state-text">Optimizando imagen…</p>
         </div>
 
-        <!-- Body -->
-        <div class="photo-modal-body">
+        <!-- Estado: preview listo -->
+        <template v-else-if="preview">
+          <p class="modal-hint">Vista previa de tu nueva foto de perfil</p>
 
-          <!-- Estado: procesando (Canvas) -->
-          <div v-if="isProcessing" class="state-center">
-            <div class="spinner-ring"></div>
-            <p class="state-text">Optimizando imagen…</p>
+          <!-- Preview circular grande -->
+          <div class="preview-wrapper">
+            <AvatarDisplay :user="previewUser" size="xl" />
+            <div class="preview-badge">
+              <span class="material-symbols-outlined">check_circle</span>
+              Lista
+            </div>
           </div>
 
-          <!-- Estado: preview listo -->
-          <template v-else-if="preview">
-            <p class="modal-hint">Vista previa de tu nueva foto de perfil</p>
-
-            <!-- Preview circular grande -->
-            <div class="preview-wrapper">
-              <AvatarDisplay :user="previewUser" size="xl" />
-              <div class="preview-badge">
-                <span class="material-symbols-outlined">check_circle</span>
-                Lista
-              </div>
-            </div>
-
-            <!-- Info de optimización -->
-            <div class="optimize-info">
-              <span class="material-symbols-outlined info-icon">auto_fix_high</span>
-              <span>Optimizada a 400×400 px · WEBP · Alta calidad</span>
-            </div>
-
-            <!-- Error -->
-            <div v-if="error" class="modal-error">
-              <span class="material-symbols-outlined">error</span>
-              {{ error }}
-            </div>
-          </template>
-
-          <!-- Estado: sin preview (solo error) -->
-          <div v-else-if="error" class="state-center">
-            <span class="material-symbols-outlined error-icon-lg">broken_image</span>
-            <p class="state-text error-text">{{ error }}</p>
+          <!-- Error -->
+          <div v-if="error" class="modal-error">
+            <span class="material-symbols-outlined">error</span>
+            {{ error }}
           </div>
+        </template>
 
-        </div>
-
-        <!-- Footer / Acciones -->
-        <div class="photo-modal-footer">
-          <button
-            class="photo-btn secondary"
-            @click="emit('select')"
-            :disabled="isBusy"
-          >
-            <span class="material-symbols-outlined">folder_open</span>
-            Elegir otra
-          </button>
-
-          <div class="footer-right">
-            <button
-              class="photo-btn ghost"
-              @click="emit('cancel')"
-              :disabled="isBusy"
-            >
-              Cancelar
-            </button>
-
-            <button
-              class="photo-btn primary"
-              @click="emit('confirm')"
-              :disabled="isBusy || !preview"
-              :class="{ loading: isUploading }"
-            >
-              <span v-if="isUploading" class="btn-spinner"></span>
-              <span v-else class="material-symbols-outlined">cloud_upload</span>
-              <span>{{ isUploading ? 'Guardando…' : 'Guardar foto' }}</span>
-            </button>
-          </div>
+        <!-- Estado: sin preview (solo error) -->
+        <div v-else-if="error" class="state-center">
+          <span class="material-symbols-outlined error-icon-lg">broken_image</span>
+          <p class="state-text error-text">{{ error }}</p>
         </div>
 
       </div>
+
+      <!-- Footer / Acciones -->
+      <div class="photo-modal-footer">
+        <button
+          class="photo-btn secondary"
+          @click="emit('select')"
+          :disabled="isBusy"
+        >
+          <span class="material-symbols-outlined">folder_open</span>
+          Elegir otra
+        </button>
+
+        <div class="footer-right">
+          <button
+            class="photo-btn ghost"
+            @click="emit('cancel')"
+            :disabled="isBusy"
+          >
+            Cancelar
+          </button>
+
+          <button
+            class="photo-btn primary"
+            @click="emit('confirm')"
+            :disabled="isBusy || !preview"
+            :class="{ loading: isUploading }"
+          >
+            <span v-if="isUploading" class="btn-spinner"></span>
+            <span v-else class="material-symbols-outlined">cloud_upload</span>
+            <span>{{ isUploading ? 'Guardando…' : 'Guardar foto' }}</span>
+          </button>
+        </div>
+      </div>
+
     </div>
-  </Transition>
+  </div>
 </template>
 
 <style scoped>
@@ -378,18 +370,28 @@ const isBusy = computed(() => props.isProcessing || props.isUploading)
 }
 
 /* ── Modal Transition ── */
-.photo-modal-enter-active {
-  animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+.photo-modal-enter-active, .photo-modal-leave-active {
+  transition: opacity 0.3s ease;
 }
-.photo-modal-leave-active {
-  animation: modalOut 0.2s ease-in;
+
+.photo-modal-enter-active .photo-modal-card,
+.photo-modal-leave-active .photo-modal-card {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
 }
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.88) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+
+.photo-modal-enter-from {
+  opacity: 0;
 }
-@keyframes modalOut {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(0.93); }
+.photo-modal-enter-from .photo-modal-card {
+  opacity: 0;
+  transform: scale(0.9) translateY(24px);
+}
+
+.photo-modal-leave-to {
+  opacity: 0;
+}
+.photo-modal-leave-to .photo-modal-card {
+  opacity: 0;
+  transform: scale(0.95) translateY(16px);
 }
 </style>

@@ -355,29 +355,30 @@ onUnmounted(() => {
 
 /* Transiciones */
 .dialog-fade-enter-active, .dialog-fade-leave-active {
-  transition: opacity 0.25s ease;
+  transition: opacity 0.3s ease;
 }
 
-.dialog-fade-enter-from, .dialog-fade-leave-to {
+.dialog-fade-enter-active .dialog-card,
+.dialog-fade-leave-active .dialog-card {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+
+.dialog-fade-enter-from {
   opacity: 0;
 }
 
-.dialog-fade-enter-active .dialog-card {
-  animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+.dialog-fade-enter-from .dialog-card {
+  opacity: 0;
+  transform: scale(0.9) translateY(24px);
 }
 
-.dialog-fade-leave-active .dialog-card {
-  animation: modalOut 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+.dialog-fade-leave-to {
+  opacity: 0;
 }
 
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.9) translateY(24px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-@keyframes modalOut {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.9) translateY(24px); }
+.dialog-fade-leave-to .dialog-card {
+  opacity: 0;
+  transform: scale(0.95) translateY(16px);
 }
 
 @keyframes slideInUp {

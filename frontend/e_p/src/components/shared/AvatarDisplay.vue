@@ -25,6 +25,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: false
+  },
+  shine: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -87,6 +91,9 @@ const sizeStyle = computed(() => {
     <div v-if="editable" class="avatar-camera-overlay">
       <span class="material-symbols-outlined camera-icon">photo_camera</span>
     </div>
+
+    <!-- Efecto de brillo al actualizar foto -->
+    <div v-if="shine" class="avatar-shine-overlay"></div>
   </div>
 </template>
 
@@ -154,5 +161,34 @@ const sizeStyle = computed(() => {
 
 .avatar-editable:active {
   transform: scale(0.97);
+}
+
+/* ── Shine / Brillo effect ── */
+.avatar-shine-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 20%,
+    rgba(255, 255, 255, 0.05) 30%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.05) 70%,
+    transparent 80%,
+    transparent 100%
+  );
+  background-size: 300% 300%;
+  animation: avatarShine 1.2s ease-in-out forwards;
+  box-shadow: 0 0 0 4px rgba(134, 239, 172, 0.7), 0 0 20px 6px rgba(134, 239, 172, 0.4);
+}
+
+@keyframes avatarShine {
+  0%   { background-position: 200% 200%; opacity: 0; }
+  15%  { opacity: 1; }
+  70%  { background-position: -80% -80%; opacity: 1; }
+  100% { background-position: -120% -120%; opacity: 0; }
 }
 </style>

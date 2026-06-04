@@ -263,17 +263,19 @@ router.afterEach(() => {
 })
 
 // ── Animaciones de Transición con View Transitions API ─────────────
-router.beforeResolve((to, from, next) => {
+router.beforeResolve((to, from) => {
   if (to.path !== from.path && document.startViewTransition) {
-    document.startViewTransition(() => {
-      return new Promise((resolve) => {
-        next()
-        // Damos un pequeño margen para que Vue renderice el nuevo DOM
-        setTimeout(resolve, 50)
-      })
+    return new Promise((resolveGuard) => {
+      try {
+        document.startViewTransition(() => {
+          resolveGuard(true)
+          return new Promise((resolveTransition) => setTimeout(resolveTransition, 50))
+        })
+      } catch (e) {
+        console.error('Error during view transition:', e)
+        resolveGuard(true)
+      }
     })
-  } else {
-    next()
   }
 })
 

@@ -313,10 +313,11 @@ const resetFilters = () => {
   Object.keys(activeMenus.value).forEach(k => activeMenus.value[k] = false)
 }
 
-const getStatusStyle = (status) => {
-  if (status === 'AL DÍA' || status === 'COMPLETADA') return { bg: '#dcfce7', text: '#15803d', dot: '#22c55e' }
-  if (status === 'PENDIENTE') return { bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' }
-  return { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' }
+const getStatusClass = (status) => {
+  const s = (status || '').toUpperCase()
+  if (s === 'AL DÍA' || s === 'COMPLETADA' || s === 'EN CURSO' || s === 'ACTIVO') return 'activo'
+  if (s === 'PENDIENTE') return 'pendiente'
+  return 'inactivo'
 }
 
 const getModalityIcon = (modality) => {
@@ -476,8 +477,12 @@ const getPhaseStyle = (phase) => {
                       <td class="text-center"><span class="text-green font-bold">{{ f.alDia }}</span></td>
                       <td class="text-center"><span class="text-red font-bold">{{ f.retrasados }}</span></td>
                       <td class="text-center">
-                        <button class="btn-action-view" @click="setFilterValue('module', 'APRENDICES'); fichaFilter = f.numero">
-                          <span class="material-symbols-outlined">visibility</span> Ver Grupo
+                        <button class="btn btn-export-outline" @click="setFilterValue('module', 'APRENDICES'); fichaFilter = f.numero" style="padding: 6px 12px; font-size: 0.7rem; margin: 0 auto; display: flex; align-items: center; gap: 6px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                          Ver Grupo
                         </button>
                       </td>
                     </tr>
@@ -516,13 +521,19 @@ const getPhaseStyle = (phase) => {
                         <div class="mini-bar"><div class="mini-fill" :style="{ width: app.progress + '%', backgroundColor: 'var(--color_button)' }"></div></div>
                       </td>
                       <td>
-                        <span class="status-pill-admin" :style="{ backgroundColor: getStatusStyle(app.status).bg, color: getStatusStyle(app.status).text }">
-                          <div class="status-dot-admin" :style="{ backgroundColor: getStatusStyle(app.status).dot }"></div>
+                        <span class="status-pill" :class="getStatusClass(app.status)">
                           {{ app.status }}
                         </span>
                       </td>
                       <td class="text-center">
-                        <button class="btn-view" @click="viewDetails(app)"><span class="material-symbols-outlined">visibility</span></button>
+                        <div class="action-btns" style="justify-content: center;">
+                          <button class="act-btn view" @click="viewDetails(app)" title="Visualizar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                              <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   </template>
@@ -603,7 +614,7 @@ const getPhaseStyle = (phase) => {
                     </td>
                     <td>
                       <div style="display: flex; align-items: center; gap: 6px;">
-                        <span class="status-pill-admin" style="background-color: #f3e8ff; color: #7c3aed; font-size: 0.65rem; font-weight: 900; border: 1px solid #ddd6fe; border-radius: 8px; gap: 4px; display: inline-flex; align-items: center;">
+                        <span class="status-pill" style="background-color: #f3e8ff; color: #7c3aed; font-size: 0.65rem; font-weight: 900; border: 1px solid #ddd6fe; border-radius: 8px; gap: 4px; display: inline-flex; align-items: center;">
                           <span class="material-symbols-outlined" style="font-size: 0.95rem;">star</span>
                           Visita Especial #{{ hour.trackingId?.numeroVisita || 'E' }}
                         </span>
@@ -763,16 +774,25 @@ const getPhaseStyle = (phase) => {
 .text-green { color: #16a34a; }
 .text-red { color: #dc2626; }
 .font-bold { font-weight: 800; }
-.btn-action-view { background: var(--bg-hover); border: 1px solid var(--border-primary); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s; margin: 0 auto; }
-.btn-action-view:hover { background: var(--color_button); color: white; border-color: var(--color_button); }
-.btn-action-view .material-symbols-outlined { font-size: 1rem; }
+.btn {
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.btn-export-outline {
+  background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px 14px; border-radius: 8px;
+  font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center;
+  transition: all 0.2s;
+}
+.btn-export-outline:hover { background: var(--bg-hover); border-color: var(--border-primary); }
 
 .bg-green-9 { background-color: var(--color_button); }
 .bg-green-10 { background-color: #1b5e20; }
 
 .apprentices-table { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
-.apprentices-table th { background: var(--color_header); color: white; padding: 0.75rem 1rem; text-align: left; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
-.apprentices-table td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-primary); background: var(--bg-elevated); color: var(--text-primary); }
+.apprentices-table th { background: var(--color_button); text-align: left; padding: 12px 16px; font-size: 0.75rem; color: white; text-transform: uppercase; font-weight: 700; }
+.apprentices-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-primary); background: var(--bg-elevated); color: var(--text-primary); }
 
 .user-cell { display: flex; align-items: center; gap: 0.75rem; }
 .avatar { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; color: #15803d; }
@@ -793,10 +813,16 @@ const getPhaseStyle = (phase) => {
 .mini-bar { height: 5px; background: var(--bg-hover); border-radius: 10px; }
 .mini-fill { height: 100%; border-radius: 10px; }
 
-.status-pill-admin { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.6rem; font-weight: 800; }
-.status-dot-admin { width: 6px; height: 6px; border-radius: 50%; }
+.status-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; }
+.status-pill.activo { background: #1b5e20; color: white; }
+.status-pill.pendiente { background: #ea580c; color: white; }
+.status-pill.inactivo { background: #c10015; color: white; }
 
-.btn-view { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border-primary); background: var(--bg-elevated); color: var(--color_button); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.action-btns { display: flex; gap: 6px; }
+.act-btn { background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 6px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; color: var(--text-primary); }
+.act-btn svg { width: 14px; height: 14px; }
+.act-btn.view { color: var(--color_button); }
+.act-btn.view:hover { background: var(--bg-active); border-color: rgba(46, 125, 50, 0.3); }
 
 .loading-state-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem; gap: 1rem; color: var(--text-muted); }
 .spin-ring-lg { width: 40px; height: 40px; border: 3px solid var(--bg-hover); border-top-color: var(--color_header); border-radius: 50%; animation: spin 1s linear infinite; }

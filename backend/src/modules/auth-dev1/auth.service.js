@@ -15,7 +15,7 @@ const driveService = require('../documents-dev2/drive.service');
 /**
  * Registrar un nuevo usuario.
  */
-const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa, fechaFinLectiva, instructorAsignado, instructorTecnico, instructorProyecto, tipoProyecto, modalidades, tipoInstructor, isFirstLogin }) => {
+const registrar = async ({ name, email, password, role, documento, telefono, ficha, programa, areaConocimiento, fechaFinLectiva, instructorAsignado, instructorTecnico, instructorProyecto, tipoProyecto, modalidades, tipoInstructor, isFirstLogin }) => {
   // Verificar que no exista el email
   const emailQuery = email ? email.toLowerCase().trim() : '';
   const existe = await User.findOne({ email: emailQuery });
@@ -49,6 +49,7 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
     telefono,
     ficha,
     programa,
+    areaConocimiento: areaConocimiento || null,
     fechaFinLectiva: fechaFinLectiva || null,
     instructorAsignado: instructorAsignado || null,
     instructorTecnico: instructorTecnico || null,
@@ -148,6 +149,13 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
       role:  usuario.role,
       tipoInstructor: usuario.tipoInstructor || null,
       fotoPerfil: usuario.fotoPerfil || null,
+      documento: usuario.documento || null,
+      telefono: usuario.telefono || null,
+      ficha: usuario.ficha || null,
+      programa: usuario.programa || null,
+      areaConocimiento: usuario.areaConocimiento || null,
+      activo: usuario.activo,
+      status: usuario.status,
     },
     token,
   };

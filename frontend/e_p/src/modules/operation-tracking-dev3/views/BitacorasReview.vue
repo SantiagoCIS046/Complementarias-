@@ -1780,7 +1780,9 @@ onUnmounted(() => {
 
 <style scoped>
 .bitacoras-layout { display: flex; height: 100vh; background: var(--bg-secondary); overflow: hidden; }
-.main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; height: 100vh; }
+.content { flex: 1; display: flex; flex-direction: column; height: calc(100vh - 64px); padding: 0 !important; overflow: hidden; }
+.content > div { flex: 1; display: flex; flex-direction: column; min-height: 0; height: 100%; }
 
 /* Navbar */
 .top-nav-bitacoras { height: 40px; background: var(--bg-primary); display: flex; align-items: center; padding: 0 1rem; gap: 1rem; border-bottom: 1px solid var(--border-primary); }

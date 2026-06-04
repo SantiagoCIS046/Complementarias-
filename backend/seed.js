@@ -106,32 +106,60 @@ async function runSeed() {
         nit: '901.442.110-3',
         direccion: 'Av. Industrial 45',
         municipio: 'Bucaramanga',
-        estado: 'EN_REVISION'
+        sector_economico: 'Logística y Transporte',
+        estado: 'EN_REVISION',
+        datos_contacto: { telefono: '6076301122', correo_corporativo: 'contacto@globallogistica.co' },
+        jefe_inmediato: { nombre_completo: 'Carlos Mendoza', cargo: 'Gerente de Operaciones', telefono: '3187778899', correo: 'cmendoza@globallogistica.co' }
       },
       {
         razon_social: 'Inversiones Delta',
         nit: '880.992.451-0',
-        estado: 'HABILITADA'
+        direccion: 'Carrera 9 #12-34',
+        municipio: 'San Gil',
+        sector_economico: 'Servicios Financieros',
+        estado: 'HABILITADA',
+        datos_contacto: { telefono: '6077241122', correo_corporativo: 'info@inversionesdelta.com' },
+        jefe_inmediato: { nombre_completo: 'Martha Lucía Gómez', cargo: 'Coordinadora Administrativa', telefono: '3165554433', correo: 'mgomez@inversionesdelta.com' }
       },
       {
         razon_social: 'Constructora Bolívar',
         nit: '830.005.123-4',
-        estado: 'HABILITADA'
+        direccion: 'Calle 50 #28-40',
+        municipio: 'Bucaramanga',
+        sector_economico: 'Construcción',
+        estado: 'HABILITADA',
+        datos_contacto: { telefono: '6076402233', correo_corporativo: 'servicioalcliente@cbolivar.com' },
+        jefe_inmediato: { nombre_completo: 'Andrés Felipe Castro', cargo: 'Director de Obra', telefono: '3178889900', correo: 'acastro@cbolivar.com' }
       },
       {
         razon_social: 'Servicios Integrales SAS',
         nit: '900.551.442-8',
-        estado: 'RECHAZADA'
+        direccion: 'Diagonal 15 #55-60',
+        municipio: 'Socorro',
+        sector_economico: 'Servicios',
+        estado: 'RECHAZADA',
+        datos_contacto: { telefono: '6077274455', correo_corporativo: 'gerencia@serviciosintegrales.com.co' },
+        jefe_inmediato: { nombre_completo: 'Sandra Milena Rojas', cargo: 'Jefe de Gestión Humana', telefono: '3124445577', correo: 'srojas@serviciosintegrales.com.co' }
       },
       {
         razon_social: 'BioMedica Research',
         nit: '880.112.990-2',
-        estado: 'EN_REVISION'
+        direccion: 'Transversal 3 #8-15',
+        municipio: 'San Gil',
+        sector_economico: 'Salud',
+        estado: 'EN_REVISION',
+        datos_contacto: { telefono: '6077249988', correo_corporativo: 'contacto@biomedicaresearch.org' },
+        jefe_inmediato: { nombre_completo: 'Dr. Alberto Restrepo', cargo: 'Director de Investigación', telefono: '3109998877', correo: 'arestrepo@biomedicaresearch.org' }
       },
       {
         razon_social: 'Bancolombia S.A.',
         nit: '890.903.938-8',
-        estado: 'HABILITADA'
+        direccion: 'Calle 12 #10-05',
+        municipio: 'San Gil',
+        sector_economico: 'Servicios Financieros',
+        estado: 'HABILITADA',
+        datos_contacto: { telefono: '6077243344', correo_corporativo: 'sucursal_sangil@bancolombia.com.co' },
+        jefe_inmediato: { nombre_completo: 'María Constanza Ortiz', cargo: 'Gerente de Sucursal', telefono: '3156667788', correo: 'mortiz@bancolombia.com.co' }
       }
     ];
 

@@ -259,7 +259,7 @@
           <div class="field-row">
             <div class="field-sm">
               <label>Teléfono / Celular</label>
-              <input v-model="editModal.data.telefono" />
+              <input v-model="editModal.data.telefono" @input="editModal.data.telefono = editModal.data.telefono.replace(/\D/g, '')" />
             </div>
             <div v-if="editModal.data.role === 'INSTRUCTOR'" class="field-sm">
               <label>Área Conocimiento</label>
@@ -524,11 +524,29 @@
             <div class="form-grid-2" style="margin-top: 16px;">
               <div class="field-group">
                 <label class="label-premium">Teléfono / Celular</label>
-                <input type="text" v-model="newUserForm.telefono" placeholder="Número de contacto" class="input-premium" />
+                <input type="text" v-model="newUserForm.telefono" @input="newUserForm.telefono = newUserForm.telefono.replace(/\D/g, '')" placeholder="Número de contacto" class="input-premium" />
               </div>
               <div class="field-group">
                 <label class="label-premium">Contraseña (Opcional - por defecto será el documento)</label>
-                <input type="password" v-model="newUserForm.password" placeholder="Contraseña personalizada" class="input-premium" />
+                <div class="input-with-icon" style="width: 100%;">
+                  <input 
+                    :type="showNewUserPassword ? 'text' : 'password'" 
+                    v-model="newUserForm.password" 
+                    placeholder="Contraseña personalizada" 
+                    class="input-premium" 
+                    autocomplete="new-password"
+                  />
+                  <button type="button" class="icon-btn" @click.prevent="showNewUserPassword = !showNewUserPassword">
+                    <svg v-if="!showNewUserPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -704,6 +722,7 @@ const stats = ref({ instructors: 0, aprendices: 0 });
 // Modal Nuevo Usuario (ARQUITECTURA SENA)
 const showAddUserModal = ref(false);
 const isSubmitting = ref(false);
+const showNewUserPassword = ref(false);
 const newUserForm = ref({
   tipoDocumento: 'CC',
   documento: '',
@@ -719,6 +738,7 @@ const newUserForm = ref({
 
 const openAddUserModal = () => {
   newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', telefono: '', role: 'APRENDIZ', ficha: '', programa: '', areaConocimiento: '', password: '' };
+  showNewUserPassword.value = false;
   showAddUserModal.value = true;
 };
 
@@ -782,6 +802,7 @@ const handleAddUser = async () => {
       
       // 3. Cerrar modal y limpiar formulario
       showAddUserModal.value = false;
+      showNewUserPassword.value = false;
       const isCustomPasswordUsed = !!newUserForm.value.password;
       newUserForm.value = { tipoDocumento: 'CC', documento: '', name: '', email: '', telefono: '', role: 'APRENDIZ', ficha: '', programa: '', areaConocimiento: '', password: '' };
 
@@ -1843,7 +1864,8 @@ const handleLogout = () => {
 }
 
 /* Icons for password toggle */
-.input-with-icon { position: relative; }
+.input-with-icon { position: relative; width: 100%; display: block; }
+.input-with-icon input { padding-right: 40px !important; }
 .input-with-icon .icon-btn {
   position: absolute;
   right: 10px;

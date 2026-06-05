@@ -153,20 +153,33 @@ const filteredSuggestions = computed(() => {
 const filteredCompaniesList = computed(() => {
   if (!searchCompany.value) return companies.value
   const q = searchCompany.value.toLowerCase()
-  return companies.value.filter(c => 
-    (c.razonSocial?.toLowerCase().includes(q)) || 
-    (c.nit?.includes(q)) || 
-    (c.sector?.toLowerCase().includes(q))
-  )
+  return companies.value.filter(c => {
+    const razonSocial = (c.razon_social || c.razonSocial || '').toLowerCase()
+    const nit = (c.nit || '')
+    const sector = (c.sector_economico || c.sector || 'General').toLowerCase()
+    return razonSocial.includes(q) || nit.includes(q) || sector.includes(q)
+  })
 })
 
 // --- Acciones ---
 const selectCompany = (c) => {
   formData.nit = c.nit
-  formData.empresaSeleccionada = { _id: c._id, nombre: c.razonSocial, nit: c.nit, ubicacion: c.direccion || 'Bogotá' }
+  formData.empresaSeleccionada = { 
+    _id: c._id, 
+    nombre: c.razon_social || c.razonSocial, 
+    nit: c.nit, 
+    ubicacion: c.direccion || 'Colombia' 
+  }
   errors.empresa = ''
   errors.nit = ''
   showSuggestions.value = false 
+}
+
+const postularseAEmpresa = (c) => {
+  selectCompany(c)
+  activeTab.value = 'EP'
+  currentStep.value = 2 // Ir directo al paso 2 (datos del jefe)
+  notify(`Has seleccionado a ${c.razon_social || c.razonSocial} para tu registro. Completa los datos de contacto del supervisor.`, 'success')
 }
 
 const handleFileChange = (e, type) => {
@@ -445,7 +458,7 @@ onMounted(loadData)
                       <span v-if="errors.empresa" class="error-text">{{ errors.empresa }}</span>
                       <div v-if="showSuggestions && filteredSuggestions.length > 0" class="suggestions-list">
                         <div v-for="c in filteredSuggestions" :key="c._id" class="suggestion-item" @click="selectCompany(c)">
-                          <strong>{{ c.razonSocial }}</strong> (NIT: {{ c.nit }})
+                          <strong>{{ c.razon_social || c.razonSocial }}</strong> (NIT: {{ c.nit }})
                         </div>
                       </div>
                     </div>
@@ -529,7 +542,7 @@ onMounted(loadData)
                     <textarea v-model="formData.observaciones" class="custom-textarea mt-32" placeholder="Observaciones adicionales..."></textarea>
                   </div>
                   <div class="form-footer">
-                    <button v-if="currentStep > 1" class="btn-text" @click="currentStep--">VOLVER</button>
+                    <button v-if="currentStep > 1" class="btn-text-danger" @click="currentStep--">VOLVER</button>
                     <div v-else></div> <!-- Espaciador para mantener SIGUIENTE a la derecha -->
                     <button class="btn-primary" @click="currentStep === 3 ? handleFinish() : handleNext()" :disabled="isSubmitting">{{ currentStep === 3 ? 'FINALIZAR' : 'SIGUIENTE' }}</button>
                   </div>
@@ -541,16 +554,82 @@ onMounted(loadData)
 
           <!-- SECCIÓN: EMPRESAS -->
           <div v-if="activeTab === 'Empresas'" class="fade-in">
-            <div class="page-header-text"><h1>Directorio de Empresas</h1></div>
+            <div class="page-header-text">
+              <h1>Directorio de Empresas Habilitadas</h1>
+              <p>Explora las organizaciones aliadas y postúlate directamente para iniciar tu proceso.</p>
+            </div>
+            
             <div class="card table-card">
-              <div class="search-bar"><span class="material-symbols-outlined">search</span><input v-model="searchCompany" placeholder="Filtrar empresas..."></div>
-              <table class="modern-table">
-                <thead><tr><th>EMPRESA</th><th>NIT</th><th>SECTOR</th><th>UBICACIÓN</th></tr></thead>
-                <tbody>
-                  <tr v-if="isLoadingCompanies"><td colspan="4" style="padding:0; border:none;"><SkeletonLoader variant="table" :rows="5" :columns="4" /></td></tr>
-                  <tr v-for="c in filteredCompaniesList" :key="c._id"><td><strong>{{ c.razonSocial }}</strong></td><td>{{ c.nit }}</td><td>{{ c.sector || 'General' }}</td><td>{{ c.direccion || 'Colombia' }}</td></tr>
-                </tbody>
-              </table>
+              <div class="search-bar">
+                <span class="material-symbols-outlined">search</span>
+                <input v-model="searchCompany" placeholder="Buscar por razón social, NIT o sector económico...">
+              </div>
+              
+              <div style="overflow-x: auto;">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th>Empresa</th>
+                      <th>NIT</th>
+                      <th>Sector</th>
+                      <th>Ubicación</th>
+                      <th style="text-align: center;">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-if="isLoadingCompanies">
+                      <td colspan="5" style="padding: 0; border: none;">
+                        <SkeletonLoader variant="table" :rows="5" :columns="5" />
+                      </td>
+                    </tr>
+                    <tr v-else-if="filteredCompaniesList.length === 0">
+                      <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted); font-weight: 600;">
+                        No se encontraron empresas que coincidan con la búsqueda.
+                      </td>
+                    </tr>
+                    <tr v-for="c in filteredCompaniesList" :key="c._id">
+                      <td>
+                        <div class="company-name-cell">
+                          <div class="company-logo-badge">
+                            <span class="material-symbols-outlined">domain</span>
+                          </div>
+                          <div>
+                            <strong style="font-size: 14px; font-weight: 800; color: var(--text-primary); display: block;">
+                              {{ c.razon_social || c.razonSocial }}
+                            </strong>
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                              Código: {{ c._id.substring(c._id.length - 6).toUpperCase() }}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="nit-badge">{{ c.nit }}</span>
+                      </td>
+                      <td>
+                        <span class="sector-pill">{{ c.sector_economico || c.sector || 'General' }}</span>
+                      </td>
+                      <td>
+                        <div class="location-cell">
+                          <span class="material-symbols-outlined">location_on</span>
+                          <span>{{ c.direccion || 'Colombia' }}{{ c.municipio ? `, ${c.municipio}` : '' }}</span>
+                        </div>
+                      </td>
+                      <td style="text-align: center;">
+                        <button 
+                          class="btn-apply-company" 
+                          @click="postularseAEmpresa(c)"
+                          :disabled="activeEP || (eligibilityInfo && !eligibilityInfo.elegible)"
+                          :title="activeEP ? 'Ya tienes una Etapa Productiva registrada' : (eligibilityInfo && !eligibilityInfo.elegible ? 'No cumples con los requisitos de elegibilidad' : 'Postularse a esta empresa')"
+                        >
+                          <span class="material-symbols-outlined" style="font-size: 18px;">assignment_turned_in</span>
+                          Postularse
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -642,20 +721,160 @@ onMounted(loadData)
 .content-container { padding: 24px; max-width: 1400px; width: 100%; box-sizing: border-box; margin: 0; }
 
 .card { background: var(--bg-primary); border-radius: 24px; padding: 32px; border: 1px solid var(--border-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-.stepper-box { margin-bottom: 40px; position: relative; padding: 32px 64px !important; }
-.stepper-line { position: absolute; top: 52px; left: 100px; right: 100px; height: 4px; background: var(--border-primary); }
+.stepper-box {
+  margin-bottom: 32px;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: 24px;
+  padding: 24px 48px !important;
+  box-shadow: none !important;
+  position: relative;
+}
+.stepper-line { position: absolute; top: 42px; left: 80px; right: 80px; height: 3px; background: var(--border-primary); }
 .stepper-progress { height: 100%; background: var(--color_button); transition: 0.5s; }
 .steps-container { display: flex; justify-content: space-between; position: relative; z-index: 1; }
-.step-num { width: 40px; height: 40px; border-radius: 10px; background: var(--bg-secondary); border: 2px solid var(--border-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-muted); }
+.step-num { 
+  width: 36px; 
+  height: 36px; 
+  border-radius: 12px; 
+  background: var(--bg-secondary); 
+  border: 1px solid var(--border-primary); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-weight: 800; 
+  color: var(--text-muted); 
+  font-size: 14px;
+}
 .step-item.active .step-num { background: var(--color_button); color: var(--color_text_button); border-color: var(--color_button); }
 .step-item.completed .step-num { background: var(--bg-active); color: var(--color_button); border-color: var(--color_button); }
-.step-desc { font-size: 10px; font-weight: 800; text-align: center; margin-top: 8px; color: var(--text-muted); }
+.step-desc { font-size: 11px; font-weight: 800; text-align: center; margin-top: 8px; color: var(--text-muted); }
 .step-item.active .step-desc { color: var(--text-primary); font-weight: 800; }
 .step-item.completed .step-desc { color: var(--color_button); }
 
-.main-grid { display: grid; grid-template-columns: 300px 1fr; gap: 32px; }
-.form-group label { font-size: 11px; font-weight: 900; color: var(--text-muted); display: block; margin-bottom: 10px; }
-.custom-select, .search-input { width: 100%; background: var(--bg-secondary); border: 2px solid var(--border-primary); border-radius: 16px; padding: 16px 20px; outline: none; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.main-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+.side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.instruction-card {
+  position: relative;
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+  border: 1px solid var(--border-primary);
+  border-left: 4px solid var(--color_button) !important;
+  border-radius: 20px;
+  padding: 24px !important;
+  box-shadow: 0 10px 25px -15px rgba(0,0,0,0.05);
+}
+.instruction-card h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.instruction-card h3::before {
+  content: 'info';
+  font-family: 'Material Symbols Outlined';
+  font-size: 20px;
+  color: var(--color_button);
+}
+.instruction-card p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+.smart-validation-card {
+  background: rgba(16, 185, 129, 0.04) !important;
+  border: 1px dashed rgba(16, 185, 129, 0.3) !important;
+  border-radius: 20px;
+  padding: 24px !important;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  box-shadow: none !important;
+}
+.smart-validation-card span {
+  font-size: 24px;
+  color: #10B981;
+  font-variation-settings: 'FILL' 1;
+  animation: pulse-green 2s infinite ease-in-out;
+  flex-shrink: 0;
+}
+.smart-validation-card p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #065F46;
+  margin: 0;
+  font-weight: 600;
+}
+@keyframes pulse-green {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.3)); }
+  100% { transform: scale(1); opacity: 0.9; }
+}
+
+.form-card {
+  padding: 40px !important;
+  border-radius: 24px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  box-shadow: 0 15px 35px -20px rgba(0,0,0,0.08);
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+.form-group {
+  margin-bottom: 24px;
+  position: relative;
+  text-align: left;
+}
+.form-group label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 12px;
+}
+.custom-select, .search-input {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary) !important;
+  border-radius: 16px;
+  padding: 16px 20px;
+  outline: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.01);
+}
+.custom-select:focus, .search-input:focus {
+  border-color: var(--color_button) !important;
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.08), inset 0 1px 2px rgba(0,0,0,0.01);
+}
+.custom-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 20px center;
+  background-size: 16px;
+  padding-right: 48px;
+}
 .no-icon { padding-left: 20px; }
 .suggestions-list { position: absolute; background: var(--bg-elevated); border: 1px solid var(--border-primary); border-radius: 12px; z-index: 100; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
 .suggestion-item { padding: 12px 20px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-primary); color: var(--text-primary); }
@@ -754,9 +973,201 @@ onMounted(loadData)
 }
 .btn-text:hover { color: var(--text-primary); }
 
-.modern-table { width: 100%; border-collapse: collapse; }
-.modern-table th { text-align: left; padding: 16px; border-bottom: 1px solid var(--border-primary); font-size: 11px; color: var(--text-muted); }
-.modern-table td { padding: 16px; border-bottom: 1px solid var(--border-primary); font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.btn-text-danger { 
+  background: none; 
+  border: none; 
+  color: #EF4444; 
+  font-weight: 800; 
+  font-size: 15px;
+  cursor: pointer; 
+  padding: 10px 20px;
+  transition: all 0.2s ease;
+}
+.btn-text-danger:hover { 
+  color: #DC2626; 
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.15);
+}
+
+/* --- Directorio de Empresas Moderno --- */
+.table-card {
+  padding: 24px !important;
+  background: var(--bg-primary);
+  border-radius: 24px;
+  border: 1px solid var(--border-primary);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 12px 20px;
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
+}
+
+.search-bar:focus-within {
+  border-color: var(--color_button);
+  box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1);
+}
+
+.search-bar input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  width: 100%;
+}
+
+.search-bar span {
+  color: var(--text-muted);
+}
+
+.modern-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  margin-top: -8px;
+}
+
+.modern-table th {
+  padding: 16px 24px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: none;
+  text-align: left;
+}
+
+.modern-table tbody tr {
+  background: var(--bg-primary);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.modern-table tbody tr:hover {
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.modern-table td {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-primary);
+  border-bottom: 1px solid var(--border-primary);
+  font-size: 13px;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.modern-table td:first-child {
+  border-left: 1px solid var(--border-primary);
+  border-radius: 16px 0 0 16px;
+}
+
+.modern-table td:last-child {
+  border-right: 1px solid var(--border-primary);
+  border-radius: 0 16px 16px 0;
+}
+
+/* Badges y Textos */
+.company-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.company-logo-badge {
+  width: 36px;
+  height: 36px;
+  background: var(--bg-secondary);
+  color: var(--color_button);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-primary);
+}
+
+.company-logo-badge span {
+  font-size: 20px;
+}
+
+.nit-badge {
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  background: var(--bg-secondary);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.sector-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(46, 125, 50, 0.15);
+  background: var(--bg-hover);
+  color: var(--color_button);
+}
+
+.location-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.location-cell span {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.btn-apply-company {
+  background: var(--bg-hover);
+  color: var(--color_button);
+  border: 1px solid var(--color_button);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-apply-company:hover:not(:disabled) {
+  background: var(--color_button);
+  color: var(--color_text_button);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(46, 125, 50, 0.15);
+}
+
+.btn-apply-company:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--border-primary);
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+}
 
 .notification-center { position: fixed; top: 24px; right: 24px; z-index: 2000; }
 .toast-card { background: var(--color_button); color: var(--color_text_button); padding: 12px 24px; border-radius: 12px; margin-bottom: 8px; font-weight: 700; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }

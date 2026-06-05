@@ -489,4 +489,155 @@ const quincena = (idx) => `Q${idx + 1}`
 
 .table-footer-count { padding: 0.75rem 1rem; font-size: 0.82rem; color: #94a3b8; text-align: right; border-top: 1px solid #f1f5f9; }
 .table-footer-count strong { color: #475569; }
+
+/* ── Dark Mode Overrides ── */
+[data-theme="dark"] .kpi-card {
+  background: #1e2535;
+  border-color: #2d3748;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+[data-theme="dark"] .kpi-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .kpi-total {
+  background: linear-gradient(135deg, #1e2535, #1d355730);
+  border-color: #2563eb;
+}
+[data-theme="dark"] .kpi-done {
+  background: linear-gradient(135deg, #1e2535, #064e3b30);
+  border-color: #16a34a;
+}
+[data-theme="dark"] .kpi-pending {
+  background: linear-gradient(135deg, #1e2535, #78350f30);
+  border-color: #ca8a04;
+}
+
+[data-theme="dark"] .kpi-total .kpi-icon-wrap { background: #1e3a8a30; color: #60a5fa; }
+[data-theme="dark"] .kpi-done .kpi-icon-wrap { background: #064e3b30; color: #4ade80; }
+[data-theme="dark"] .kpi-pending .kpi-icon-wrap { background: #78350f30; color: #facc15; }
+
+[data-theme="dark"] .kpi-value { color: #f1f5f9; }
+[data-theme="dark"] .kpi-label { color: #94a3b8; }
+
+[data-theme="dark"] .hrs-filters-bar {
+  background: #1e2535;
+  border-color: #374151;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .hrs-search-input,
+[data-theme="dark"] .hrs-select {
+  background: #151a27;
+  border-color: #374151;
+  color: #f1f5f9;
+}
+[data-theme="dark"] .hrs-search-input:focus,
+[data-theme="dark"] .hrs-select:focus {
+  border-color: #0284c7;
+}
+[data-theme="dark"] .filter-label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .hrs-table-card {
+  background: #1a1f2e;
+  border-color: #2d3748;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .hrs-table thead tr {
+  background: #151a27;
+}
+[data-theme="dark"] .hrs-table th {
+  color: #86efac;
+  border-bottom-color: #16a34a;
+}
+[data-theme="dark"] .hrs-row {
+  border-bottom-color: #242b3d;
+}
+[data-theme="dark"] .hrs-row:hover {
+  background: #1e2535;
+}
+[data-theme="dark"] .hrs-row.expanded {
+  background: #143d2130;
+  border-left-color: #22c55e;
+}
+[data-theme="dark"] .hrs-table td {
+  color: #d1d5db;
+}
+[data-theme="dark"] .apprentice-name {
+  color: #f1f5f9;
+}
+[data-theme="dark"] .apprentice-doc {
+  color: #6b7280;
+}
+[data-theme="dark"] .ficha-chip {
+  background: #0c2a3d;
+  color: #38bdf8;
+}
+[data-theme="dark"] .progress-pct {
+  color: #94a3b8;
+}
+[data-theme="dark"] .progress-bar {
+  background: #2d3748;
+}
+
+[data-theme="dark"] .subtable-row {
+  background: #151a27;
+}
+[data-theme="dark"] .subtable-wrapper {
+  border-top-color: #1a4731;
+}
+[data-theme="dark"] .subtable thead tr {
+  background: #111827;
+}
+[data-theme="dark"] .subtable th {
+  color: #86efac;
+  border-bottom-color: #1f2937;
+}
+[data-theme="dark"] .subtable-bit-row {
+  border-bottom-color: #1e2535;
+}
+[data-theme="dark"] .subtable td {
+  color: #d1d5db;
+}
+[data-theme="dark"] .subtable-date {
+  color: #6b7280;
+}
+[data-theme="dark"] .subtable-mes {
+  color: #6b7280;
+}
+[data-theme="dark"] .subtable-total-row {
+  background: #143d2120;
+}
+[data-theme="dark"] .total-label {
+  color: #86efac;
+}
+[data-theme="dark"] .total-hrs {
+  color: #22c55e;
+}
+
+[data-theme="dark"] .table-footer-count {
+  border-top-color: #2d3748;
+  color: #6b7280;
+}
+[data-theme="dark"] .table-footer-count strong {
+  color: #9ca3af;
+}
+[data-theme="dark"] .btn-expand:hover {
+  background: #2d3748;
+  color: #f1f5f9;
+}
+[data-theme="dark"] .btn-desglose {
+  background: #143d2120;
+  border-color: #1b5e20;
+  color: #22c55e;
+}
+[data-theme="dark"] .btn-desglose:hover {
+  background: #143d2140;
+}
+[data-theme="dark"] .quincena-chip {
+  background: #1e3a8a30;
+  color: #60a5fa;
+}
 </style>

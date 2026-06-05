@@ -164,8 +164,16 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
 /**
  * Login de usuario.
  */
-const login = async ({ email, password }) => {
-  const emailQuery = email ? email.toLowerCase().trim() : '';
+const login = async (payload = {}) => {
+  const { email, password } = payload;
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    throw new Error('El correo electrónico es obligatorio.');
+  }
+  if (!password || typeof password !== 'string' || !password.trim()) {
+    throw new Error('La contraseña es obligatoria.');
+  }
+
+  const emailQuery = email.toLowerCase().trim();
   // Buscar usuario (incluyendo el campo password que tiene select: false)
   const usuario = await User.findOne({ email: emailQuery }).select('+password');
   if (!usuario) {

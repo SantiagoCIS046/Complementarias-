@@ -717,4 +717,150 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
   font-size: 0.78rem; color: #b45309; font-weight: 600;
   margin-left: auto;
 }
+
+/* ── Dark Mode Overrides ── */
+[data-theme="dark"] .tracking-filters-bar {
+  background: #1e2535;
+  border-color: #374151;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .search-input,
+[data-theme="dark"] .filter-select {
+  background: #151a27;
+  border-color: #374151;
+  color: #f1f5f9;
+}
+[data-theme="dark"] .search-input:focus,
+[data-theme="dark"] .filter-select:focus {
+  border-color: #39a2db;
+}
+[data-theme="dark"] .filter-label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .tracking-table-card {
+  background: #1a1f2e;
+  border-color: #2d3748;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .tracking-table thead tr {
+  background: #151a27;
+}
+[data-theme="dark"] .tracking-table th {
+  color: #38bdf8;
+  border-bottom-color: #0284c7;
+}
+[data-theme="dark"] .tracking-row {
+  border-bottom-color: #242b3d;
+}
+[data-theme="dark"] .tracking-row:hover {
+  background: #1e2535;
+}
+[data-theme="dark"] .tracking-table td {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .visit-badge {
+  background: #0c2a3d;
+  color: #38bdf8;
+}
+[data-theme="dark"] .apprentice-name {
+  color: #f1f5f9;
+}
+[data-theme="dark"] .apprentice-doc {
+  color: #6b7280;
+}
+[data-theme="dark"] .cell-date,
+[data-theme="dark"] .cell-lugar,
+[data-theme="dark"] .cell-cal {
+  color: #94a3b8;
+}
+[data-theme="dark"] .cal-badge {
+  background: #3b2010;
+  color: #fb923c;
+}
+[data-theme="dark"] .tipo-chip.tipo-std {
+  background: #0c2a3d;
+  color: #38bdf8;
+}
+[data-theme="dark"] .tipo-chip.tipo-extra {
+  background: #3b2010;
+  color: #fb923c;
+}
+[data-theme="dark"] .ia-pending {
+  color: #4b5563;
+}
+[data-theme="dark"] .btn-icon-action:hover {
+  background: #0c2a3d;
+  color: #38bdf8;
+}
+[data-theme="dark"] .table-footer-count {
+  color: #6b7280;
+}
+[data-theme="dark"] .table-footer-count strong {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .modal-panel {
+  background: #1a1f2e;
+  border: 1px solid #374151;
+}
+[data-theme="dark"] .modal-header {
+  background: #151a27;
+  border-bottom-color: #2d3748;
+}
+[data-theme="dark"] .modal-icon {
+  color: #38bdf8;
+}
+[data-theme="dark"] .modal-title {
+  color: #f1f5f9;
+}
+[data-theme="dark"] .modal-close-btn:hover {
+  background: #2d3748;
+  color: #f1f5f9;
+}
+[data-theme="dark"] .form-label {
+  color: #94a3b8;
+}
+[data-theme="dark"] .form-input {
+  background: #151a27;
+  border-color: #374151;
+  color: #f1f5f9;
+}
+[data-theme="dark"] .form-input:focus {
+  background: #1e2535;
+  border-color: #39a2db;
+}
+[data-theme="dark"] .toggle-text {
+  color: #d1d5db;
+}
+[data-theme="dark"] .ia-section {
+  border-color: #0284c7;
+  background: linear-gradient(135deg, #151a27, #0c2a3d20);
+}
+[data-theme="dark"] .ia-section-header h3 {
+  color: #f1f5f9;
+}
+[data-theme="dark"] .pdf-dropzone {
+  border-color: #374151;
+  background: #151a27;
+}
+[data-theme="dark"] .pdf-dropzone:hover,
+[data-theme="dark"] .pdf-dropzone.dragging {
+  border-color: #38bdf8;
+  background: #1e2535;
+}
+[data-theme="dark"] .pdf-dropzone.has-file {
+  border-color: #22c55e;
+  background: #143d2120;
+}
+[data-theme="dark"] .dropzone-text {
+  color: #94a3b8;
+}
+[data-theme="dark"] .modal-footer {
+  background: #151a27;
+  border-top-color: #2d3748;
+}
 </style>

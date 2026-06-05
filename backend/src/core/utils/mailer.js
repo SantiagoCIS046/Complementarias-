@@ -19,6 +19,20 @@ const transporter = nodemailer.createTransport({
  * Función global para enviar correos
  */
 const sendEmail = async ({ to, subject, html, attachments }) => {
+  // Simular el envío en desarrollo/test a menos que se habilite explícitamente en el .env con SMTP_ENABLED=true
+  const smtpEnabled = process.env.SMTP_ENABLED === 'true';
+  const isDevOrTest = env.NODE_ENV === 'development' || env.NODE_ENV === 'test';
+
+  if (isDevOrTest && !smtpEnabled) {
+    console.log(`✉️ [EMAIL SIMULADO] Para: ${to} | Asunto: ${subject}`);
+    return {
+      messageId: `simulated-id-${Date.now()}`,
+      to,
+      subject,
+      html,
+    };
+  }
+
   try {
     const info = await transporter.sendMail({
       from: env.SMTP_FROM || env.SMTP_USER,

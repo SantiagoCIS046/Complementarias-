@@ -374,7 +374,7 @@ const certificarEP = async (req, res) => {
  */
 const getEstadoCertificacion = async (req, res) => {
   try {
-    const resultado = await service.getEstadoCertificacion(req.params.id);
+    const resultado = await service.getEstadoCertificacion(req.params.id, req.user);
 
     res.json({
       success: true,

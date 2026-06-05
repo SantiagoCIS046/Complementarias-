@@ -433,3 +433,38 @@ describe('Elegibilidad Temporal - RF-ADM-08', () => {
     expect(result.mensaje).toContain('Nueva norma');
   });
 });
+
+// --- 7. getEstadoCertificacion ---
+const { getEstadoCertificacion } = require('../src/modules/productive-stages-dev2/productive-stages.service');
+const DocumentModel = require('../src/modules/documents-dev2/document.model');
+
+describe('getEstadoCertificacion', () => {
+  const mockUser = { _id: 'mock-user-id', role: 'APRENDIZ' };
+
+  it('debe retornar estructura inicial por defecto si el aprendiz no tiene EP activa', async () => {
+    vi.spyOn(ProductiveStageModel, 'findOne').mockResolvedValue(null);
+
+    const result = await getEstadoCertificacion('current', mockUser);
+    expect(result.estadoEP).toBe('PENDIENTE');
+    expect(result.estado).toBe('Pendiente');
+    expect(result.habilitado).toBe(false);
+    expect(result.mensaje).toContain('Debes formalizar');
+  });
+
+  it('debe retornar estado En Progreso si la EP está activa pero no finalizada', async () => {
+    const mockStage = {
+      _id: 'mock-stage-id',
+      estado: 'EN_CURSO',
+      radicado: 'REP-2026-001'
+    };
+    vi.spyOn(ProductiveStageModel, 'findOne').mockResolvedValue(mockStage);
+    vi.spyOn(ProductiveStageModel, 'findById').mockResolvedValue(mockStage);
+    vi.spyOn(DocumentModel, 'find').mockResolvedValue([]);
+
+    const result = await getEstadoCertificacion('current', mockUser);
+    expect(result.estadoEP).toBe('EN_CURSO');
+    expect(result.estado).toBe('En Progreso');
+    expect(result.habilitado).toBe(false);
+    expect(result.mensaje).toContain('se encuentra en desarrollo');
+  });
+});

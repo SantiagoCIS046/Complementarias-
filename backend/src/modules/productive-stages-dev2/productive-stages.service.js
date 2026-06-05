@@ -741,13 +741,46 @@ const certificarEP = async (stageId, userId) => {
  * Obtener el estado de los documentos de certificacion de una EP.
  * Muestra cuales de los 3 documentos finales estan subidos y su estado.
  */
-const getEstadoCertificacion = async (stageId) => {
-  const stage = await ProductiveStage.findById(stageId);
+const getEstadoCertificacion = async (stageId, currentUser = null) => {
+  let resolvedStageId = stageId;
+
+  if (stageId === 'current') {
+    if (!currentUser) {
+      throw new Error('Usuario no autenticado.');
+    }
+    // Buscamos la etapa productiva activa para este aprendiz
+    const stage = await ProductiveStage.findOne({
+      apprenticeId: currentUser._id,
+      estado: { $ne: ESTADO_EP.RECHAZADO }
+    });
+
+    if (!stage) {
+      // Si no tiene etapa productiva, retornamos una respuesta por defecto amigable.
+      // Así el frontend no rompe y muestra el estado inicial correcto.
+      return {
+        estadoEP: 'PENDIENTE',
+        radicado: null,
+        listoCertificar: false,
+        documentos: [],
+        resumen: {
+          subidos: 0,
+          aprobados: 0,
+          total: DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.length,
+        },
+        estado: 'Pendiente',
+        mensaje: 'Debes formalizar tu Etapa Productiva para comenzar.',
+        habilitado: false
+      };
+    }
+    resolvedStageId = stage._id;
+  }
+
+  const stage = await ProductiveStage.findById(resolvedStageId);
   if (!stage) {
     throw new Error('Etapa Productiva no encontrada.');
   }
 
-  const documentos = await Document.find({ stageId });
+  const documentos = await Document.find({ stageId: resolvedStageId });
 
   // Verificar cada documento de certificacion
   const estadoDocumentos = DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.map((tipo) => {
@@ -764,16 +797,42 @@ const getEstadoCertificacion = async (stageId) => {
   const todosSubidos = estadoDocumentos.every((d) => d.subido);
   const todosAprobados = estadoDocumentos.every((d) => d.estado === 'APROBADO');
 
+  // Mapear los mensajes de acuerdo al estado para que el frontend los muestre correctamente
+  let estado = 'Pendiente';
+  let mensaje = 'Aún no disponible.';
+  let habilitado = false;
+
+  if (stage.estado === ESTADO_EP.CERTIFICADO) {
+    estado = 'Certificado';
+    mensaje = 'Tu Etapa Productiva ha sido certificada con éxito. Ya puedes descargar tu documento.';
+    habilitado = true;
+  } else if (stage.estado === ESTADO_EP.FINALIZADO) {
+    if (todosSubidos && todosAprobados) {
+      estado = 'Listo para Certificar';
+      mensaje = 'Todos los documentos finales han sido aprobados. Pendiente de firma de coordinación.';
+    } else {
+      estado = 'Finalizado (Documentación pendiente)';
+      mensaje = 'Tu etapa productiva finalizó. Sube los 3 documentos de certificación obligatorios.';
+    }
+  } else {
+    estado = 'En Progreso';
+    mensaje = 'Tu Etapa Productiva se encuentra en desarrollo. El certificado estará disponible al finalizar y aprobar los documentos.';
+  }
+
   return {
     estadoEP: stage.estado,
     radicado: stage.radicado,
-    listoCertificar: todosSubidos && todosAprobados && stage.estado === 'FINALIZADO',
+    listoCertificar: todosSubidos && todosAprobados && stage.estado === ESTADO_EP.FINALIZADO,
     documentos: estadoDocumentos,
     resumen: {
       subidos: estadoDocumentos.filter((d) => d.subido).length,
       aprobados: estadoDocumentos.filter((d) => d.estado === 'APROBADO').length,
       total: DOCUMENTOS_CERTIFICACION_OBLIGATORIOS.length,
     },
+    // Compatibilidad frontend
+    estado,
+    mensaje,
+    habilitado
   };
 };
 

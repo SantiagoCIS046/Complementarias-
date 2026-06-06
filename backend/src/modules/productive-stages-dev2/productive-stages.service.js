@@ -547,11 +547,18 @@ const evaluarEP = async (stageId, { decision, comentario, documentosRevisados },
   }
 
   // Guardar el comentario en las observaciones de la EP
+  stageActualizada.chatObservaciones = stageActualizada.chatObservaciones || [];
+  stageActualizada.chatObservaciones.push({
+    remitente: 'Instructor',
+    texto: `Evaluación de la solicitud: ${decision === 'APROBADA' ? 'APROBADA' : 'RECHAZADA'}.${comentario ? ` Motivo: ${comentario}` : ''}`,
+    fecha: new Date()
+  });
+
   if (comentario) {
     stageActualizada.observaciones = (stageActualizada.observaciones || '') +
       '\n[' + new Date().toISOString().split('T')[0] + ' - Evaluacion] ' + comentario;
-    await stageActualizada.save();
   }
+  await stageActualizada.save();
 
   // --- Notificar al aprendiz sobre el resultado de la evaluación ---
   try {

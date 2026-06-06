@@ -275,6 +275,15 @@ onUnmounted(() => {
                 </div>
               </div>
             </section>
+            
+            <!-- OBSERVACIONES DEL INSTRUCTOR -->
+            <div v-if="stage?.observaciones" class="card observations-card" style="border-left: 4px solid var(--color_button); border-left-color: #EF4444; background: rgba(239, 68, 68, 0.02); display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-weight: 850; font-size: 11px; color: #EF4444; letter-spacing: 0.5px; text-transform: uppercase;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">warning</span>
+                Observaciones de la Etapa Productiva
+              </div>
+              <p style="margin: 0; font-size: 13px; color: var(--text-secondary); white-space: pre-wrap; font-weight: 500; line-height: 1.5;">{{ stage.observaciones }}</p>
+            </div>
 
             <!-- INFORMACIÓN DE LA EMPRESA -->
             <section class="card company-card">

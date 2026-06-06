@@ -60,6 +60,10 @@ const aprendiz = computed(() => {
   }
 })
 
+const hasActiveStage = computed(() => {
+  return stage.value && stage.value.estado !== 'RECHAZADO'
+})
+
 const bitacoras = ref([])
 
 const checklist = computed(() => {
@@ -303,7 +307,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
                 <div v-else class="skel-badge"></div>
               </div>
               
-              <div class="company-details" v-if="!loading">
+              <div class="company-details" v-if="!loading && hasActiveStage">
                 <div class="detail-item">
                   <div class="icon"><span class="material-symbols-outlined">corporate_fare</span></div>
                   <div class="txt">
@@ -333,6 +337,21 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
                   </div>
                 </div>
               </div>
+              <div class="company-details-empty" v-else-if="!loading && !hasActiveStage" style="padding: 24px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; border: 1px dashed var(--border-primary); border-radius: 16px; margin: 16px 0;">
+                <span class="material-symbols-outlined" style="font-size: 44px; color: var(--text-muted); opacity: 0.6;">domain_disabled</span>
+                <div style="max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                  <h4 style="font-weight: 800; font-size: 14px; margin: 0; color: var(--text-primary);">Sin vinculación activa</h4>
+                  <p style="font-size: 12px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                    {{ stage?.estado === 'RECHAZADO' 
+                       ? 'Tu solicitud de etapa productiva anterior fue rechazada. Por favor registra una nueva empresa para iniciar el proceso.'
+                       : 'Aún no has registrado tu información de etapa productiva. Completa la formalización para comenzar.' }}
+                  </p>
+                  <router-link to="/registro-ep" class="btn-new" style="display: inline-flex; align-items: center; gap: 6px; justify-content: center; text-decoration: none; padding: 8px 16px; margin-top: 6px; font-size: 11px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">app_registration</span>
+                    Registrar Etapa Productiva
+                  </router-link>
+                </div>
+              </div>
               <div class="company-details" v-else>
                 <div class="detail-item" v-for="i in 4" :key="i">
                   <div class="icon skel-anim" style="width: 36px; height: 36px; border-radius: 10px;"></div>
@@ -345,7 +364,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
             </div>
 
             <!-- FOOTER DE PROGRESO INTEGRADO -->
-            <div class="company-footer">
+            <div class="company-footer" v-if="hasActiveStage || loading">
               <template v-if="!loading">
                 <div class="footer-progress-header">
                   <div class="progress-info">
@@ -548,6 +567,10 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
                  stage.estado === 'CERTIFICADO' ? '¡Felicitaciones! Has completado exitosamente tu Etapa Productiva.' :
                  '' }}
             </p>
+            <div v-if="stage.observaciones" class="observations-box" style="margin-top: 12px; background: rgba(255, 255, 255, 0.15); padding: 12px 16px; border-radius: 8px; border-left: 4px solid currentColor;">
+              <strong style="display: block; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Observaciones del Instructor:</strong>
+              <p style="margin: 0; font-size: 13px; white-space: pre-wrap; font-weight: 500; line-height: 1.5;">{{ stage.observaciones }}</p>
+            </div>
           </div>
         </div>
 

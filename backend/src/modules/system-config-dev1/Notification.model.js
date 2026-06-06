@@ -17,7 +17,7 @@ const notificationSchema = new mongoose.Schema({
   },
   tipo: { 
     type: String, 
-    enum: ['INFO', 'SUCCESS', 'WARNING', 'ERROR', 'SEGUIMIENTO'],
+    enum: ['INFO', 'SUCCESS', 'WARNING', 'ERROR', 'SEGUIMIENTO', 'ALERTA_BITACORA'],
     default: 'INFO'
   },
   resuelta: {

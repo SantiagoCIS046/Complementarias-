@@ -112,7 +112,12 @@ const handleNotificationClick = async (notif) => {
 
   if (notif.referenciaModelo === 'ProductiveStage' && notif.referencia) {
     if (userRole.value === 'APRENDIZ') {
-      router.push({ path: '/seguimiento-ep', query: { openChat: 'true' } });
+      const msgLower = (notif.mensaje || '').toLowerCase();
+      if (notif.tipo === 'ALERTA_BITACORA' || notif.tipo === 'SUCCESS' || notif.tipo === 'WARNING' || msgLower.includes('rechazada') || msgLower.includes('aprobada')) {
+        router.push({ path: '/mi-ep' });
+      } else {
+        router.push({ path: '/seguimiento-ep', query: { openChat: 'true' } });
+      }
     } else if (userRole.value === 'INSTRUCTOR' || userRole.value === 'ADMIN') {
       router.push({ path: '/bitacoras', query: { id: notif.referencia, openChat: 'true' } });
     }
@@ -157,6 +162,7 @@ const getNotifIcon = (tipo) => {
     WARNING: '⚠️',
     ERROR: '❌',
     INFO: 'ℹ️',
+    ALERTA_BITACORA: '⏰',
   };
   return map[tipo] || '🔔';
 };
@@ -271,11 +277,13 @@ const handleSaveQuickEdit = async () => {
                 :key="notif._id"
                 class="notif-item"
                 :class="{ 'unread': !notif.leido, 'resolved': notif.resuelta }"
+                @click="handleNotificationClick(notif)"
+                style="cursor: pointer;"
               >
                 <div class="notif-icon-col">
                   <span class="notif-type-icon">{{ getNotifIcon(notif.tipo) }}</span>
                 </div>
-                <div class="notif-content" @click="handleNotificationClick(notif)" style="cursor: pointer;">
+                <div class="notif-content">
                   <p class="notif-msg">{{ notif.mensaje }}</p>
                   <span class="notif-time">{{ timeAgo(notif.createdAt) }}</span>
                 </div>
@@ -283,7 +291,7 @@ const handleSaveQuickEdit = async () => {
                   <button 
                     v-if="!notif.leido"
                     class="notif-action-btn read" 
-                    @click="handleMarkRead(notif._id)"
+                    @click.stop="handleMarkRead(notif._id)"
                     title="Marcar como leída"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -291,7 +299,7 @@ const handleSaveQuickEdit = async () => {
                   <button 
                     v-if="notif.tipo === 'SEGUIMIENTO' && !notif.resuelta"
                     class="notif-action-btn resolve" 
-                    @click="handleMarkResolved(notif._id)"
+                    @click.stop="handleMarkResolved(notif._id)"
                     title="Marcar como resuelta"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>

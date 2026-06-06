@@ -45,6 +45,20 @@ const registrar = async (req, res) => {
           url: driveResult.viewUrl,
         });
       }
+      if (req.files.terceroFile && req.files.terceroFile[0]) {
+        const file = req.files.terceroFile[0];
+        const driveResult = await driveService.subirDocumentoEP(file.buffer, file.originalname);
+        // Determinar tipo según modalidad
+        const modalidadRaw = req.body.modalidad || '';
+        let tipoTercero = 'CONTRATO_APRENDIZAJE';
+        if (modalidadRaw.includes('Laboral') || modalidadRaw.includes('VINCULACION')) tipoTercero = 'CERTIFICACION_LABORAL';
+        else if (modalidadRaw.includes('Pasant') || modalidadRaw.includes('PASANTIA')) tipoTercero = 'CONVENIO_PASANTIA';
+        documentos.push({
+          tipoDocumento: tipoTercero,
+          nombreArchivo: file.originalname,
+          url: driveResult.viewUrl,
+        });
+      }
     }
 
     // Soporte para pruebas de integración (JSON payload)

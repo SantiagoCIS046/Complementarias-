@@ -44,7 +44,8 @@ router.post(
   checkRole(['APRENDIZ']),
   upload.fields([
     { name: 'rutFile', maxCount: 1 },
-    { name: 'camaraFile', maxCount: 1 }
+    { name: 'camaraFile', maxCount: 1 },
+    { name: 'terceroFile', maxCount: 1 }
   ]),
   controller.registrar
 );

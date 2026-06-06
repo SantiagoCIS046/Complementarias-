@@ -176,8 +176,10 @@ async function load(silent = false) {
   try {
     const res = await epService.getAll()
     const stages = res.data?.data || []
-    if (stages.length > 0) {
-      const newStage = stages[0]
+    // Buscar la primera etapa activa (no rechazada)
+    const activeStage = stages.find(s => s.estado !== 'RECHAZADO') || null
+    if (activeStage) {
+      const newStage = activeStage
       const oldProgress = aprendiz.value.progresoPorcentaje
       const oldEstado = stage.value?.estado
       

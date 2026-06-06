@@ -25,8 +25,32 @@ const formData = reactive({
   supervisor: { nombre: '', email: '', telefono: '' },
   observaciones: '',
   rutFile: null,
-  camaraFile: null
+  camaraFile: null,
+  terceroFile: null
 })
+
+// Etiqueta del 3er documento según modalidad
+const terceroFileLabel = computed(() => {
+  if (formData.modalidad === 'Vínculo Laboral') return 'CERTIFICACIÓN LABORAL CON FUNCIONES Y VIGENCIA (PDF - MÁX 5MB)'
+  if (formData.modalidad === 'Pasantía') return 'ACUERDO/CONVENIO DE PASANTÍA FIRMADO (PDF - MÁX 5MB)'
+  return 'COPIA DEL CONTRATO DE APRENDIZAJE FIRMADO (PDF - MÁX 5MB)'
+})
+
+// Resetear formulario completamente
+const resetForm = () => {
+  formData.modalidad = 'Contrato de Aprendizaje'
+  formData.nit = ''
+  formData.empresaSeleccionada = null
+  formData.supervisor.nombre = ''
+  formData.supervisor.email = ''
+  formData.supervisor.telefono = ''
+  formData.observaciones = ''
+  formData.rutFile = null
+  formData.camaraFile = null
+  formData.terceroFile = null
+  currentStep.value = 1
+  Object.keys(errors).forEach(k => errors[k] = '')
+}
 
 const requisitosPorModalidad = computed(() => {
   if (formData.modalidad === 'Contrato de Aprendizaje') {
@@ -201,8 +225,9 @@ const handleFileChange = (e, type) => {
 
   if (type === 'rut') formData.rutFile = file
   if (type === 'camara') formData.camaraFile = file
+  if (type === 'tercero') formData.terceroFile = file
   errors.files = ''
-  notify(`Archivo ${type.toUpperCase()} cargado correctamente.`, 'info')
+  notify(`Archivo cargado correctamente.`, 'info')
 }
 
 const onNitInput = (e) => {
@@ -247,14 +272,16 @@ const validateStep = () => {
       isValid = false
     }
   } else if (currentStep.value === 3) {
-    if (!formData.rutFile && !formData.camaraFile) {
-      errors.files = 'Faltan ambos documentos obligatorios (RUT y Cámara).'
-      isValid = false
-    } else if (!formData.rutFile) {
-      errors.files = 'Falta adjuntar el RUT de la empresa.'
-      isValid = false
-    } else if (!formData.camaraFile) {
-      errors.files = 'Falta adjuntar la Cámara de Comercio.'
+    const missing = []
+    if (!formData.rutFile) missing.push('RUT de la empresa')
+    if (!formData.camaraFile) missing.push('Cámara de Comercio')
+    if (!formData.terceroFile) {
+      if (formData.modalidad === 'Vínculo Laboral') missing.push('Certificación Laboral')
+      else if (formData.modalidad === 'Pasantía') missing.push('Acuerdo/Convenio de Pasantía')
+      else missing.push('Contrato de Aprendizaje firmado')
+    }
+    if (missing.length > 0) {
+      errors.files = `Falta(n) adjuntar: ${missing.join(', ')}.`
       isValid = false
     }
   }
@@ -283,6 +310,7 @@ const handleFinish = async () => {
     fData.append('observaciones', formData.observaciones)
     fData.append('rutFile', formData.rutFile)
     fData.append('camaraFile', formData.camaraFile)
+    if (formData.terceroFile) fData.append('terceroFile', formData.terceroFile)
 
     const res = await epService.create(fData)
     const stageId = res.data?.data?.stage?._id;
@@ -536,6 +564,15 @@ onMounted(loadData)
                           </div>
                         </div>
                       </div>
+                      <div class="form-group mt-16">
+                        <label>{{ terceroFileLabel }}</label>
+                        <div class="file-input-wrapper">
+                          <input type="file" @change="handleFileChange($event, 'tercero')" accept=".pdf" class="file-input">
+                          <div v-if="formData.terceroFile" class="file-selected-tag">
+                            <span class="material-symbols-outlined">check_circle</span> {{ formData.terceroFile.name }}
+                          </div>
+                        </div>
+                      </div>
                       <span v-if="errors.files" class="error-text">{{ errors.files }}</span>
                     </div>
 
@@ -543,7 +580,7 @@ onMounted(loadData)
                   </div>
                   <div class="form-footer">
                     <button v-if="currentStep > 1" class="btn-text-danger" @click="currentStep--">VOLVER</button>
-                    <div v-else></div> <!-- Espaciador para mantener SIGUIENTE a la derecha -->
+                    <button v-else class="btn-text-danger" @click="resetForm()">REINICIAR</button>
                     <button class="btn-primary" @click="currentStep === 3 ? handleFinish() : handleNext()" :disabled="isSubmitting">{{ currentStep === 3 ? 'FINALIZAR' : 'SIGUIENTE' }}</button>
                   </div>
                 </div>

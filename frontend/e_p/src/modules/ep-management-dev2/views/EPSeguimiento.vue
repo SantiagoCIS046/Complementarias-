@@ -76,6 +76,10 @@ const currentStepIdx = computed(() => {
   return idx !== -1 ? idx : 0
 })
 
+const hasActiveStage = computed(() => {
+  return stage.value && stage.value.estado !== 'RECHAZADO'
+})
+
 const stats = computed(() => {
   const aprobadas = bitacoras.value.filter(b => b.estado === 'APROBADA').length
   const pendientes = bitacoras.value.filter(b => b.estado === 'PENDIENTE' || b.estado === 'REVISION' || b.estado === 'EN REVISIÓN').length
@@ -292,12 +296,12 @@ onUnmounted(() => {
                   <span class="material-symbols-outlined icon-green">domain</span>
                   <span class="label-text">INFORMACIÓN DE LA EMPRESA</span>
                 </div>
-                <div class="company-mini-logo">
+                <div class="company-mini-logo" v-if="hasActiveStage">
                   <img :src="`https://ui-avatars.com/api/?name=${stage?.companyId?.razon_social || stage?.companyId?.razonSocial || 'EP'}&background=${themeStore.isDark ? '1f2937' : 'F8FAFC'}&color=${themeStore.isDark ? 'f3f4f6' : '1A4D2E'}&bold=true`" alt="Logo">
                 </div>
               </div>
 
-              <div class="info-details-grid">
+              <div class="info-details-grid" v-if="hasActiveStage">
                 <div class="info-item">
                   <label>Razón Social</label>
                   <p>{{ stage?.companyId?.razon_social || stage?.companyId?.razonSocial || stage?.companySnapshot?.razonSocial || '---' }}</p>
@@ -324,6 +328,21 @@ onUnmounted(() => {
                     <span class="tag-dot"></span>
                     <p>{{ stage?.modalidad || '---' }}</p>
                   </div>
+                </div>
+              </div>
+              <div class="company-details-empty" v-else style="padding: 24px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; border: 1px dashed var(--border-primary); border-radius: 16px; margin-top: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 44px; color: var(--text-muted); opacity: 0.6;">domain_disabled</span>
+                <div style="max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0 auto;">
+                  <h4 style="font-weight: 800; font-size: 14px; margin: 0; color: var(--text-primary);">Sin vinculación activa</h4>
+                  <p style="font-size: 12px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                    {{ stage?.estado === 'RECHAZADO' 
+                       ? 'La solicitud de etapa productiva anterior fue rechazada. Por favor registra una nueva empresa para iniciar el proceso.'
+                       : 'Aún no se ha registrado información de etapa productiva. Completa la formalización para comenzar.' }}
+                  </p>
+                  <router-link to="/registro-ep" class="btn-new" style="display: inline-flex; align-items: center; gap: 6px; justify-content: center; text-decoration: none; padding: 8px 16px; margin-top: 6px; font-size: 11px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">app_registration</span>
+                    Registrar Etapa Productiva
+                  </router-link>
                 </div>
               </div>
             </section>

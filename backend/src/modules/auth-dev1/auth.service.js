@@ -4,13 +4,13 @@
 // Usa JWT para generar tokens de sesión.
 // =============================================
 
-const jwt    = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const User   = require('../users-dev1/user.model');
+const User = require('../users-dev1/user.model');
 const { JWT_SECRET, JWT_EXPIRES_IN, FRONTEND_URL } = require('../../core/config/env');
 const onedriveService = require('../documents-dev2/onedrive.service');
 const driveService = require('../documents-dev2/drive.service');
-const Batch  = require('../batches-dev1/batch.model');
+const Batch = require('../batches-dev1/batch.model');
 const { sendEmail } = require('../../core/utils/mailer');
 
 /**
@@ -41,6 +41,7 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
       if (!inst) {
         throw new Error(`El instructor asignado en ${fieldName} no existe.`);
       }
+
       if (inst.role !== 'INSTRUCTOR') {
         throw new Error(`El usuario asignado en ${fieldName} debe tener el rol de INSTRUCTOR.`);
       }
@@ -86,7 +87,7 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
       try {
         const nombreInstructor = 'INSTRUCTOR_' + usuario.name.replace(/\s+/g, '_');
         let updated = false;
-        
+
         // Crear en OneDrive
         try {
           const onedriveCarpeta = await onedriveService.crearCarpeta(nombreInstructor);
@@ -166,10 +167,10 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
 
   return {
     usuario: {
-      _id:   usuario._id,
-      name:  usuario.name,
+      _id: usuario._id,
+      name: usuario.name,
       email: usuario.email,
-      role:  usuario.role,
+      role: usuario.role,
       tipoInstructor: usuario.tipoInstructor || null,
       fotoPerfil: usuario.fotoPerfil || null,
       documento: usuario.documento || null,
@@ -238,10 +239,10 @@ const login = async (payload = {}) => {
 
   return {
     usuario: {
-      _id:          usuario._id,
-      name:         usuario.name,
-      email:        usuario.email,
-      role:         usuario.role,
+      _id: usuario._id,
+      name: usuario.name,
+      email: usuario.email,
+      role: usuario.role,
       tipoInstructor: usuario.tipoInstructor || null,
       isFirstLogin: usuario.isFirstLogin,
       fotoPerfil: usuario.fotoPerfil || null,
@@ -267,10 +268,10 @@ const getPerfil = async (userId) => {
 const generarToken = (usuario) => {
   return jwt.sign(
     {
-      _id:            usuario._id,
-      name:           usuario.name,
-      email:          usuario.email,
-      role:           usuario.role,
+      _id: usuario._id,
+      name: usuario.name,
+      email: usuario.email,
+      role: usuario.role,
       tipoInstructor: usuario.tipoInstructor || null,
     },
     JWT_SECRET,
@@ -298,14 +299,14 @@ const forgotPassword = async ({ email }) => {
   const expiry = new Date(Date.now() + 60 * 60 * 1000); // Expira en 1 hora
 
   // Guardar token hasheado en la BD
-  usuario.resetPasswordToken   = crypto.createHash('sha256').update(token).digest('hex');
+  usuario.resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
   usuario.resetPasswordExpires = expiry;
   await usuario.save({ validateBeforeSave: false });
 
   // Enviar email
   const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
   const sendResult = await sendEmail({
-    to:      usuario.email,
+    to: usuario.email,
     subject: 'Restablecer contraseña — RepFora',
     html: `
       <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
@@ -349,7 +350,7 @@ const resetPassword = async ({ token, newPassword }) => {
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
   const usuario = await User.findOne({
-    resetPasswordToken:   tokenHash,
+    resetPasswordToken: tokenHash,
     resetPasswordExpires: { $gt: new Date() }, // No expirado
   });
 
@@ -358,9 +359,9 @@ const resetPassword = async ({ token, newPassword }) => {
   }
 
   // Actualizar contraseña y limpiar el token
-  usuario.password             = newPassword;
-  usuario.isFirstLogin         = false; // Ya no es primer ingreso tras restablecer
-  usuario.resetPasswordToken   = null;
+  usuario.password = newPassword;
+  usuario.isFirstLogin = false; // Ya no es primer ingreso tras restablecer
+  usuario.resetPasswordToken = null;
   usuario.resetPasswordExpires = null;
   await usuario.save();
 

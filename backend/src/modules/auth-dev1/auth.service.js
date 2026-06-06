@@ -350,7 +350,7 @@ const resetPassword = async ({ token, newPassword }) => {
 
   const usuario = await User.findOne({
     resetPasswordToken:   tokenHash,
-    resetPasswordExpires: { $gt: Date.now() }, // No expirado
+    resetPasswordExpires: { $gt: new Date() }, // No expirado
   });
 
   if (!usuario) {

@@ -37,7 +37,8 @@ async function runSeed() {
       email: 'santiagocisneros046@gmail.com',
       password: PASSWORD,
       role: 'ADMIN',
-      documento: '1037658690'
+      documento: '1037658690',
+      isFirstLogin: false
     });
     console.log('✅ Admin creado:', admin.email);
 
@@ -49,7 +50,8 @@ async function runSeed() {
       role: 'INSTRUCTOR',
       documento: '123475869',
       programa: 'Análisis y Desarrollo de Software',
-      status: 'ACTIVO'
+      status: 'ACTIVO',
+      isFirstLogin: true
     });
     console.log('✅ Instructor ADSO creado:', instructor.email);
 
@@ -61,7 +63,8 @@ async function runSeed() {
       role: 'INSTRUCTOR',
       documento: '987654321',
       programa: 'Multimedia',
-      status: 'ACTIVO'
+      status: 'ACTIVO',
+      isFirstLogin: true
     });
     console.log('✅ Instructor Multimedia creado:', instructor2.email);
 
@@ -74,7 +77,8 @@ async function runSeed() {
       documento: '1037000111',
       ficha: '2670687',
       instructorAsignado: instructor._id,
-      fechaAsignacionInstructor: new Date()
+      fechaAsignacionInstructor: new Date(),
+      isFirstLogin: true
     });
 
     const a2 = await User.create({
@@ -85,7 +89,8 @@ async function runSeed() {
       documento: '1037000333',
       ficha: '2558342',
       instructorAsignado: instructor._id,
-      fechaAsignacionInstructor: new Date()
+      fechaAsignacionInstructor: new Date(),
+      isFirstLogin: true
     });
     console.log('✅ Aprendices creados: Juan Mancilla, Daniela Palacio');
 

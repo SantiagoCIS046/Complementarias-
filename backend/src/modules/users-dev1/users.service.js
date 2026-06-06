@@ -145,6 +145,27 @@ const actualizar = async (id, data) => {
     throw new Error('Usuario no encontrado.');
   }
 
+  // Sincronizar la Ficha (Batch) si el rol es APRENDIZ y cambió la ficha
+  if (usuario.role === 'APRENDIZ') {
+    const oldFicha = oldUser.ficha;
+    const newFicha = usuario.ficha;
+    if (oldFicha !== newFicha) {
+      const Batch = require('../batches-dev1/batch.model');
+      if (oldFicha) {
+        await Batch.updateOne(
+          { codigo_ficha: oldFicha },
+          { $pull: { aprendices_ids: usuario._id } }
+        ).catch(batchErr => console.error('[BATCH SYNC PULL ERROR]', batchErr.message));
+      }
+      if (newFicha) {
+        await Batch.updateOne(
+          { codigo_ficha: newFicha },
+          { $addToSet: { aprendices_ids: usuario._id } }
+        ).catch(batchErr => console.error('[BATCH SYNC ADD ERROR]', batchErr.message));
+      }
+    }
+  }
+
   // Si es un APRENDIZ y se le asigna un instructor (o cambia), enviar correo y alerta interna
   if (usuario.role === 'APRENDIZ' && nuevoInstructorId && nuevoInstructorId.toString() !== oldInstructorId) {
     const { enviarNotificacionAsignacion } = require('../../core/utils/notifications');
@@ -468,7 +489,7 @@ const importExcel = async (fileBuffer) => {
       }
 
       // Crear aprendiz
-      await User.create({
+      const nuevoAprendiz = await User.create({
         name: name.trim(),
         email: email.toLowerCase().trim(),
         password: documento, // Se hashea en el middleware pre-save
@@ -481,6 +502,15 @@ const importExcel = async (fileBuffer) => {
         status: 'ACTIVO',
         isFirstLogin: true
       });
+
+      // Sincronizar Ficha al importar desde Excel
+      if (nuevoAprendiz.ficha) {
+        const Batch = require('../batches-dev1/batch.model');
+        await Batch.updateOne(
+          { codigo_ficha: nuevoAprendiz.ficha },
+          { $addToSet: { aprendices_ids: nuevoAprendiz._id } }
+        ).catch(batchErr => console.error('[BATCH SYNC IMPORT ERROR]', batchErr.message));
+      }
 
       // Enviar correo de habilitación (RF-APR-01)
       try {

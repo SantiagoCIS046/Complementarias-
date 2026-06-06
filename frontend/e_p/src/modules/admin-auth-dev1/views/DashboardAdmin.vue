@@ -162,7 +162,12 @@
                       <div class="user-cell">
                         <AvatarDisplay v-if="user" :user="user" size="sm" />
                         <div class="user-info">
-                          <p class="u-name">{{ user.name }}</p>
+                          <p class="u-name">
+                            {{ user.name }}
+                            <span v-if="user.role === 'APRENDIZ' && user.ficha" class="user-ficha-badge">
+                              Ficha: {{ user.ficha }}
+                            </span>
+                          </p>
                           <p class="u-email">{{ user.email }}</p>
                         </div>
                       </div>
@@ -2025,6 +2030,18 @@ const handleLogout = () => {
 .role-badge.instructor { background: rgba(219, 39, 119, 0.15); color: #f472b6; }
 .role-badge.aprendiz { background: rgba(2, 132, 199, 0.15); color: #38bdf8; }
 .role-badge.empresa { background: rgba(234, 88, 12, 0.15); color: #fb923c; }
+.user-ficha-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(57, 169, 0, 0.15);
+  color: #39A900;
+  margin-left: 8px;
+  display: inline-block;
+  vertical-align: middle;
+  border: 1px solid rgba(57, 169, 0, 0.25);
+}
 .status-dot { width: 8px; height: 8px; background: var(--text-muted); border-radius: 50%; display: inline-block; }
 .status-dot.active { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
 .table-footer { padding: 12px 16px; font-size: 0.75rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
@@ -2228,6 +2245,16 @@ const handleLogout = () => {
 }
 .requirements p.met {
   color: #16a34a;
+  font-weight: 700;
+}
+.user-ficha-badge {
+  display: inline-block;
+  background-color: rgba(57, 169, 0, 0.1);
+  color: #39A900;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
   font-weight: 700;
 }
 </style>

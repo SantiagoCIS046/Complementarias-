@@ -34,7 +34,7 @@ const seedUsers = async () => {
         documento: '87654321',
         activo: true,
         status: 'ACTIVO',
-        isFirstLogin: false,
+        isFirstLogin: true,
         ficha: '2560664',
         programa: 'ADSO'
       }

@@ -8,9 +8,10 @@ const jwt    = require('jsonwebtoken');
 const crypto = require('crypto');
 const User   = require('../users-dev1/user.model');
 const { JWT_SECRET, JWT_EXPIRES_IN, FRONTEND_URL } = require('../../core/config/env');
-const { sendEmail } = require('../../core/utils/mailer');
 const onedriveService = require('../documents-dev2/onedrive.service');
 const driveService = require('../documents-dev2/drive.service');
+const Batch  = require('../batches-dev1/batch.model');
+const { sendEmail } = require('../../core/utils/mailer');
 
 /**
  * Registrar un nuevo usuario.
@@ -21,6 +22,15 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
   const existe = await User.findOne({ email: emailQuery });
   if (existe) {
     throw new Error('Ya existe un usuario registrado con el email: ' + emailQuery);
+  }
+
+  // Verificar que no exista el documento
+  if (documento) {
+    const docQuery = documento.toString().trim();
+    const existeDoc = await User.findOne({ documento: docQuery });
+    if (existeDoc) {
+      throw new Error('Ya existe un usuario registrado con el documento: ' + docQuery);
+    }
   }
 
   // RF-ADM-15 Verificación de estado activo para instructores asignados
@@ -60,83 +70,96 @@ const registrar = async ({ name, email, password, role, documento, telefono, fic
     isFirstLogin: isFirstLogin !== undefined ? isFirstLogin : true,
   });
 
-  // Si es un instructor, crear su carpeta de almacenamiento en OneDrive y Google Drive
-  if (usuario.role === 'INSTRUCTOR') {
-    try {
-      const nombreInstructor = 'INSTRUCTOR_' + usuario.name.replace(/\s+/g, '_');
-      
-      // Crear en OneDrive
-      try {
-        const onedriveCarpeta = await onedriveService.crearCarpeta(nombreInstructor);
-        usuario.onedriveFolderId = onedriveCarpeta.id;
-      } catch (odErr) {
-        console.error('[ONEDRIVE REGISTRATION ERROR]', odErr.message || odErr);
-      }
-
-      // Crear en Google Drive
-      try {
-        const driveCarpeta = await driveService.crearCarpeta(nombreInstructor);
-        usuario.driveFolderId = driveCarpeta.id;
-      } catch (drErr) {
-        console.error('[DRIVE REGISTRATION ERROR]', drErr.message || drErr);
-      }
-
-      if (usuario.onedriveFolderId || usuario.driveFolderId) {
-        await usuario.save();
-      }
-    } catch (err) {
-      console.error('[STORAGE FOLDER CREATION ERROR]', err.message || err);
-    }
-  }
-
-  // Enviar correo de bienvenida/registro
-  try {
-    await sendEmail({
-      to: email.toLowerCase().trim(),
-      subject: '¡Habilitación de cuenta en RepFora! Credenciales de acceso',
-      html: `
-        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
-          <div style="background: #1b5e20; padding: 24px 32px; border-radius: 12px 12px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 1.2rem;">🎉 ¡Bienvenido a RepFora!</h1>
-            <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Gestión de Etapas Productivas — SENA</p>
-          </div>
-          <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-              Hola <strong>${name.trim()}</strong>,
-            </p>
-            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-              Tu cuenta ha sido creada en la plataforma RepFora para que gestiones tus procesos formativos.
-            </p>
-            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-              A continuación, tus credenciales de acceso:
-            </p>
-            <div style="background: #f8fafc; border-left: 4px solid #1b5e20; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Usuario:</strong> ${email.toLowerCase().trim()}</p>
-              <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Contraseña:</strong> ${password}</p>
-            </div>
-            <p style="color: #ea580c; font-size: 0.85rem; font-weight: 700; margin-top: 16px;">
-              ⚠️ Por motivos de seguridad, el sistema te solicitará cambiar esta contraseña en tu primer ingreso.
-            </p>
-            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6; margin-top: 20px;">
-              Puedes acceder a la plataforma haciendo clic en el siguiente enlace:
-            </p>
-            <a href="${FRONTEND_URL}/login"
-               style="display:inline-block;padding:12px 24px;background:#1b5e20;
-                      color:#fff;text-decoration:none;border-radius:6px;margin:16px 0;font-weight:700;">
-              Ingresar a la Plataforma
-            </a>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-            <p style="color: #94a3b8; font-size: 0.75rem; text-align: center;">
-              Este correo fue generado automáticamente por el sistema REPFORA.<br>
-              No responda a este mensaje.
-            </p>
-          </div>
-        </div>
-      `
+  // Sincronizar Ficha al Registrar
+  if (usuario.role === 'APRENDIZ' && usuario.ficha) {
+    Batch.updateOne(
+      { codigo_ficha: usuario.ficha },
+      { $addToSet: { aprendices_ids: usuario._id } }
+    ).catch(batchErr => {
+      console.error('[BATCH SYNC REGISTRATION ERROR]', batchErr.message || batchErr);
     });
-  } catch (emailErr) {
-    console.error('Error enviando correo de registro:', emailErr.message);
   }
+
+  // Si es un instructor, crear su carpeta de almacenamiento en OneDrive y Google Drive en segundo plano
+  if (usuario.role === 'INSTRUCTOR') {
+    (async () => {
+      try {
+        const nombreInstructor = 'INSTRUCTOR_' + usuario.name.replace(/\s+/g, '_');
+        let updated = false;
+        
+        // Crear en OneDrive
+        try {
+          const onedriveCarpeta = await onedriveService.crearCarpeta(nombreInstructor);
+          usuario.onedriveFolderId = onedriveCarpeta.id;
+          updated = true;
+        } catch (odErr) {
+          console.error('[ONEDRIVE REGISTRATION ERROR]', odErr.message || odErr);
+        }
+
+        // Crear en Google Drive
+        try {
+          const driveCarpeta = await driveService.crearCarpeta(nombreInstructor);
+          usuario.driveFolderId = driveCarpeta.id;
+          updated = true;
+        } catch (drErr) {
+          console.error('[DRIVE REGISTRATION ERROR]', drErr.message || drErr);
+        }
+
+        if (updated) {
+          await usuario.save();
+        }
+      } catch (err) {
+        console.error('[STORAGE FOLDER CREATION ERROR]', err.message || err);
+      }
+    })();
+  }
+
+  // Enviar correo de bienvenida/registro en segundo plano
+  sendEmail({
+    to: email.toLowerCase().trim(),
+    subject: '¡Habilitación de cuenta en RepFora! Credenciales de acceso',
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+        <div style="background: #1b5e20; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 1.2rem;">🎉 ¡Bienvenido a RepFora!</h1>
+          <p style="color: #a5d6a7; margin: 4px 0 0; font-size: 0.85rem;">Gestión de Etapas Productivas — SENA</p>
+        </div>
+        <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+          <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+            Hola <strong>${name.trim()}</strong>,
+          </p>
+          <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+            Tu cuenta ha sido creada en la plataforma RepFora para que gestiones tus procesos formativos.
+          </p>
+          <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+            A continuación, tus credenciales de acceso:
+          </p>
+          <div style="background: #f8fafc; border-left: 4px solid #1b5e20; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Usuario:</strong> ${email.toLowerCase().trim()}</p>
+            <p style="margin: 4px 0; font-size: 0.9rem; color: #334155;"><strong>Contraseña:</strong> ${password}</p>
+          </div>
+          <p style="color: #ea580c; font-size: 0.85rem; font-weight: 700; margin-top: 16px;">
+            ⚠️ Por motivos de seguridad, el sistema te solicitará cambiar esta contraseña en tu primer ingreso.
+          </p>
+          <p style="color: #475569; font-size: 0.95rem; line-height: 1.6; margin-top: 20px;">
+            Puedes acceder a la plataforma haciendo clic en el siguiente enlace:
+          </p>
+          <a href="${FRONTEND_URL}/login"
+             style="display:inline-block;padding:12px 24px;background:#1b5e20;
+                    color:#fff;text-decoration:none;border-radius:6px;margin:16px 0;font-weight:700;">
+            Ingresar a la Plataforma
+          </a>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+          <p style="color: #94a3b8; font-size: 0.75rem; text-align: center;">
+            Este correo fue generado automáticamente por el sistema REPFORA.<br>
+            No responda a este mensaje.
+          </p>
+        </div>
+      </div>
+    `
+  }).catch(emailErr => {
+    console.error('Error enviando correo de registro:', emailErr.message);
+  });
 
   // Generar token
   const token = generarToken(usuario);

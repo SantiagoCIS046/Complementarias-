@@ -356,7 +356,7 @@ const getPhaseStyle = (phase) => {
       <Header :title="dashboardTitle" />
 
       <main class="content">
-        <div class="w-full space-y-2">
+        <div class="ins-page-body">
 
           <div class="flex items-center justify-between gap-4 mb-2">
             <p class="text-gray-500 font-medium text-xs">Visualización en tiempo real de la base de datos oficial.</p>
@@ -372,7 +372,7 @@ const getPhaseStyle = (phase) => {
           </div>
 
           <!-- Filtros -->
-          <div class="filters-bar-card">
+          <div class="ins-filters-bar">
             <div class="filters-grid">
               <div class="filter-item">
                 <label>Búsqueda Rápida</label>
@@ -440,10 +440,10 @@ const getPhaseStyle = (phase) => {
             </div>
           </div>
 
-          <div class="table-container-card">
+          <div class="ins-table-card">
             <SkeletonLoader v-if="isLoading" variant="table" :rows="6" :columns="6" />
             <div class="scrollable-table" v-else>
-              <table class="apprentices-table">
+              <table class="ins-table">
                 <thead>
                   <!-- Encabezados para FICHAS -->
                   <tr v-if="filters.module === 'FICHAS'">
@@ -490,23 +490,23 @@ const getPhaseStyle = (phase) => {
                   <template v-else>
                     <tr v-for="app in filteredApprentices" :key="app.id">
                       <td>
-                        <div class="user-cell">
+                        <div class="ins-apprentice-cell">
                           <AvatarDisplay :user="app" size="sm" />
-                          <div class="user-info">
+                          <div>
                             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                              <p class="user-name">{{ app.name }}</p>
+                              <p class="ins-apprentice-name">{{ app.name }}</p>
                               <span class="phase-badge" :style="getPhaseStyle(app.phase)">
                                 {{ app.phase }}
                               </span>
                             </div>
-                            <p class="user-sub">
+                            <p class="ins-apprentice-doc">
                               Doc: {{ app.doc }}
                               <span v-if="app.fechaAsignacion"> | Asig: {{ app.fechaAsignacion }}</span>
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td><div class="ficha-cell-premium"><span class="ficha-number">#{{ app.ficha }}</span></div></td>
+                      <td><span class="ins-ficha-chip">#{{ app.ficha }}</span></td>
                       <td>
                         <div class="modality-cell-premium">
                           <div class="company-row">
@@ -521,7 +521,7 @@ const getPhaseStyle = (phase) => {
                         <div class="mini-bar"><div class="mini-fill" :style="{ width: app.progress + '%', backgroundColor: 'var(--color_button)' }"></div></div>
                       </td>
                       <td>
-                        <span class="status-pill" :class="getStatusClass(app.status)">
+                        <span :class="['ins-status-badge', getStatusClass(app.status)]">
                           {{ app.status }}
                         </span>
                       </td>
@@ -558,7 +558,7 @@ const getPhaseStyle = (phase) => {
           </div>
 
           <!-- RF-INS-11: Control de Horas Adicionales (Seguimientos Extraordinarios) -->
-          <div class="table-container-card mt-8" style="margin-top: 2rem;">
+          <div class="ins-table-card" style="margin-top: 2rem;">
             <div class="flex items-center justify-between gap-4 mb-4" style="padding: 1.25rem 1.25rem 0.5rem 1.25rem;">
               <div>
                 <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2" style="margin: 0; font-size: 0.85rem; color: var(--text-primary);">
@@ -588,7 +588,7 @@ const getPhaseStyle = (phase) => {
 
             <!-- Tabla de horas -->
             <div class="scrollable-table" v-else style="border-radius: 0 0 14px 14px; overflow: hidden;">
-              <table class="apprentices-table">
+              <table class="ins-table">
                 <thead>
                   <tr>
                     <th>APRENDIZ</th>
@@ -601,16 +601,16 @@ const getPhaseStyle = (phase) => {
                 <tbody>
                   <tr v-for="hour in additionalHours" :key="hour._id">
                     <td>
-                      <div class="user-cell">
+                      <div class="ins-apprentice-cell">
                         <AvatarDisplay :user="hour.apprenticeId" size="sm" />
-                        <div class="user-info">
-                          <p class="user-name">{{ hour.apprenticeId?.name || 'Aprendiz sin nombre' }}</p>
-                          <p class="user-sub">Doc: {{ hour.apprenticeId?.documento || 'S/N' }}</p>
+                        <div>
+                          <p class="ins-apprentice-name">{{ hour.apprenticeId?.name || 'Aprendiz sin nombre' }}</p>
+                          <p class="ins-apprentice-doc">Doc: {{ hour.apprenticeId?.documento || 'S/N' }}</p>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <div class="ficha-cell-premium"><span class="ficha-number">#{{ hour.stageId?.ficha || hour.apprenticeId?.ficha || 'S/F' }}</span></div>
+                      <span class="ins-ficha-chip">#{{ hour.stageId?.ficha || hour.apprenticeId?.ficha || 'S/F' }}</span>
                     </td>
                     <td>
                       <div style="display: flex; align-items: center; gap: 6px;">
@@ -665,7 +665,7 @@ const getPhaseStyle = (phase) => {
           </div>
 
           <!-- RF-INS-29: Historial de Acciones del Instructor (Auditoría) -->
-          <div class="table-container-card mt-8" style="margin-top: 2rem; margin-bottom: 2rem;">
+          <div class="ins-table-card" style="margin-top: 2rem; margin-bottom: 2rem;">
             <div class="flex items-center justify-between gap-4 mb-4" style="padding: 1.25rem 1.25rem 0.5rem 1.25rem;">
               <div>
                 <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2" style="margin: 0; font-size: 0.85rem; color: var(--text-primary);">
@@ -738,7 +738,7 @@ const getPhaseStyle = (phase) => {
 .page-main-title { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.5px; }
 .page-subtitle { font-size: 0.7rem; color: var(--text-secondary); margin: 2px 0 0; }
 
-.filters-bar-card { background: var(--bg-elevated); padding: 1.25rem; border-radius: 14px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-primary); margin-bottom: 1.5rem; }
+/* .filters-bar-card is now handled by .ins-filters-bar globally */
 .filters-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr auto; gap: 1rem; align-items: flex-end; }
 .filter-item label { display: block; font-size: 0.6rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem; }
 .search-input-wrapper { position: relative; }
@@ -790,17 +790,7 @@ const getPhaseStyle = (phase) => {
 .bg-green-9 { background-color: var(--color_button); }
 .bg-green-10 { background-color: #1b5e20; }
 
-.apprentices-table { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
-.apprentices-table th { background: var(--color_button); text-align: left; padding: 12px 16px; font-size: 0.75rem; color: white; text-transform: uppercase; font-weight: 700; }
-.apprentices-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-primary); background: var(--bg-elevated); color: var(--text-primary); }
-
-.user-cell { display: flex; align-items: center; gap: 0.75rem; }
-.avatar { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; color: #15803d; }
-.user-name { font-size: 0.8rem; font-weight: 800; color: var(--text-primary); margin: 0; }
-.user-sub { font-size: 0.65rem; color: var(--text-muted); margin: 0; }
-
-.ficha-cell-premium { background: #e0f2fe; padding: 4px 10px; border-radius: 8px; border: 1px solid #bae6fd; display: inline-block; }
-.ficha-number { color: #0369a1; font-size: 0.75rem; font-weight: 900; }
+/* apprentices-table, user-cell, avatar, ficha-cell-premium, user-name, user-sub, and ficha-number are handled by global .ins-* tokens */
 
 .modality-cell-premium { display: flex; flex-direction: column; gap: 4px; }
 .company-row { display: flex; align-items: center; gap: 6px; }
@@ -813,10 +803,9 @@ const getPhaseStyle = (phase) => {
 .mini-bar { height: 5px; background: var(--bg-hover); border-radius: 10px; }
 .mini-fill { height: 100%; border-radius: 10px; }
 
-.status-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; }
-.status-pill.activo { background: #1b5e20; color: white; }
-.status-pill.pendiente { background: #ea580c; color: white; }
-.status-pill.inactivo { background: #c10015; color: white; }
+.ins-status-badge.activo { background: #1b5e20; color: white; }
+.ins-status-badge.pendiente { background: #ea580c; color: white; }
+.ins-status-badge.inactivo { background: #c10015; color: white; }
 
 .action-btns { display: flex; gap: 6px; }
 .act-btn { background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 6px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; color: var(--text-primary); }

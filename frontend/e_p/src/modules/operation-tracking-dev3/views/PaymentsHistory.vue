@@ -153,71 +153,70 @@ const calculoPorcentaje = (mesItem) => {
       <Header title="Histórico de Pagos" />
 
       <main class="content">
-        <div class="page-body">
+        <div class="ins-page-body">
 
           <!-- Page Header -->
-          <header class="page-header">
+          <header class="ins-page-header">
             <div class="header-info">
-              <h1 class="page-title">Histórico de Pagos por Mes</h1>
-              <p class="page-description">Consolidación financiera de visitas extraordinarias y horas adicionales devengadas.</p>
+              <h1 class="ins-page-title">Histórico de Pagos por Mes</h1>
+              <p class="ins-page-description">Consolidación financiera de visitas extraordinarias y horas adicionales devengadas.</p>
             </div>
             
             <div class="header-actions">
               <!-- Filtro Admin -->
-              <div v-if="isAdmin" class="admin-filter-group">
-                <span class="material-symbols-outlined filter-icon">person</span>
-                <select id="select-instructor-pagos" v-model="selectedInst" @change="fetchData" class="premium-select">
+              <div v-if="isAdmin" class="ins-filter-group">
+                <select id="select-instructor-pagos" v-model="selectedInst" @change="fetchData" class="ins-filter-select">
                   <option value="">Todos los Instructores</option>
                   <option v-for="inst in instructores" :key="inst._id" :value="inst._id">{{ inst.name }}</option>
                 </select>
               </div>
 
-              <button id="btn-sincronizar-pagos" class="btn-refresh" @click="fetchData" :disabled="isLoading">
-                <span class="material-symbols-outlined" :class="{ 'spin': isLoading }">sync</span>
+              <button id="btn-sincronizar-pagos" class="ins-btn-sync" @click="fetchData" :disabled="isLoading">
+                <span class="material-symbols-outlined" :class="{ 'ins-spin': isLoading }">sync</span>
                 {{ isLoading ? 'Cargando...' : 'Sincronizar' }}
               </button>
             </div>
           </header>
 
           <!-- KPI Cards Premium (HSL curado) -->
-          <div class="kpi-grid">
-            <div class="kpi-card kpi-cobradas">
-              <div class="kpi-icon-wrap"><span class="material-symbols-outlined">payments</span></div>
-              <div class="kpi-content">
-                <span class="kpi-value">{{ resumenGlobal.totalCobrado }}<span class="kpi-unit">h</span></span>
-                <span class="kpi-label">Horas Cobradas</span>
+          <div class="ins-kpi-grid">
+            <div class="ins-kpi-card">
+              <div class="ins-kpi-icon-wrap"><span class="material-symbols-outlined">payments</span></div>
+              <div class="ins-kpi-content">
+                <span class="ins-kpi-value">{{ resumenGlobal.totalCobrado }}<span class="ins-kpi-unit">h</span></span>
+                <span class="ins-kpi-label">Horas Cobradas</span>
               </div>
             </div>
-            <div class="kpi-card kpi-pendientes">
-              <div class="kpi-icon-wrap"><span class="material-symbols-outlined">pending</span></div>
-              <div class="kpi-content">
-                <span class="kpi-value">{{ resumenGlobal.totalPendiente }}<span class="kpi-unit">h</span></span>
-                <span class="kpi-label">Horas Pendientes</span>
+            <div class="ins-kpi-card">
+              <div class="ins-kpi-icon-wrap"><span class="material-symbols-outlined">pending</span></div>
+              <div class="ins-kpi-content">
+                <span class="ins-kpi-value">{{ resumenGlobal.totalPendiente }}<span class="ins-kpi-unit">h</span></span>
+                <span class="ins-kpi-label">Horas Pendientes</span>
               </div>
             </div>
-            <div class="kpi-card kpi-visitas">
-              <div class="kpi-icon-wrap"><span class="material-symbols-outlined">local_activity</span></div>
-              <div class="kpi-content">
-                <span class="kpi-value">{{ resumenGlobal.visitasEjecutadas }}</span>
-                <span class="kpi-label">Visitas Especiales Ejecutadas</span>
+            <div class="ins-kpi-card">
+              <div class="ins-kpi-icon-wrap"><span class="material-symbols-outlined">local_activity</span></div>
+              <div class="ins-kpi-content">
+                <span class="ins-kpi-value">{{ resumenGlobal.visitasEjecutadas }}</span>
+                <span class="ins-kpi-label">Visitas Especiales Ejecutadas</span>
               </div>
             </div>
           </div>
 
           <!-- Tabla de Historial agrupado por mes -->
-          <div class="history-card">
-            <div v-if="isLoading" class="state-container">
-              <span class="material-symbols-outlined spin">sync</span>
+          <div class="ins-table-card">
+            <div v-if="isLoading" class="ins-loading-state">
+              <span class="material-symbols-outlined ins-spin">sync</span>
               <span>Cargando histórico de pagos...</span>
             </div>
-            <div v-else-if="errorMsg" class="state-container error">
+            <div v-else-if="errorMsg" class="ins-empty-state">
               <span class="material-symbols-outlined">error_outline</span>
               <p>{{ errorMsg }}</p>
             </div>
-            <div v-else-if="meses.length === 0" class="state-container empty">
-              <span class="material-symbols-outlined font-size-3">receipt_long</span>
-              <p class="empty-title">SIN REGISTROS FINANCIEROS</p>
-              <p class="empty-subtitle">Las horas adicionales aparecerán listadas aquí una vez que se registren visitas extraordinarias.</p>
+            <div v-else-if="meses.length === 0" class="ins-empty-state">
+              <span class="material-symbols-outlined">receipt_long</span>
+              <p class="ins-empty-title">SIN REGISTROS FINANCIEROS</p>
+              <p class="ins-empty-subtitle">Las horas adicionales aparecerán listadas aquí una vez que se registren visitas extraordinarias.</p>
             </div>
             
             <template v-else>
@@ -275,7 +274,7 @@ const calculoPorcentaje = (mesItem) => {
                             </div>
                           </td>
                           <td>
-                            <span class="ficha-badge">#{{ det.apprentice.ficha }}</span>
+                            <span class="ins-ficha-chip">#{{ det.apprentice.ficha }}</span>
                           </td>
                           <td>
                             <span class="visita-badge">Especial N°{{ det.visitaNumero }}</span>
@@ -332,71 +331,10 @@ const calculoPorcentaje = (mesItem) => {
 </template>
 
 <style scoped>
-/* ── Layout & Variables HSL ── */
-.page-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
-.page-title { font-size: 1.6rem; font-weight: 700; color: var(--text-primary, #1e293b); margin: 0; }
-.page-description { font-size: 0.875rem; color: var(--text-secondary, #64748b); margin: 0.25rem 0 0; }
-
+/* ── Layout ── */
 .header-actions { display: flex; align-items: center; gap: 1rem; }
-.admin-filter-group { display: flex; align-items: center; gap: 0.5rem; background: var(--surface-card, #fff); border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0 0.75rem; height: 38px; }
-.admin-filter-group .filter-icon { color: #64748b; font-size: 1.2rem; }
-.premium-select { border: none; background: transparent; font-size: 0.82rem; font-weight: 700; color: #1e293b; outline: none; cursor: pointer; height: 100%; }
-
-.btn-refresh {
-  display: flex; align-items: center; gap: 0.5rem;
-  background: linear-gradient(135deg, #0f172a, #1e293b);
-  color: #fff; border: none; border-radius: 10px; padding: 0.65rem 1.2rem;
-  font-size: 0.9rem; font-weight: 600; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(15,23,42,0.25);
-  transition: transform 0.15s, opacity 0.15s;
-}
-.btn-refresh:hover:not(:disabled) { transform: translateY(-2px); }
-.btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
-.spin { animation: spin 1s linear infinite; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-/* ── KPI Grid (HSL curado) ── */
-.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-@media (max-width: 768px) { .kpi-grid { grid-template-columns: 1fr; } }
-
-.kpi-card {
-  display: flex; align-items: center; gap: 1.25rem;
-  background: var(--surface-card, #fff); border-radius: 14px; padding: 1.25rem 1.5rem;
-  border: 1.5px solid transparent;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
-
-.kpi-cobradas   { border-color: #ddd6fe; background: linear-gradient(135deg, #fff, #f5f3ff); }
-.kpi-pendientes  { border-color: #fed7aa; background: linear-gradient(135deg, #fff, #fff7ed); }
-.kpi-visitas     { border-color: #a7f3d0; background: linear-gradient(135deg, #fff, #f0fdf4); }
-
-.kpi-icon-wrap { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.kpi-cobradas .kpi-icon-wrap   { background: #ede9fe; color: #6d28d9; }
-.kpi-pendientes .kpi-icon-wrap  { background: #ffedd5; color: #ea580c; }
-.kpi-visitas .kpi-icon-wrap     { background: #d1fae5; color: #059669; }
-.kpi-icon-wrap .material-symbols-outlined { font-size: 1.5rem; }
-
-.kpi-content { display: flex; flex-direction: column; gap: 0.15rem; }
-.kpi-value { font-size: 1.8rem; font-weight: 800; line-height: 1; color: #0f172a; }
-.kpi-label { font-size: 0.76rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-.kpi-unit { font-size: 1.15rem; font-weight: 500; color: #64748b; margin-left: 2px; }
 
 /* ── Historial ── */
-.history-card {
-  background: var(--surface-card, #fff); border-radius: 14px;
-  border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-  overflow: hidden;
-}
-
-.state-container { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 4.5rem 2rem; color: #94a3b8; text-align: center; }
-.state-container .spin, .state-container .material-symbols-outlined { font-size: 2.6rem; }
-.font-size-3 { font-size: 3.2rem !important; }
-.empty-title { font-size: 0.95rem; font-weight: 800; color: #475569; margin: 0.5rem 0 0.15rem; }
-.empty-subtitle { font-size: 0.74rem; color: #94a3b8; max-width: 340px; margin: 0; line-height: 1.45; }
-
 .meses-list { display: flex; flex-direction: column; }
 .mes-block { border-bottom: 1px solid #f1f5f9; }
 .mes-block:last-child { border-bottom: none; }
@@ -404,16 +342,16 @@ const calculoPorcentaje = (mesItem) => {
 /* Cabecera mensual de acordeón */
 .mes-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1.1rem 1.5rem; background: var(--surface-card, #fff);
+  padding: 1.1rem 1.5rem; background: var(--bg-elevated, #fff);
   cursor: pointer; transition: background 0.15s;
 }
-.mes-header:hover { background: #f8fafc; }
-.mes-header.expanded { background: #faf5ff; border-left: 3px solid #7c3aed; }
+.mes-header:hover { background: var(--bg-hover, #f8fafc); }
+.mes-header.expanded { background: var(--bg-active, #faf5ff); border-left: 3px solid #7c3aed; }
 
 .mes-title-group { display: flex; align-items: center; gap: 0.65rem; }
 .expand-chevron { color: #94a3b8; transition: transform 0.2s, color 0.15s; }
 .expand-chevron.rotated { transform: rotate(180deg); color: #7c3aed; }
-.mes-nombre { font-size: 0.95rem; font-weight: 800; color: #1e293b; }
+.mes-nombre { font-size: 0.95rem; font-weight: 800; color: var(--text-primary, #1e293b); }
 
 .mes-progress-wrapper { display: flex; align-items: center; gap: 0.65rem; min-width: 170px; }
 .progress-bar-container { flex: 1; height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
@@ -426,27 +364,22 @@ const calculoPorcentaje = (mesItem) => {
 .badge-pendientes { background: #fff7ed; color: #c2410c; }
 
 /* Sub-tabla mensual de visitas extraordinarias */
-.mes-body { background: #fafcff; padding: 0.5rem 1.5rem 1.25rem 1.5rem; border-top: 1px solid #f1f5f9; }
+.mes-body { background: var(--bg-elevated); padding: 0.5rem 1.5rem 1.25rem 1.5rem; border-top: 1px solid var(--border-primary, #f1f5f9); }
 .desglose-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-.desglose-table th { background: #f1f5f9; color: #475569; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.65rem 0.85rem; text-align: left; border-bottom: 1.5px solid #e2e8f0; }
-.desglose-table td { padding: 0.75rem 0.85rem; font-size: 0.84rem; color: #334155; border-bottom: 1px solid #f1f5f9; background: #fff; vertical-align: middle; }
+.desglose-table th { background: var(--bg-secondary, #f1f5f9); color: var(--text-secondary); font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.65rem 0.85rem; text-align: left; border-bottom: 1.5px solid var(--border-primary, #e2e8f0); }
+.desglose-table td { padding: 0.75rem 0.85rem; font-size: 0.84rem; color: var(--text-primary); border-bottom: 1px solid var(--border-primary, #f1f5f9); background: var(--bg-elevated); vertical-align: middle; }
 .desglose-table tbody tr:last-child td { border-bottom: none; }
 
 .user-info-cell { display: flex; flex-direction: column; }
-.user-info-cell .name { font-weight: 700; color: #0f172a; }
-.user-info-cell .document { font-size: 0.72rem; color: #94a3b8; margin-top: 0.05rem; }
+.user-info-cell .name { font-weight: 700; color: var(--text-primary); }
+.user-info-cell .document { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.05rem; }
 
-.ficha-badge { display: inline-block; background: #e0f2fe; color: #0369a1; border-radius: 6px; padding: 0.15rem 0.5rem; font-size: 0.76rem; font-weight: 800; }
 .visita-badge { display: inline-block; background: #f3e8ff; color: #7c3aed; border-radius: 6px; padding: 0.15rem 0.5rem; font-size: 0.74rem; font-weight: 800; }
 .font-bold { font-weight: 700; }
 
-.state-badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
-.badge-success { background: #dcfce7; color: #15803d; }
-.badge-warning { background: #ffedd5; color: #c2410c; }
-
 .text-center { text-align: center; }
 
-/* Control de Horas Checkboxes Premium */
+/* Control de Horas Checkboxes */
 .control-checkbox-group {
   display: flex;
   align-items: center;
@@ -461,7 +394,7 @@ const calculoPorcentaje = (mesItem) => {
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
-  color: #475569;
+  color: var(--text-secondary);
   user-select: none;
   transition: all 0.2s ease;
 }
@@ -483,63 +416,14 @@ const calculoPorcentaje = (mesItem) => {
   border-radius: 4px;
 }
 
-.checkbox-control input:disabled {
-  cursor: not-allowed;
-}
+/* ── Dark Mode Overrides (Específicos) ── */
+[data-theme="dark"] .mes-block { border-bottom-color: var(--border-primary); }
+[data-theme="dark"] .mes-header { background: var(--bg-elevated); }
+[data-theme="dark"] .mes-header:hover { background: var(--bg-hover); }
+[data-theme="dark"] .mes-header.expanded { background: var(--bg-active); border-left-color: #7c3aed; }
 
-/* ── Dark Mode Overrides (cards only) ── */
-[data-theme="dark"] .kpi-card {
-  background: #1e2535;
-  border-color: #2d3748;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-[data-theme="dark"] .kpi-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-[data-theme="dark"] .kpi-cobradas {
-  background: linear-gradient(135deg, #1e2535, #221c3a);
-  border-color: #3d2f6b;
-}
-[data-theme="dark"] .kpi-pendientes {
-  background: linear-gradient(135deg, #1e2535, #2a1f18);
-  border-color: #5a3a1a;
-}
-[data-theme="dark"] .kpi-visitas {
-  background: linear-gradient(135deg, #1e2535, #17291f);
-  border-color: #1a4731;
-}
-
-[data-theme="dark"] .kpi-cobradas .kpi-icon-wrap { background: #2e235a; color: #a78bfa; }
-[data-theme="dark"] .kpi-pendientes .kpi-icon-wrap { background: #3b2010; color: #fb923c; }
-[data-theme="dark"] .kpi-visitas .kpi-icon-wrap   { background: #0f3222; color: #34d399; }
-
-[data-theme="dark"] .kpi-value  { color: #f1f5f9; }
-[data-theme="dark"] .kpi-label  { color: #94a3b8; }
-[data-theme="dark"] .kpi-unit   { color: #94a3b8; }
-
-[data-theme="dark"] .history-card {
-  background: #1a1f2e;
-  border-color: #2d3748;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .mes-block {
-  border-bottom-color: #2d3748;
-}
-
-[data-theme="dark"] .mes-header {
-  background: #1a1f2e;
-}
-[data-theme="dark"] .mes-header:hover {
-  background: #1e2535;
-}
-[data-theme="dark"] .mes-header.expanded {
-  background: #1e1a35;
-  border-left-color: #7c3aed;
-}
-
-[data-theme="dark"] .mes-nombre { color: #f1f5f9; }
-[data-theme="dark"] .expand-chevron { color: #6b7280; }
+[data-theme="dark"] .mes-nombre { color: var(--text-primary); }
+[data-theme="dark"] .expand-chevron { color: var(--text-muted); }
 [data-theme="dark"] .expand-chevron.rotated { color: #a78bfa; }
 
 [data-theme="dark"] .progress-bar-container { background: #374151; }
@@ -548,41 +432,17 @@ const calculoPorcentaje = (mesItem) => {
 [data-theme="dark"] .badge-cobradas   { background: #2e235a; color: #c4b5fd; }
 [data-theme="dark"] .badge-pendientes { background: #3b2010; color: #fb923c; }
 
-[data-theme="dark"] .mes-body {
-  background: #151a27;
-  border-top-color: #2d3748;
-}
+[data-theme="dark"] .mes-body { background: var(--bg-elevated); border-top-color: var(--border-primary); }
 
-[data-theme="dark"] .desglose-table th {
-  background: #1e2535;
-  color: #94a3b8;
-  border-bottom-color: #374151;
-}
-[data-theme="dark"] .desglose-table td {
-  background: #1a1f2e;
-  color: #d1d5db;
-  border-bottom-color: #242b3d;
-}
-[data-theme="dark"] .desglose-table tbody tr:hover td {
-  background: #1e2535;
-}
+[data-theme="dark"] .desglose-table th { background: var(--bg-secondary); color: var(--text-secondary); border-bottom-color: var(--border-primary); }
+[data-theme="dark"] .desglose-table td { background: var(--bg-elevated); color: var(--text-primary); border-bottom-color: var(--border-primary); }
+[data-theme="dark"] .desglose-table tbody tr:hover td { background: var(--bg-hover); }
 
-[data-theme="dark"] .user-info-cell .name     { color: #f1f5f9; }
-[data-theme="dark"] .user-info-cell .document { color: #6b7280; }
+[data-theme="dark"] .user-info-cell .name     { color: var(--text-primary); }
+[data-theme="dark"] .user-info-cell .document { color: var(--text-muted); }
 
-[data-theme="dark"] .ficha-badge   { background: #0c2a3d; color: #38bdf8; }
 [data-theme="dark"] .visita-badge  { background: #2e235a; color: #c4b5fd; }
 
-[data-theme="dark"] .state-container { color: #6b7280; }
-[data-theme="dark"] .empty-title     { color: #9ca3af; }
-
-[data-theme="dark"] .admin-filter-group {
-  background: #1e2535;
-  border-color: #374151;
-}
-[data-theme="dark"] .premium-select { color: #f1f5f9; }
-[data-theme="dark"] .admin-filter-group .filter-icon { color: #9ca3af; }
-
-[data-theme="dark"] .checkbox-control       { color: #9ca3af; }
+[data-theme="dark"] .checkbox-control       { color: var(--text-secondary); }
 [data-theme="dark"] .checkbox-control:hover:not(.disabled) { color: #c4b5fd; }
 </style>

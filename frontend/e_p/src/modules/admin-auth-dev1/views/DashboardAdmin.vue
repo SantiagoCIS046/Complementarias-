@@ -31,17 +31,17 @@
               <div class="stat-box border-green">
                 <p>TOTAL USUARIOS</p>
                 <h2>{{ pagination.total }}</h2>
-                <small>Basado en registros actuales</small>
+                <small>Basado en registros</small>
               </div>
               <div class="stat-box border-pink">
                 <p>INSTRUCTORES</p>
                 <h2>{{ stats.instructors }}</h2>
-                <small>Usuarios con rol instructor</small>
+                <small>Con rol instructor</small>
               </div>
               <div class="stat-box border-dark">
                 <p>APRENDICES</p>
                 <h2>{{ stats.aprendices }}</h2>
-                <small>Usuarios con rol aprendiz</small>
+                <small>Con rol aprendiz</small>
               </div>
             </div>
           </div>
@@ -1694,33 +1694,7 @@ const handleLogout = () => {
 /* Content Area */
 .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-/* Topbar */
-.topbar {
-  height: 48px;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-primary);
-  display: flex;
-  justify-content: space-between;
-  padding: 0 20px;
-}
-.topbar-left { display: flex; align-items: flex-end; height: 100%; }
-.topbar-right { display: flex; align-items: flex-end; height: 100%; padding-bottom: 8px; }
-.top-nav { display: flex; gap: 20px; height: 100%; }
-.top-nav-item {
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 0.8rem;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 8px;
-  position: relative;
-}
-.top-nav-item.active { color: var(--color_button); }
-.top-nav-item.active::after {
-  content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: var(--color_button);
-}
+
 
 .search-box { position: relative; }
 .search-box input {
@@ -2063,8 +2037,22 @@ const handleLogout = () => {
 /* Header & Stats */
 .header-left-group { display: flex; align-items: center; gap: 24px; flex: 1; min-width: 0; }
 .header-info { min-width: 200px; }
-.stats-row { display: flex; gap: 12px; flex-wrap: wrap; }
-.stat-box { background: var(--bg-primary); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border-primary); border-left: 4px solid; min-width: 120px; flex: 1 1 120px; }
+.stats-row { display: flex; gap: 12px; flex-wrap: wrap; flex: 1; max-width: 600px; }
+.stat-box {
+  background: var(--bg-primary);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  border-left: 4px solid;
+  min-width: 120px;
+  flex: 1 1 120px;
+  box-sizing: border-box;
+  height: 88px;
+  max-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 
 .header-actions {
   display: flex;
@@ -2076,9 +2064,9 @@ const handleLogout = () => {
 .border-green { border-left-color: #1b5e20; }
 .border-pink { border-left-color: #db2777; }
 .border-dark { border-left-color: var(--text-secondary); }
-.stat-box p { font-size: 0.65rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 4px; }
-.stat-box h2 { font-size: 1.4rem; margin: 0 0 2px 0; font-weight: 800; }
-.stat-box small { font-size: 0.65rem; color: #22c55e; font-weight: 600; }
+.stat-box p { font-size: 0.65rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-box h2 { font-size: 1.4rem; margin: 0 0 2px 0; font-weight: 800; color: var(--text-primary); }
+.stat-box small { font-size: 0.65rem; color: #22c55e; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 /* ═══ Modales ═══ */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px);

@@ -68,12 +68,12 @@ const descargarPlantilla = async (type, format) => {
         <div class="abstract-glowing-circle circle-violet"></div>
         <div class="abstract-glowing-circle circle-emerald"></div>
 
-        <div class="page-body">
+        <div class="ins-page-body">
           <!-- Page Header -->
-          <header class="page-header">
+          <header class="ins-page-header">
             <div class="header-info">
-              <h1 class="page-title">Descarga de Plantillas Oficiales</h1>
-              <p class="page-description">Accede directamente a los formatos institucionales vigentes para tu Etapa Productiva.</p>
+              <h1 class="ins-page-title">Descarga de Plantillas Oficiales</h1>
+              <p class="ins-page-description">Accede directamente a los formatos institucionales vigentes para tu Etapa Productiva.</p>
             </div>
           </header>
 
@@ -200,31 +200,10 @@ const descargarPlantilla = async (type, format) => {
 </template>
 
 <style scoped>
-/* ── Layout General & Variables HSL ── */
-.page-body { 
-  padding: 1.5rem; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 1.5rem; 
+/* ── Layout General Override ── */
+.ins-page-body {
   position: relative;
   z-index: 2;
-}
-
-.page-header {
-  margin-bottom: 0.5rem;
-}
-
-.page-title { 
-  font-size: 1.75rem; 
-  font-weight: 800; 
-  color: var(--text-primary, #0f172a); 
-  margin: 0; 
-}
-
-.page-description { 
-  font-size: 0.9rem; 
-  color: var(--text-secondary, #64748b); 
-  margin: 0.35rem 0 0; 
 }
 
 /* ── Banner Informativo Estilo Premium ── */

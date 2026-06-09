@@ -125,81 +125,81 @@ const quincena = (idx) => `Q${idx + 1}`
       <Header title="Informe de Horas" />
 
       <main class="content">
-        <div class="page-body">
+        <div class="ins-page-body">
 
           <!-- Header -->
-          <header class="page-header">
+          <header class="ins-page-header">
             <div class="header-info">
-              <h1 class="page-title">Informe de Horas de Aprendices</h1>
-              <p class="page-description">Consulta consolidada de horas reportadas por aprendiz en sus bitácoras quincenales.</p>
+              <h1 class="ins-page-title">Informe de Horas de Aprendices</h1>
+              <p class="ins-page-description">Consulta consolidada de horas reportadas por aprendiz en sus bitácoras quincenales.</p>
             </div>
-            <button id="btn-sincronizar-horas" class="btn-refresh" @click="fetchData" :disabled="isLoading">
-              <span class="material-symbols-outlined" :class="{ 'spin': isLoading }">sync</span>
+            <button id="btn-sincronizar-horas" class="ins-btn-sync" @click="fetchData" :disabled="isLoading">
+              <span class="material-symbols-outlined" :class="{ 'ins-spin': isLoading }">sync</span>
               {{ isLoading ? 'Cargando...' : 'Sincronizar' }}
             </button>
           </header>
 
           <!-- KPI Cards -->
-          <div class="kpi-grid">
-            <div class="kpi-card kpi-total">
-              <div class="kpi-icon-wrap"><span class="material-symbols-outlined">schedule</span></div>
-              <div class="kpi-content">
-                <span class="kpi-value">{{ globalKPI.requeridas.toLocaleString() }}</span>
-                <span class="kpi-label">Horas Totales Requeridas</span>
+          <div class="ins-kpi-grid">
+            <div class="ins-kpi-card">
+              <div class="ins-kpi-icon-wrap"><span class="material-symbols-outlined">schedule</span></div>
+              <div class="ins-kpi-content">
+                <span class="ins-kpi-value">{{ globalKPI.requeridas.toLocaleString() }}</span>
+                <span class="ins-kpi-label">Horas Totales Requeridas</span>
               </div>
             </div>
-            <div class="kpi-card kpi-done">
-              <div class="kpi-icon-wrap"><span class="material-symbols-outlined">task_alt</span></div>
-              <div class="kpi-content">
-                <span class="kpi-value">{{ globalKPI.completadas.toLocaleString() }}</span>
-                <span class="kpi-label">Horas Ejecutadas (Aprobadas)</span>
+            <div class="ins-kpi-card">
+              <div class="ins-kpi-icon-wrap"><span class="material-symbols-outlined">task_alt</span></div>
+              <div class="ins-kpi-content">
+                <span class="ins-kpi-value">{{ globalKPI.completadas.toLocaleString() }}</span>
+                <span class="ins-kpi-label">Horas Ejecutadas (Aprobadas)</span>
               </div>
             </div>
-            <div class="kpi-card kpi-pending">
-              <div class="kpi-icon-wrap"><span class="material-symbols-outlined">pending_actions</span></div>
-              <div class="kpi-content">
-                <span class="kpi-value">{{ globalKPI.pendientes.toLocaleString() }}</span>
-                <span class="kpi-label">Horas Pendientes / En Revisión</span>
+            <div class="ins-kpi-card">
+              <div class="ins-kpi-icon-wrap"><span class="material-symbols-outlined">pending_actions</span></div>
+              <div class="ins-kpi-content">
+                <span class="ins-kpi-value">{{ globalKPI.pendientes.toLocaleString() }}</span>
+                <span class="ins-kpi-label">Horas Pendientes / En Revisión</span>
               </div>
             </div>
           </div>
 
           <!-- Filtros -->
-          <div class="hrs-filters-bar">
+          <div class="ins-filters-bar">
             <div class="search-box-wrapper">
               <span class="material-symbols-outlined search-icon">search</span>
               <input
                 id="input-buscar-horas"
                 v-model="searchQuery"
-                class="hrs-search-input"
+                class="ins-search-input"
                 type="text"
                 placeholder="Buscar por nombre, documento o ficha..."
               />
             </div>
             <div class="filter-group">
-              <label class="filter-label">Mes</label>
-              <select id="select-mes-horas" v-model="filterMonth" class="hrs-select">
+              <label class="ins-filter-label">Mes</label>
+              <select id="select-mes-horas" v-model="filterMonth" class="ins-filter-select">
                 <option v-for="m in MONTHS" :key="m.value" :value="m.value">{{ m.label }}</option>
               </select>
             </div>
           </div>
 
           <!-- Tabla principal -->
-          <div class="hrs-table-card">
-            <div v-if="isLoading" class="hrs-loading">
-              <span class="material-symbols-outlined spin">sync</span>
+          <div class="ins-table-card">
+            <div v-if="isLoading" class="ins-loading-state">
+              <span class="material-symbols-outlined ins-spin">sync</span>
               <span>Cargando informe de horas...</span>
             </div>
-            <div v-else-if="errorMsg" class="hrs-empty">
+            <div v-else-if="errorMsg" class="ins-empty-state">
               <span class="material-symbols-outlined">error_outline</span>
               <p>{{ errorMsg }}</p>
             </div>
-            <div v-else-if="filteredRows.length === 0" class="hrs-empty">
+            <div v-else-if="filteredRows.length === 0" class="ins-empty-state">
               <span class="material-symbols-outlined">analytics</span>
               <p>No se encontraron aprendices con los filtros aplicados.</p>
             </div>
             <template v-else>
-              <table class="hrs-table">
+              <table class="ins-table">
                 <thead>
                   <tr>
                     <th></th>
@@ -229,16 +229,16 @@ const quincena = (idx) => `Q${idx + 1}`
                         </button>
                       </td>
                       <td>
-                        <div class="apprentice-cell">
-                          <div class="apprentice-avatar">{{ row.initials }}</div>
+                        <div class="ins-apprentice-cell">
+                          <div class="ins-apprentice-avatar">{{ row.initials }}</div>
                           <div>
-                            <div class="apprentice-name">{{ row.name }}</div>
-                            <div class="apprentice-doc">{{ row.doc }}</div>
+                            <div class="ins-apprentice-name">{{ row.name }}</div>
+                            <div class="ins-apprentice-doc">{{ row.doc }}</div>
                           </div>
                         </div>
                       </td>
                       <td>
-                        <span class="ficha-chip">{{ row.ficha }}</span>
+                        <span class="ins-ficha-chip">{{ row.ficha }}</span>
                       </td>
                       <td class="text-right font-semibold">{{ row.horasRequeridas }}h</td>
                       <td class="text-right">
@@ -321,7 +321,7 @@ const quincena = (idx) => `Q${idx + 1}`
               </table>
 
               <!-- Contador -->
-              <div class="table-footer-count">
+              <div class="ins-table-footer">
                 Mostrando <strong>{{ filteredRows.length }}</strong> de <strong>{{ allStages.length }}</strong> aprendices
               </div>
             </template>
@@ -334,105 +334,21 @@ const quincena = (idx) => `Q${idx + 1}`
 </template>
 
 <style scoped>
-/* ── Layout ── */
-.page-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-.page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
-.page-title { font-size: 1.6rem; font-weight: 700; color: var(--text-primary, #1e293b); margin: 0; }
-.page-description { font-size: 0.875rem; color: var(--text-secondary, #64748b); margin: 0.25rem 0 0; }
-
-.btn-refresh {
-  display: flex; align-items: center; gap: 0.5rem;
-  background: linear-gradient(135deg, #0369a1, #0284c7);
-  color: #fff; border: none; border-radius: 10px; padding: 0.65rem 1.2rem;
-  font-size: 0.9rem; font-weight: 600; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(3,105,161,0.3);
-  transition: transform 0.15s;
-}
-.btn-refresh:hover:not(:disabled) { transform: translateY(-2px); }
-.btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.spin { animation: spin 1s linear infinite; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-/* ── KPI ── */
-.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-@media (max-width: 768px) { .kpi-grid { grid-template-columns: 1fr; } }
-
-.kpi-card {
-  display: flex; align-items: center; gap: 1rem;
-  background: var(--surface-card, #fff); border-radius: 14px; padding: 1.25rem 1.5rem;
-  border: 1.5px solid transparent;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-
-.kpi-total { border-color: #bfdbfe; background: linear-gradient(135deg, #fff, #eff6ff); }
-.kpi-done  { border-color: #bbf7d0; background: linear-gradient(135deg, #fff, #f0fdf4); }
-.kpi-pending { border-color: #fde68a; background: linear-gradient(135deg, #fff, #fffbeb); }
-
-.kpi-icon-wrap { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.kpi-total .kpi-icon-wrap  { background: #dbeafe; color: #2563eb; }
-.kpi-done .kpi-icon-wrap   { background: #dcfce7; color: #16a34a; }
-.kpi-pending .kpi-icon-wrap { background: #fef9c3; color: #ca8a04; }
-.kpi-icon-wrap .material-symbols-outlined { font-size: 1.5rem; }
-
-.kpi-content { display: flex; flex-direction: column; gap: 0.15rem; }
-.kpi-value { font-size: 1.8rem; font-weight: 800; line-height: 1; color: #0f172a; }
-.kpi-label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-
-/* ── Filtros ── */
-.hrs-filters-bar {
-  display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;
-  background: var(--surface-card, #fff); padding: 1rem 1.25rem;
-  border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
+/* ── Filtros (Específicos de búsqueda) ── */
 .search-box-wrapper { position: relative; flex: 1; min-width: 220px; }
 .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; }
-.hrs-search-input { width: 100%; padding: 0.65rem 0.75rem 0.65rem 2.3rem; border-radius: 8px; border: 1.5px solid var(--border-color, #e2e8f0); font-size: 0.875rem; background: #f8fafc; transition: border-color 0.2s; }
-.hrs-search-input:focus { outline: none; border-color: #0369a1; }
-
 .filter-group { display: flex; flex-direction: column; gap: 0.3rem; }
-.filter-label { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-.hrs-select { padding: 0.65rem 0.75rem; border-radius: 8px; border: 1.5px solid var(--border-color, #e2e8f0); font-size: 0.875rem; background: #f8fafc; cursor: pointer; }
 
 /* ── Tabla principal ── */
-.hrs-table-card {
-  background: var(--surface-card, #fff); border-radius: 14px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden;
-}
-
-.hrs-loading, .hrs-empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 0.75rem; padding: 4rem 2rem; color: #94a3b8;
-}
-.hrs-loading .spin, .hrs-empty .material-symbols-outlined { font-size: 2.5rem; }
-
-.hrs-table { width: 100%; border-collapse: collapse; }
-.hrs-table thead tr { background: linear-gradient(135deg, #f0fdf4, #dcfce7); }
-.hrs-table th { padding: 0.85rem 1rem; text-align: left; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #166534; border-bottom: 2px solid #bbf7d0; white-space: nowrap; }
-.hrs-table th.text-right { text-align: right; }
-
 .hrs-row { border-bottom: 1px solid var(--border-color, #f1f5f9); transition: background 0.15s; }
-.hrs-row:hover { background: #f8fafc; }
+.hrs-row:hover { background: var(--bg-hover, #f8fafc); }
 .hrs-row.expanded { background: #f0fdf4; border-left: 3px solid #22c55e; }
-.hrs-table td { padding: 0.9rem 1rem; font-size: 0.875rem; color: #1e293b; vertical-align: middle; }
-.hrs-table td.text-right { text-align: right; }
 
 .td-expand { width: 40px; }
 .btn-expand { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; color: #64748b; transition: background 0.15s, color 0.15s; }
 .btn-expand:hover { background: #f1f5f9; color: #0f172a; }
 .expand-icon { font-size: 1.2rem; transition: transform 0.2s; }
 .expand-icon.rotated { transform: rotate(90deg); }
-
-.apprentice-cell { display: flex; align-items: center; gap: 0.65rem; }
-.apprentice-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
-.apprentice-name { font-weight: 600; }
-.apprentice-doc { font-size: 0.76rem; color: #94a3b8; }
-
-.ficha-chip { display: inline-block; background: #e0f2fe; color: #0369a1; border-radius: 8px; padding: 0.2rem 0.65rem; font-size: 0.8rem; font-weight: 700; }
 
 .hrs-num-aprobadas { font-weight: 800; color: #16a34a; }
 .hrs-num-pendientes { font-weight: 700; color: #d97706; }
@@ -454,7 +370,7 @@ const quincena = (idx) => `Q${idx + 1}`
 }
 .btn-desglose:hover { background: #dcfce7; }
 
-/* ── Sub-tabla ── */
+/* ── Sub-tabla (Accordion) ── */
 .subtable-row { background: #f8fffe; }
 .subtable-cell { padding: 0 !important; }
 .subtable-wrapper { padding: 0.75rem 1.5rem 1rem 3rem; border-top: 1px solid #bbf7d0; }
@@ -487,157 +403,27 @@ const quincena = (idx) => `Q${idx + 1}`
 .total-label { color: #166534; font-weight: 700; text-align: right; }
 .total-hrs { color: #15803d; font-size: 1rem; text-align: right; }
 
-.table-footer-count { padding: 0.75rem 1rem; font-size: 0.82rem; color: #94a3b8; text-align: right; border-top: 1px solid #f1f5f9; }
-.table-footer-count strong { color: #475569; }
+/* ── Dark Mode Overrides (Específicos) ── */
+[data-theme="dark"] .hrs-row { border-bottom-color: #242b3d; }
+[data-theme="dark"] .hrs-row:hover { background: #1e2535; }
+[data-theme="dark"] .hrs-row.expanded { background: #143d2130; border-left-color: #22c55e; }
+[data-theme="dark"] .progress-pct { color: #94a3b8; }
+[data-theme="dark"] .progress-bar { background: #2d3748; }
 
-/* ── Dark Mode Overrides ── */
-[data-theme="dark"] .kpi-card {
-  background: #1e2535;
-  border-color: #2d3748;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-[data-theme="dark"] .kpi-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-[data-theme="dark"] .kpi-total {
-  background: linear-gradient(135deg, #1e2535, #1d355730);
-  border-color: #2563eb;
-}
-[data-theme="dark"] .kpi-done {
-  background: linear-gradient(135deg, #1e2535, #064e3b30);
-  border-color: #16a34a;
-}
-[data-theme="dark"] .kpi-pending {
-  background: linear-gradient(135deg, #1e2535, #78350f30);
-  border-color: #ca8a04;
-}
+[data-theme="dark"] .subtable-row { background: #151a27; }
+[data-theme="dark"] .subtable-wrapper { border-top-color: #1a4731; }
+[data-theme="dark"] .subtable thead tr { background: #111827; }
+[data-theme="dark"] .subtable th { color: #86efac; border-bottom-color: #1f2937; }
+[data-theme="dark"] .subtable-bit-row { border-bottom-color: #1e2535; }
+[data-theme="dark"] .subtable td { color: #d1d5db; }
+[data-theme="dark"] .subtable-date { color: #6b7280; }
+[data-theme="dark"] .subtable-mes { color: #6b7280; }
+[data-theme="dark"] .subtable-total-row { background: #143d2120; }
+[data-theme="dark"] .total-label { color: #86efac; }
+[data-theme="dark"] .total-hrs { color: #22c55e; }
 
-[data-theme="dark"] .kpi-total .kpi-icon-wrap { background: #1e3a8a30; color: #60a5fa; }
-[data-theme="dark"] .kpi-done .kpi-icon-wrap { background: #064e3b30; color: #4ade80; }
-[data-theme="dark"] .kpi-pending .kpi-icon-wrap { background: #78350f30; color: #facc15; }
-
-[data-theme="dark"] .kpi-value { color: #f1f5f9; }
-[data-theme="dark"] .kpi-label { color: #94a3b8; }
-
-[data-theme="dark"] .hrs-filters-bar {
-  background: #1e2535;
-  border-color: #374151;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="dark"] .hrs-search-input,
-[data-theme="dark"] .hrs-select {
-  background: #151a27;
-  border-color: #374151;
-  color: #f1f5f9;
-}
-[data-theme="dark"] .hrs-search-input:focus,
-[data-theme="dark"] .hrs-select:focus {
-  border-color: #0284c7;
-}
-[data-theme="dark"] .filter-label {
-  color: #94a3b8;
-}
-
-[data-theme="dark"] .hrs-table-card {
-  background: #1a1f2e;
-  border-color: #2d3748;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .hrs-table thead tr {
-  background: #151a27;
-}
-[data-theme="dark"] .hrs-table th {
-  color: #86efac;
-  border-bottom-color: #16a34a;
-}
-[data-theme="dark"] .hrs-row {
-  border-bottom-color: #242b3d;
-}
-[data-theme="dark"] .hrs-row:hover {
-  background: #1e2535;
-}
-[data-theme="dark"] .hrs-row.expanded {
-  background: #143d2130;
-  border-left-color: #22c55e;
-}
-[data-theme="dark"] .hrs-table td {
-  color: #d1d5db;
-}
-[data-theme="dark"] .apprentice-name {
-  color: #f1f5f9;
-}
-[data-theme="dark"] .apprentice-doc {
-  color: #6b7280;
-}
-[data-theme="dark"] .ficha-chip {
-  background: #0c2a3d;
-  color: #38bdf8;
-}
-[data-theme="dark"] .progress-pct {
-  color: #94a3b8;
-}
-[data-theme="dark"] .progress-bar {
-  background: #2d3748;
-}
-
-[data-theme="dark"] .subtable-row {
-  background: #151a27;
-}
-[data-theme="dark"] .subtable-wrapper {
-  border-top-color: #1a4731;
-}
-[data-theme="dark"] .subtable thead tr {
-  background: #111827;
-}
-[data-theme="dark"] .subtable th {
-  color: #86efac;
-  border-bottom-color: #1f2937;
-}
-[data-theme="dark"] .subtable-bit-row {
-  border-bottom-color: #1e2535;
-}
-[data-theme="dark"] .subtable td {
-  color: #d1d5db;
-}
-[data-theme="dark"] .subtable-date {
-  color: #6b7280;
-}
-[data-theme="dark"] .subtable-mes {
-  color: #6b7280;
-}
-[data-theme="dark"] .subtable-total-row {
-  background: #143d2120;
-}
-[data-theme="dark"] .total-label {
-  color: #86efac;
-}
-[data-theme="dark"] .total-hrs {
-  color: #22c55e;
-}
-
-[data-theme="dark"] .table-footer-count {
-  border-top-color: #2d3748;
-  color: #6b7280;
-}
-[data-theme="dark"] .table-footer-count strong {
-  color: #9ca3af;
-}
-[data-theme="dark"] .btn-expand:hover {
-  background: #2d3748;
-  color: #f1f5f9;
-}
-[data-theme="dark"] .btn-desglose {
-  background: #143d2120;
-  border-color: #1b5e20;
-  color: #22c55e;
-}
-[data-theme="dark"] .btn-desglose:hover {
-  background: #143d2140;
-}
-[data-theme="dark"] .quincena-chip {
-  background: #1e3a8a30;
-  color: #60a5fa;
-}
+[data-theme="dark"] .btn-expand:hover { background: #2d3748; color: #f1f5f9; }
+[data-theme="dark"] .btn-desglose { background: #143d2120; border-color: #1b5e20; color: #22c55e; }
+[data-theme="dark"] .btn-desglose:hover { background: #143d2140; }
+[data-theme="dark"] .quincena-chip { background: #1e3a8a30; color: #60a5fa; }
 </style>

@@ -71,7 +71,7 @@ const menuItems = computed(() => {
 
     // Por defecto (SEGUIMIENTO o sin tipo): menú completo del instructor
     return [
-      { name: 'Dashboard', icon: 'dashboard', path: '/instructor-dashboard' },
+      { name: 'Panel Principal', icon: 'dashboard', path: '/instructor-dashboard' },
       { name: 'Seguimientos', icon: 'assessment', path: '/seguimiento' },
       { name: 'Bitácoras', icon: 'description', path: '/bitacoras' },
       { name: 'Certificación', icon: 'workspace_premium', path: '/certificacion' },

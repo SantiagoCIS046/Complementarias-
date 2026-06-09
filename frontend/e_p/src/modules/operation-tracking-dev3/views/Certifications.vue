@@ -114,83 +114,79 @@ onMounted(fetchCerts)
       <Header title="Certificación de Etapa Productiva" />
 
       <main class="content">
-        <div class="page-body">
-          <header class="page-header">
+        <div class="ins-page-body">
+          <header class="ins-page-header">
             <div class="header-left-group">
               <div class="header-info">
-                <h1 class="page-title">Certificación de Etapa Productiva</h1>
-                <p class="page-description">Gestione los procesos de certificación final de sus aprendices.</p>
+                <h1 class="ins-page-title">Certificación de Etapa Productiva</h1>
+                <p class="ins-page-description">Gestione los procesos de certificación final de sus aprendices.</p>
               </div>
             </div>
           </header>
 
-          <div class="dashboard-grid">
-            <div class="right-col" style="width: 100%">
-              <div class="card main-table-card">
-                <div class="table-header">
-                  <div class="filter-tabs">
-                    <button class="filter-btn" :class="{active: currentFilter === 'Todos'}" @click="setFilter('Todos')">Todos</button>
-                    <button class="filter-btn" :class="{active: currentFilter === 'Por Revisar'}" @click="setFilter('Por Revisar')">Por Revisar</button>
-                    <button class="filter-btn" :class="{active: currentFilter === 'Certificados'}" @click="setFilter('Certificados')">Certificados</button>
-                  </div>
-                  <div class="search-box table-search">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    <input type="text" v-model="searchCert" placeholder="Buscar por aprendiz, documento o ficha..." />
-                  </div>
-                </div>
-
-                <div class="table-responsive">
-                  <div v-if="isLoading" class="p-12 text-center text-gray-500">
-                    <div class="spin-ring-lg mx-auto mb-4"></div>
-                    Cargando aprendices...
-                  </div>
-                  <table v-else class="user-table">
-                    <thead>
-                      <tr>
-                        <th>APRENDIZ</th>
-                        <th>FICHA</th>
-                        <th>ESTADO</th>
-                        <th>FECHA CERT.</th>
-                        <th>ACCIONES</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="cert in filteredCerts" :key="cert.id">
-                        <td>
-                          <div class="user-cell">
-                            <div class="avatar bg-green">{{ cert.name.substring(0, 2).toUpperCase() }}</div>
-                            <div class="user-info">
-                              <p class="u-name">{{ cert.name }}</p>
-                              <p class="u-email">{{ cert.doc }}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="role-badge">#{{ cert.ficha }}</span>
-                        </td>
-                        <td>
-                          <span class="status-pill" :class="cert.status === 'CERTIFICADO' ? 'activo' : 'contract_ended'">
-                            {{ cert.status }}
-                          </span>
-                        </td>
-                        <td>
-                          <span class="u-email">{{ cert.date }}</span>
-                        </td>
-                        <td>
-                          <button class="btn-primary-sena" @click="openCertifyModal(cert)" style="padding: 6px 12px; font-size: 0.7rem;">
-                            Gestionar
-                          </button>
-                        </td>
-                      </tr>
-                      <tr v-if="filteredCerts.length === 0">
-                        <td colspan="5" class="text-center py-12 text-gray-400 italic">No se encontraron resultados</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+          <div class="ins-filters-bar">
+            <div class="filter-tabs">
+              <button class="filter-btn" :class="{active: currentFilter === 'Todos'}" @click="setFilter('Todos')">Todos</button>
+              <button class="filter-btn" :class="{active: currentFilter === 'Por Revisar'}" @click="setFilter('Por Revisar')">Por Revisar</button>
+              <button class="filter-btn" :class="{active: currentFilter === 'Certificados'}" @click="setFilter('Certificados')">Certificados</button>
+            </div>
+            <div class="search-box table-search" style="flex: 1; display: flex; justify-content: flex-end;">
+              <div style="position: relative; width: 100%; max-width: 360px;">
+                <span class="material-symbols-outlined search-icon" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem; pointer-events: none;">search</span>
+                <input type="text" v-model="searchCert" class="ins-search-input" placeholder="Buscar por aprendiz, documento o ficha..." style="padding-left: 2.4rem;" />
               </div>
+            </div>
+          </div>
+
+          <div class="ins-table-card">
+            <div class="table-responsive">
+              <div v-if="isLoading" class="p-12 text-center text-gray-500" style="padding: 3rem 0;">
+                <div class="spin-ring-lg mx-auto mb-4"></div>
+                Cargando aprendices...
+              </div>
+              <table v-else class="ins-table">
+                <thead>
+                  <tr>
+                    <th>APRENDIZ</th>
+                    <th>FICHA</th>
+                    <th>ESTADO</th>
+                    <th>FECHA CERT.</th>
+                    <th>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="cert in filteredCerts" :key="cert.id">
+                    <td>
+                      <div class="ins-apprentice-cell">
+                        <div class="ins-apprentice-avatar">{{ cert.name.substring(0, 2).toUpperCase() }}</div>
+                        <div>
+                          <div class="ins-apprentice-name">{{ cert.name }}</div>
+                          <div class="ins-apprentice-doc">Doc: {{ cert.doc }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="ins-ficha-chip">#{{ cert.ficha }}</span>
+                    </td>
+                    <td>
+                      <span :class="['ins-status-badge', cert.status === 'CERTIFICADO' ? 'status-certificado' : 'status-revision']">
+                        {{ cert.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <span style="font-size: 0.82rem; color: var(--text-secondary);">{{ cert.date }}</span>
+                    </td>
+                    <td>
+                      <button class="ins-btn-primary" @click="openCertifyModal(cert)" style="height: 30px; font-size: 0.75rem; padding: 0 0.85rem;">
+                        Gestionar
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="filteredCerts.length === 0">
+                    <td colspan="5" class="text-center py-12 text-gray-400 italic" style="padding: 2rem 0; text-align: center; font-style: italic; color: var(--text-muted);">No se encontraron resultados</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -306,12 +302,12 @@ onMounted(fetchCerts)
             </div>
           </div>
         </div>
-        <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-primary); display: flex; justify-content: flex-end; gap: 10px;">
+        <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-primary); display: flex; justify-content: flex-end; gap: 10px; background: var(--bg-elevated);">
           <button class="btn-cancel" @click="showCertifyModal = false" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
-          <button class="btn-primary-sena" 
+          <button class="ins-btn-primary" 
                   :disabled="!certDetails?.listoCertificar || certifying" 
                   @click="handleCertify"
-                  style="padding: 8px 20px; font-weight: 700; font-size: 0.85rem; border-radius: 8px;">
+                  style="height: 38px; font-size: 0.85rem; border-radius: 8px; font-weight: 700; padding: 0 1.25rem;">
             {{ certifying ? 'Completando y Archivando...' : 'Marcar como COMPLETADA' }}
           </button>
         </div>
@@ -321,25 +317,7 @@ onMounted(fetchCerts)
 </template>
 
 <style scoped>
-/* Page Header */
-.page-body { flex: 1; overflow-y: auto; padding: 12px 20px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.page-title { font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--text-primary); }
-.page-description { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
-.header-left-group { display: flex; align-items: center; gap: 32px; flex: 1; }
-.header-info { min-width: 200px; }
-
-/* Dashboard Grid */
-.dashboard-grid { display: flex; flex-direction: column; gap: 24px; margin-bottom: 24px; }
-.card { background: var(--bg-elevated); border: 1px solid var(--border-primary); border-radius: 12px; padding: 16px; }
-
-/* Table Elements */
-.main-table-card { padding: 0; }
-.table-header { padding: 12px 16px; border-bottom: 1px solid var(--border-primary); display: flex; justify-content: space-between; align-items: center; background: var(--bg-elevated); border-radius: 12px 12px 0 0; }
-.table-search { width: 40%; position: relative; }
-.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; color: var(--text-muted); }
-.table-search input { width: 100%; background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 8px; padding: 6px 10px 6px 32px; font-size: 0.75rem; outline: none; color: var(--text-primary); }
-.table-search input:focus { border-color: var(--color_button); background: var(--bg-elevated); box-shadow: 0 0 0 3px rgba(46,125,50,0.15); }
+/* --- Filter Tabs --- */
 .filter-tabs { display: flex; gap: 8px; }
 .filter-btn { background: transparent; border: 1px solid transparent; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: 0.2s; }
 .filter-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
@@ -350,35 +328,33 @@ onMounted(fetchCerts)
   view-transition-name: active-filter-tab; 
 }
 
-.user-table { width: 100%; border-collapse: collapse; }
-.user-table th { background: #1b5e20; text-align: left; padding: 12px 16px; font-size: 0.75rem; color: white; text-transform: uppercase; font-weight: 700; white-space: nowrap; }
-.user-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-primary); vertical-align: middle; white-space: nowrap; background: var(--bg-elevated); color: var(--text-primary); }
-.user-table tbody tr:nth-child(even) td { background: var(--bg-secondary); }
-.user-table tbody tr:hover td { background: var(--bg-hover); }
+/* --- Status Badges --- */
+.status-certificado { background: #dcfce7; color: #166534; }
+.status-revision { background: #ffedd5; color: #9a3412; }
 
-.user-cell { display: flex; align-items: center; gap: 12px; }
-.avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.75rem; }
-.bg-green { background: #1b5e20; }
-
-.status-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
-.status-pill.activo { background: #1b5e20; color: white; }
-.status-pill.contract_ended { background: #ea580c; color: white; }
-
-.u-name { font-weight: 700; margin: 0; color: var(--text-primary); font-size: 0.85rem; }
-.u-email { font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 600; }
-
-.role-badge { font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; background: #e0f2fe; color: #0369a1; display: inline-block; }
-
-.btn-primary-sena { background: var(--color_button); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2); white-space: nowrap; }
-.btn-primary-sena:hover { background: #1b5e20; transform: translateY(-1px); }
-
-.spin-ring-lg { width: 40px; height: 40px; border: 3px solid var(--bg-hover); border-top-color: var(--color_header); border-radius: 50%; animation: spin 1s linear infinite; }
+/* --- Spinner --- */
+.spin-ring-lg { width: 40px; height: 40px; border: 3px solid var(--bg-hover); border-top-color: var(--color_header); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Modal (Verificación de Cierre) ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-card {
+  background: var(--bg-elevated);
+  border-radius: 18px; box-shadow: 0 25px 80px rgba(0,0,0,0.25);
+  width: 100%; border: 1px solid var(--border-primary);
+  animation: slideUp 0.25s cubic-bezier(.16,1,.3,1);
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.97); } to { opacity: 1; transform: none; } }
 
 /* --- Responsive fixes --- */
 @media (max-width: 768px) {
-  .table-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .table-search { width: 100%; }
+  .ins-filters-bar { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .table-search { width: 100% !important; justify-content: flex-start !important; }
+  .table-search > div { max-width: 100% !important; }
   .filter-tabs { flex-wrap: wrap; }
   
   .table-responsive {
@@ -386,8 +362,13 @@ onMounted(fetchCerts)
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  .user-table {
-    min-width: 800px;
+  .ins-table {
+    min-width: 700px;
   }
 }
+
+/* ── Dark Mode Overrides ── */
+[data-theme="dark"] .status-certificado { background: #143d21; color: #4ade80; }
+[data-theme="dark"] .status-revision { background: #3b2010; color: #fb923c; }
+[data-theme="dark"] .filter-btn.active { border-color: #1b5e20; }
 </style>

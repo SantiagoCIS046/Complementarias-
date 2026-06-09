@@ -212,71 +212,71 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
       <Header title="Seguimientos Técnicos" />
 
       <main class="content">
-        <div class="page-body">
+        <div class="ins-page-body">
 
           <!-- Page Header -->
-          <header class="page-header">
+          <header class="ins-page-header">
             <div class="header-left-group">
               <div class="header-info">
-                <h1 class="page-title">Seguimientos Técnicos</h1>
-                <p class="page-description">Gestión y registro de visitas de seguimiento a aprendices en Etapa Productiva.</p>
+                <h1 class="ins-page-title">Seguimientos Técnicos</h1>
+                <p class="ins-page-description">Gestión y registro de visitas de seguimiento a aprendices en Etapa Productiva.</p>
               </div>
             </div>
-            <button id="btn-nuevo-seguimiento" class="btn-primary-action" @click="openCreate">
+            <button id="btn-nuevo-seguimiento" class="ins-btn-primary" @click="openCreate">
               <span class="material-symbols-outlined">add_circle</span>
               Nuevo Seguimiento
             </button>
           </header>
 
           <!-- Filtros -->
-          <div class="tracking-filters-bar">
+          <div class="ins-filters-bar">
             <div class="search-box-wrapper">
               <span class="material-symbols-outlined search-icon">search</span>
               <input
                 id="input-buscar-seguimiento"
                 v-model="searchQuery"
-                class="search-input"
+                class="ins-search-input"
                 type="text"
                 placeholder="Buscar por aprendiz, cédula o N° visita..."
               />
             </div>
             <div class="filter-group">
-              <label class="filter-label">Estado</label>
-              <select id="select-estado-tracking" v-model="filterEstado" class="filter-select">
+              <label class="ins-filter-label">Estado</label>
+              <select id="select-estado-tracking" v-model="filterEstado" class="ins-filter-select">
                 <option v-for="e in ESTADOS" :key="e" :value="e">{{ e === 'TODOS' ? 'Todos los estados' : e }}</option>
               </select>
             </div>
             <div class="filter-group">
-              <label class="filter-label">Tipo</label>
-              <select id="select-tipo-tracking" v-model="filterTipo" class="filter-select">
+              <label class="ins-filter-label">Tipo</label>
+              <select id="select-tipo-tracking" v-model="filterTipo" class="ins-filter-select">
                 <option v-for="t in TIPOS" :key="t" :value="t">{{ t === 'TODOS' ? 'Todos los tipos' : t }}</option>
               </select>
             </div>
           </div>
 
           <!-- Tabla de seguimientos -->
-          <div class="tracking-table-card">
+          <div class="ins-table-card">
             <!-- Loading -->
-            <div v-if="isLoading" class="tracking-loading">
+            <div v-if="isLoading" class="ins-loading-state">
               <span class="material-symbols-outlined spin-icon">sync</span>
               <span>Cargando seguimientos...</span>
             </div>
 
             <!-- Error -->
-            <div v-else-if="errorMsg" class="tracking-empty">
+            <div v-else-if="errorMsg" class="ins-empty-state">
               <span class="material-symbols-outlined">error_outline</span>
               <p>{{ errorMsg }}</p>
             </div>
 
             <!-- Empty state -->
-            <div v-else-if="filteredTrackings.length === 0" class="tracking-empty">
+            <div v-else-if="filteredTrackings.length === 0" class="ins-empty-state">
               <span class="material-symbols-outlined">playlist_remove</span>
               <p>No hay seguimientos que coincidan con los filtros seleccionados.</p>
-              <button class="btn-outline" @click="openCreate">Registrar primer seguimiento</button>
+              <button class="ins-btn-outline" @click="openCreate">Registrar primer seguimiento</button>
             </div>
 
             <!-- Tabla -->
-            <table v-else class="tracking-table">
+            <table v-else class="ins-table">
               <thead>
                 <tr>
                   <th>N° Visita</th>
@@ -293,14 +293,14 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
               <tbody>
                 <tr v-for="t in filteredTrackings" :key="t._id" class="tracking-row">
                   <td class="visit-num">
-                    <span class="visit-badge">V{{ t.numeroVisita }}</span>
+                    <span class="ins-ficha-chip">V{{ t.numeroVisita }}</span>
                   </td>
                   <td>
-                    <div class="apprentice-cell">
-                      <div class="apprentice-avatar">{{ (t.apprenticeId?.name || 'A').charAt(0).toUpperCase() }}</div>
+                    <div class="ins-apprentice-cell">
+                      <div class="ins-apprentice-avatar">{{ (t.apprenticeId?.name || 'A').charAt(0).toUpperCase() }}</div>
                       <div>
-                        <div class="apprentice-name">{{ t.apprenticeId?.name || 'Sin nombre' }}</div>
-                        <div class="apprentice-doc">{{ t.apprenticeId?.documento || '---' }}</div>
+                        <div class="ins-apprentice-name">{{ t.apprenticeId?.name || 'Sin nombre' }}</div>
+                        <div class="ins-apprentice-doc">{{ t.apprenticeId?.documento || '---' }}</div>
                       </div>
                     </div>
                   </td>
@@ -316,7 +316,7 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
                     <span v-else class="text-muted">---</span>
                   </td>
                   <td>
-                    <span :class="['estado-badge', badgeClass(t.estadoVisita)]">
+                    <span :class="['ins-status-badge', badgeClass(t.estadoVisita)]">
                       {{ t.estadoVisita }}
                     </span>
                   </td>
@@ -488,10 +488,10 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
 
           <!-- Footer del modal -->
           <div class="modal-footer">
-            <button class="btn-outline" @click="closeModal">Cancelar</button>
+            <button class="ins-btn-outline" @click="closeModal">Cancelar</button>
             <button
               id="btn-guardar-seguimiento"
-              class="btn-primary-action"
+              class="ins-btn-primary"
               :disabled="isSaving || !canSave"
               @click="saveTracking"
             >
@@ -510,78 +510,19 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
 </template>
 
 <style scoped>
-/* ── Layout ── */
-.page-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
-
-.page-header {
-  display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
-}
-.page-title { font-size: 1.6rem; font-weight: 700; color: var(--text-primary, #1e293b); margin: 0; }
-.page-description { font-size: 0.875rem; color: var(--text-secondary, #64748b); margin: 0.25rem 0 0; }
-
-.btn-primary-action {
-  display: flex; align-items: center; gap: 0.5rem;
-  background: linear-gradient(135deg, #39a2db, #2180c0);
-  color: #fff; border: none; border-radius: 10px; padding: 0.65rem 1.2rem;
-  font-size: 0.9rem; font-weight: 600; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(57,162,219,0.35);
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.btn-primary-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(57,162,219,0.45); }
-.btn-primary-action:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.btn-outline {
-  background: transparent; border: 1.5px solid var(--border-color, #e2e8f0);
-  border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.9rem; cursor: pointer;
-  color: var(--text-secondary, #64748b); transition: background 0.15s;
-}
-.btn-outline:hover { background: var(--surface-hover, #f1f5f9); }
-
-/* ── Filtros ── */
-.tracking-filters-bar {
-  display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;
-  background: var(--surface-card, #fff); padding: 1rem 1.25rem;
-  border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
+/* ── Filtros (Específicos del buscador) ── */
 .search-box-wrapper { position: relative; flex: 1; min-width: 200px; }
 .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; }
-.search-input { width: 100%; padding: 0.6rem 0.75rem 0.6rem 2.3rem; border-radius: 8px; border: 1.5px solid var(--border-color, #e2e8f0); font-size: 0.875rem; background: var(--surface-input, #f8fafc); transition: border-color 0.2s; }
-.search-input:focus { outline: none; border-color: #39a2db; }
 
 .filter-group { display: flex; flex-direction: column; gap: 0.3rem; }
-.filter-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary, #64748b); text-transform: uppercase; letter-spacing: 0.05em; }
-.filter-select { padding: 0.6rem 0.75rem; border-radius: 8px; border: 1.5px solid var(--border-color, #e2e8f0); font-size: 0.875rem; background: var(--surface-input, #f8fafc); cursor: pointer; }
 
-/* ── Tabla ── */
-.tracking-table-card {
-  background: var(--surface-card, #fff); border-radius: 14px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden;
-}
-
-.tracking-loading, .tracking-empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 0.75rem; padding: 4rem 2rem; color: #94a3b8;
-}
-.tracking-loading .spin-icon, .tracking-empty .material-symbols-outlined { font-size: 2.5rem; }
+/* ── Tabla (Estilos específicos de columnas / chips) ── */
 .spin-icon { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-.tracking-table { width: 100%; border-collapse: collapse; }
-.tracking-table thead tr { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); }
-.tracking-table th { padding: 0.85rem 1rem; text-align: left; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #0369a1; border-bottom: 2px solid #bae6fd; white-space: nowrap; }
 .tracking-row { border-bottom: 1px solid var(--border-color, #f1f5f9); transition: background 0.15s; }
 .tracking-row:last-child { border-bottom: none; }
-.tracking-row:hover { background: #f8fafc; }
-.tracking-table td { padding: 0.85rem 1rem; font-size: 0.875rem; color: var(--text-primary, #1e293b); vertical-align: middle; }
-
-.visit-badge { display: inline-flex; align-items: center; justify-content: center; background: #e0f2fe; color: #0369a1; border-radius: 8px; padding: 0.25rem 0.65rem; font-weight: 700; font-size: 0.82rem; }
-
-.apprentice-cell { display: flex; align-items: center; gap: 0.65rem; }
-.apprentice-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #39a2db, #2180c0); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
-.apprentice-name { font-weight: 600; font-size: 0.875rem; }
-.apprentice-doc { font-size: 0.76rem; color: #94a3b8; }
+.tracking-row:hover { background: var(--surface-hover, #f8fafc); }
 
 .cell-date, .cell-lugar, .cell-cal { color: #475569; }
 .text-muted { color: #cbd5e1; font-style: italic; }
@@ -591,233 +532,22 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
 .tipo-std  { background: #e0f2fe; color: #0369a1; }
 .tipo-extra { background: #fef3c7; color: #92400e; }
 
-.estado-badge { display: inline-block; border-radius: 20px; padding: 0.2rem 0.7rem; font-size: 0.77rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .badge-programado  { background: #eff6ff; color: #1d4ed8; }
 .badge-realizado   { background: #dcfce7; color: #166534; }
 .badge-reprogramado { background: #fef3c7; color: #92400e; }
 .badge-no-realizado { background: #fee2e2; color: #991b1b; }
 
-.cell-ia { text-align: center; }
-.ia-ok   { color: #16a34a; }
-.ia-pending { color: #cbd5e1; }
-
-.btn-icon-action { background: transparent; border: none; padding: 0.3rem; border-radius: 6px; cursor: pointer; color: #64748b; transition: background 0.15s, color 0.15s; display: flex; }
-.btn-icon-action:hover { background: #e0f2fe; color: #0369a1; }
-
-.table-footer-count { font-size: 0.82rem; color: #94a3b8; text-align: right; }
-.table-footer-count strong { color: #475569; }
-
-/* ── Modal ── */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 1000;
-  background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center; padding: 1rem;
-}
-.modal-panel {
-  background: var(--surface-card, #fff);
-  border-radius: 18px; box-shadow: 0 25px 80px rgba(0,0,0,0.25);
-  width: 100%; max-width: 760px; max-height: 90vh;
-  display: flex; flex-direction: column; overflow: hidden;
-  animation: slideUp 0.25s cubic-bezier(.16,1,.3,1);
-}
-@keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.97); } to { opacity: 1; transform: none; } }
-
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.25rem 1.5rem; border-bottom: 1.5px solid var(--border-color, #f1f5f9);
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-}
-.modal-title-group { display: flex; align-items: center; gap: 0.75rem; }
-.modal-icon { color: #0369a1; font-size: 1.4rem; }
-.modal-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: #0f172a; }
-.modal-close-btn { background: transparent; border: none; cursor: pointer; display: flex; border-radius: 8px; padding: 0.3rem; color: #64748b; }
-.modal-close-btn:hover { background: #e2e8f0; }
-
-.modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1.5rem; }
-
-/* Form grid */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.span-2 { grid-column: span 2; }
-.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
-.form-label { font-size: 0.82rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; }
-.required-field::after { content: ' *'; color: #ef4444; }
-.form-input { padding: 0.65rem 0.85rem; border-radius: 8px; border: 1.5px solid var(--border-color, #e2e8f0); font-size: 0.9rem; background: var(--surface-input, #f8fafc); transition: border-color 0.2s; }
-.form-input:focus { outline: none; border-color: #39a2db; background: #fff; }
-.form-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
-
-.toggle-label { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; }
-.toggle-checkbox { width: 18px; height: 18px; accent-color: #39a2db; cursor: pointer; }
-.toggle-text { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; color: #374151; font-weight: 500; }
-
-/* IA Section */
-.ia-section {
-  border: 2px dashed #7dd3fc; border-radius: 14px; padding: 1.25rem;
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe08);
-  display: flex; flex-direction: column; gap: 1rem;
-}
-.ia-section-header { display: flex; align-items: center; gap: 0.65rem; }
-.ia-section-header .material-symbols-outlined { color: #0369a1; font-size: 1.4rem; }
-.ia-section-header h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.required-chip { background: #fef3c7; color: #92400e; font-size: 0.72rem; font-weight: 700; border-radius: 20px; padding: 0.15rem 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
-
-.pdf-dropzone {
-  border: 2px dashed #bae6fd; border-radius: 12px; padding: 2rem;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;
-  cursor: pointer; background: #f0f9ff; transition: border-color 0.2s, background 0.2s;
-}
-.pdf-dropzone:hover, .pdf-dropzone.dragging { border-color: #38bdf8; background: #e0f2fe; }
-.pdf-dropzone.has-file { border-color: #22c55e; background: #f0fdf4; }
-.hidden { display: none; }
-.dropzone-icon { font-size: 2.5rem; color: #38bdf8; }
-.has-file .dropzone-icon { color: #16a34a; }
-.dropzone-text { font-size: 0.875rem; color: #64748b; text-align: center; margin: 0; }
-
-.ia-actions { display: flex; gap: 1rem; }
-.btn-ia-validate {
-  display: flex; align-items: center; gap: 0.5rem;
-  background: linear-gradient(135deg, #0369a1, #0284c7);
-  color: #fff; border: none; border-radius: 10px; padding: 0.65rem 1.2rem;
-  font-size: 0.9rem; font-weight: 600; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(3,105,161,0.3);
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.btn-ia-validate:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(3,105,161,0.4); }
-.btn-ia-validate:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.ia-banner {
-  display: flex; align-items: flex-start; gap: 0.75rem;
-  border-radius: 10px; padding: 1rem 1.25rem;
-  animation: fadeIn 0.3s ease;
-}
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-.ia-banner .material-symbols-outlined { font-size: 1.5rem; flex-shrink: 0; }
-.ia-banner-content { display: flex; flex-direction: column; gap: 0.25rem; }
-.ia-banner-content strong { font-size: 0.9rem; }
-.ia-banner-content p { margin: 0; font-size: 0.85rem; }
-.ia-banner-ok  { background: #dcfce7; border: 1px solid #bbf7d0; color: #166534; }
-.ia-banner-error { background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; }
-
-.btn-retry { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; background: #fca5a5; border: none; color: #991b1b; border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.82rem; cursor: pointer; font-weight: 600; }
-.btn-retry:hover { background: #f87171; }
-
-.modal-save-error {
-  display: flex; align-items: center; gap: 0.5rem;
-  margin: 0 1.5rem; padding: 0.75rem 1rem;
-  background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
-  color: #dc2626; font-size: 0.85rem;
-}
-
-.modal-footer {
-  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
-  padding: 1rem 1.5rem; border-top: 1.5px solid var(--border-color, #f1f5f9);
-  background: #f8fafc;
-}
 .ia-lock-hint {
   display: flex; align-items: center; gap: 0.4rem;
   font-size: 0.78rem; color: #b45309; font-weight: 600;
   margin-left: auto;
 }
 
-/* ── Dark Mode Overrides ── */
-[data-theme="dark"] .tracking-filters-bar {
-  background: #1e2535;
-  border-color: #374151;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="dark"] .search-input,
-[data-theme="dark"] .filter-select {
-  background: #151a27;
-  border-color: #374151;
-  color: #f1f5f9;
-}
-[data-theme="dark"] .search-input:focus,
-[data-theme="dark"] .filter-select:focus {
-  border-color: #39a2db;
-}
-[data-theme="dark"] .filter-label {
-  color: #94a3b8;
-}
-
-[data-theme="dark"] .tracking-table-card {
-  background: #1a1f2e;
-  border-color: #2d3748;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .tracking-table thead tr {
-  background: #151a27;
-}
-[data-theme="dark"] .tracking-table th {
-  color: #38bdf8;
-  border-bottom-color: #0284c7;
-}
-[data-theme="dark"] .tracking-row {
-  border-bottom-color: #242b3d;
-}
-[data-theme="dark"] .tracking-row:hover {
-  background: #1e2535;
-}
-[data-theme="dark"] .tracking-table td {
-  color: #d1d5db;
-}
-
-[data-theme="dark"] .visit-badge {
-  background: #0c2a3d;
-  color: #38bdf8;
-}
-[data-theme="dark"] .apprentice-name {
-  color: #f1f5f9;
-}
-[data-theme="dark"] .apprentice-doc {
-  color: #6b7280;
-}
+/* ── Dark Mode Overrides (Específicos) ── */
+[data-theme="dark"] .tracking-row { border-bottom-color: #242b3d; }
+[data-theme="dark"] .tracking-row:hover { background: #1e2535; }
 [data-theme="dark"] .cell-date,
 [data-theme="dark"] .cell-lugar,
-[data-theme="dark"] .cell-cal {
-  color: #94a3b8;
-}
-[data-theme="dark"] .cal-badge {
-  background: #3b2010;
-  color: #fb923c;
-}
-[data-theme="dark"] .tipo-chip.tipo-std {
-  background: #0c2a3d;
-  color: #38bdf8;
-}
-[data-theme="dark"] .tipo-chip.tipo-extra {
-  background: #3b2010;
-  color: #fb923c;
-}
-[data-theme="dark"] .ia-pending {
-  color: #4b5563;
-}
-[data-theme="dark"] .btn-icon-action:hover {
-  background: #0c2a3d;
-  color: #38bdf8;
-}
-[data-theme="dark"] .table-footer-count {
-  color: #6b7280;
-}
-[data-theme="dark"] .table-footer-count strong {
-  color: #9ca3af;
-}
-
-[data-theme="dark"] .modal-panel {
-  background: #1a1f2e;
-  border: 1px solid #374151;
-}
-[data-theme="dark"] .modal-header {
-  background: #151a27;
-  border-bottom-color: #2d3748;
-}
-[data-theme="dark"] .modal-icon {
-  color: #38bdf8;
-}
-[data-theme="dark"] .modal-title {
-  color: #f1f5f9;
-}
-[data-theme="dark"] .modal-close-btn:hover {
   background: #2d3748;
   color: #f1f5f9;
 }

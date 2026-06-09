@@ -80,12 +80,26 @@ const cancelEdit = () => {
 /** Guarda cualquier campo genérico en el backend */
 const saveField = async (field) => {
   if (isSavingField.value) return;
+
+  if (field === 'email') {
+    const emailVal = editValue.value?.trim();
+    if (!emailVal) {
+      showError('Error', 'El correo electrónico no puede estar vacío.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailVal)) {
+      showError('Error', 'Por favor, ingresa un correo electrónico con un formato válido.');
+      return;
+    }
+  }
+
   isSavingField.value = true;
   try {
-    const payload  = { [field]: editValue.value };
+    const payload  = { [field]: editValue.value?.trim() };
     const response = await usersService.update(user.value._id, payload);
     if (response.data.success) {
-      formData.value[field] = editValue.value;
+      formData.value[field] = editValue.value?.trim();
       authStore.updateUser(response.data.data);
       cancelEdit();
       showSuccess('¡Guardado!', 'El campo se actualizó correctamente.');
@@ -304,195 +318,67 @@ const handleSelectAnother = () => {
                     </div>
                   </div>
 
-                  <!-- Teléfono / Celular (editable inline) -->
-                  <div class="form-group" :class="{ editing: editingField === 'telefono' }">
-                    <label for="telefono">
-                      Teléfono / Celular
-                      <button
-                        v-if="editingField !== 'telefono'"
-                        class="edit-field-btn"
-                        @click="startEdit('telefono')"
-                        title="Editar teléfono"
-                      >
-                        <span class="material-symbols-outlined">edit</span>
-                      </button>
-                    </label>
+                  <!-- Teléfono / Celular (Bloqueado) -->
+                  <div class="form-group readonly">
+                    <label for="telefono">Teléfono / Celular</label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">phone</span>
-                      <input
-                        id="telefono"
-                        v-if="editingField === 'telefono'"
-                        v-model="editValue"
-                        type="text"
-                        class="field-active"
-                        placeholder="Número de contacto"
-                        @keydown.enter="saveField('telefono')"
-                        @keydown.esc="cancelEdit"
-                        autofocus
-                      />
-                      <input v-else :value="formData.telefono" type="text" readonly />
-                      <div v-if="editingField === 'telefono'" class="field-actions">
-                        <button class="field-save-btn" @click="saveField('telefono')" :disabled="isSavingField" title="Guardar">
-                          <span v-if="isSavingField" class="field-spinner"></span>
-                          <span v-else class="material-symbols-outlined">thumb_up</span>
-                        </button>
-                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField" title="Cancelar">
-                          <span class="material-symbols-outlined">close</span>
-                        </button>
-                      </div>
+                      <input id="telefono" :value="formData.telefono || 'No registrado'" type="text" readonly />
                     </div>
                   </div>
 
-                  <!-- Documento de Identidad (editable) -->
-                  <div class="form-group" :class="{ editing: editingField === 'documento' }">
-                    <label>
-                      Documento de Identidad
-                      <button v-if="editingField !== 'documento'" class="edit-field-btn" @click="startEdit('documento')" title="Editar documento">
-                        <span class="material-symbols-outlined">edit</span>
-                      </button>
-                    </label>
+                  <!-- Documento de Identidad (Bloqueado) -->
+                  <div class="form-group readonly">
+                    <label for="documento">Documento de Identidad</label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">badge</span>
-                      <input v-if="editingField === 'documento'" v-model="editValue" type="text" class="field-active" placeholder="Número de documento" @keydown.enter="saveField('documento')" @keydown.esc="cancelEdit" autofocus />
-                      <input v-else :value="formData.documento" type="text" readonly />
-                      <div v-if="editingField === 'documento'" class="field-actions">
-                        <button class="field-save-btn" @click="saveField('documento')" :disabled="isSavingField">
-                          <span v-if="isSavingField" class="field-spinner"></span>
-                          <span v-else class="material-symbols-outlined">thumb_up</span>
-                        </button>
-                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
-                          <span class="material-symbols-outlined">close</span>
-                        </button>
-                      </div>
+                      <input id="documento" :value="formData.documento" type="text" readonly />
                     </div>
                   </div>
 
-                  <!-- Contraseña (editable con confirmación) -->
-                  <div class="form-group" :class="{ editing: editingField === 'password' }">
-                    <label>
-                      Contraseña
-                      <button v-if="editingField !== 'password'" class="edit-field-btn" @click="startEdit('password')" title="Cambiar contraseña">
-                        <span class="material-symbols-outlined">edit</span>
-                      </button>
-                    </label>
-                    <div v-if="editingField === 'password'" class="password-edit-group">
-                      <div class="input-wrapper">
-                        <span class="material-symbols-outlined">lock</span>
-                        <input v-model="editValue" type="password" class="field-active" placeholder="Nueva contraseña" @keydown.esc="cancelEdit" autofocus />
-                      </div>
-                      <div class="input-wrapper" style="margin-top:0.5rem">
-                        <span class="material-symbols-outlined">lock_reset</span>
-                        <input v-model="confirmValue" type="password" class="field-active" placeholder="Confirmar contraseña" @keydown.enter="savePassword" @keydown.esc="cancelEdit" />
-                      </div>
-                      <div class="field-actions" style="margin-top:0.5rem; justify-content:flex-end">
-                        <button class="field-save-btn" @click="savePassword" :disabled="isSavingField">
-                          <span v-if="isSavingField" class="field-spinner"></span>
-                          <span v-else class="material-symbols-outlined">thumb_up</span>
-                        </button>
-                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
-                          <span class="material-symbols-outlined">close</span>
-                        </button>
-                      </div>
-                    </div>
-                    <div v-else class="input-wrapper">
+                  <!-- Contraseña (Bloqueada) -->
+                  <div class="form-group readonly">
+                    <label for="password">Contraseña</label>
+                    <div class="input-wrapper">
                       <span class="material-symbols-outlined">lock</span>
-                      <input value="••••••••" type="password" readonly />
+                      <input id="password" value="••••••••" type="password" readonly />
                     </div>
+                    <small>Se modifica desde la opción "Cambiar Clave" en el menú de usuario.</small>
                   </div>
 
-                  <!-- Ficha (editable, solo APRENDIZ) -->
-                  <div v-if="user?.role === 'APRENDIZ'" class="form-group" :class="{ editing: editingField === 'ficha' }">
-                    <label>
-                      Ficha
-                      <button v-if="editingField !== 'ficha'" class="edit-field-btn" @click="startEdit('ficha')" title="Editar ficha">
-                        <span class="material-symbols-outlined">edit</span>
-                      </button>
-                    </label>
+                  <!-- Ficha (Bloqueada, solo APRENDIZ) -->
+                  <div v-if="user?.role === 'APRENDIZ'" class="form-group readonly">
+                    <label for="ficha">Ficha</label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">tag</span>
-                      <input v-if="editingField === 'ficha'" v-model="editValue" type="text" class="field-active" placeholder="Código de ficha" @keydown.enter="saveField('ficha')" @keydown.esc="cancelEdit" autofocus />
-                      <input v-else :value="formData.ficha" type="text" readonly />
-                      <div v-if="editingField === 'ficha'" class="field-actions">
-                        <button class="field-save-btn" @click="saveField('ficha')" :disabled="isSavingField">
-                          <span v-if="isSavingField" class="field-spinner"></span>
-                          <span v-else class="material-symbols-outlined">thumb_up</span>
-                        </button>
-                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
-                          <span class="material-symbols-outlined">close</span>
-                        </button>
-                      </div>
+                      <input id="ficha" :value="formData.ficha" type="text" readonly />
                     </div>
                   </div>
 
-                  <!-- Programa (editable, solo APRENDIZ) -->
-                  <div v-if="user?.role === 'APRENDIZ'" class="form-group" :class="{ editing: editingField === 'programa' }">
-                    <label>
-                      Programa
-                      <button v-if="editingField !== 'programa'" class="edit-field-btn" @click="startEdit('programa')" title="Editar programa">
-                        <span class="material-symbols-outlined">edit</span>
-                      </button>
-                    </label>
+                  <!-- Programa (Bloqueado, solo APRENDIZ) -->
+                  <div v-if="user?.role === 'APRENDIZ'" class="form-group readonly">
+                    <label for="programa">Programa</label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">school</span>
-                      <input v-if="editingField === 'programa'" v-model="editValue" type="text" class="field-active" placeholder="Nombre del programa" @keydown.enter="saveField('programa')" @keydown.esc="cancelEdit" autofocus />
-                      <input v-else :value="formData.programa" type="text" readonly />
-                      <div v-if="editingField === 'programa'" class="field-actions">
-                        <button class="field-save-btn" @click="saveField('programa')" :disabled="isSavingField">
-                          <span v-if="isSavingField" class="field-spinner"></span>
-                          <span v-else class="material-symbols-outlined">thumb_up</span>
-                        </button>
-                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
-                          <span class="material-symbols-outlined">close</span>
-                        </button>
-                      </div>
+                      <input id="programa" :value="formData.programa || 'No asignado'" type="text" readonly />
                     </div>
                   </div>
 
-                  <!-- Área de Conocimiento (editable, solo INSTRUCTOR) -->
-                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group" :class="{ editing: editingField === 'areaConocimiento' }">
-                    <label>
-                      Área de Conocimiento
-                      <button v-if="editingField !== 'areaConocimiento'" class="edit-field-btn" @click="startEdit('areaConocimiento')" title="Editar área">
-                        <span class="material-symbols-outlined">edit</span>
-                      </button>
-                    </label>
+                  <!-- Área de Conocimiento (Bloqueada, solo INSTRUCTOR) -->
+                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group readonly">
+                    <label for="areaConocimiento">Área de Conocimiento</label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">menu_book</span>
-                      <input v-if="editingField === 'areaConocimiento'" v-model="editValue" type="text" class="field-active" placeholder="Área de conocimiento" @keydown.enter="saveField('areaConocimiento')" @keydown.esc="cancelEdit" autofocus />
-                      <input v-else :value="formData.areaConocimiento" type="text" readonly />
-                      <div v-if="editingField === 'areaConocimiento'" class="field-actions">
-                        <button class="field-save-btn" @click="saveField('areaConocimiento')" :disabled="isSavingField">
-                          <span v-if="isSavingField" class="field-spinner"></span>
-                          <span v-else class="material-symbols-outlined">thumb_up</span>
-                        </button>
-                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
-                          <span class="material-symbols-outlined">close</span>
-                        </button>
-                      </div>
+                      <input id="areaConocimiento" :value="formData.areaConocimiento || 'No registrada'" type="text" readonly />
                     </div>
                   </div>
 
-                  <!-- Tipo de Instructor (editable, solo INSTRUCTOR) -->
-                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group" :class="{ editing: editingField === 'tipoInstructor' }">
-                    <label>
-                      Tipo de Instructor
-                      <button v-if="editingField !== 'tipoInstructor'" class="edit-field-btn" @click="startEdit('tipoInstructor')" title="Editar tipo">
-                        <span class="material-symbols-outlined">edit</span>
-                      </button>
-                    </label>
+                  <!-- Tipo de Instructor (Bloqueado, solo INSTRUCTOR) -->
+                  <div v-if="user?.role === 'INSTRUCTOR'" class="form-group readonly">
+                    <label for="tipoInstructor">Tipo de Instructor</label>
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined">support_agent</span>
-                      <input v-if="editingField === 'tipoInstructor'" v-model="editValue" type="text" class="field-active" placeholder="Tipo de instructor" @keydown.enter="saveField('tipoInstructor')" @keydown.esc="cancelEdit" autofocus />
-                      <input v-else :value="formData.tipoInstructor" type="text" readonly />
-                      <div v-if="editingField === 'tipoInstructor'" class="field-actions">
-                        <button class="field-save-btn" @click="saveField('tipoInstructor')" :disabled="isSavingField">
-                          <span v-if="isSavingField" class="field-spinner"></span>
-                          <span v-else class="material-symbols-outlined">thumb_up</span>
-                        </button>
-                        <button class="field-cancel-btn" @click="cancelEdit" :disabled="isSavingField">
-                          <span class="material-symbols-outlined">close</span>
-                        </button>
-                      </div>
+                      <input id="tipoInstructor" :value="formData.tipoInstructor || 'No registrado'" type="text" readonly />
                     </div>
                   </div>
                 </div>

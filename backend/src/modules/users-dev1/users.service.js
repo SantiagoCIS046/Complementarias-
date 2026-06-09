@@ -71,6 +71,23 @@ const getById = async (id) => {
   if (!usuario) {
     throw new Error('Usuario no encontrado.');
   }
+  
+  // Si es aprendiz, tiene ficha y no tiene programa asignado directamente,
+  // buscar el programa de la Ficha en la colección Batch
+  if (usuario.role === 'APRENDIZ' && usuario.ficha && !usuario.programa) {
+    try {
+      const Batch = require('../batches-dev1/batch.model');
+      const batch = await Batch.findOne({ codigo_ficha: usuario.ficha });
+      if (batch && batch.programa) {
+        const userObj = usuario.toObject();
+        userObj.programa = batch.programa;
+        return userObj;
+      }
+    } catch (err) {
+      console.error('Error al resolver programa de la ficha:', err.message);
+    }
+  }
+  
   return usuario;
 };
 
@@ -80,6 +97,16 @@ const getById = async (id) => {
 const actualizar = async (id, data) => {
   // No permitir cambiar el password por esta via
   delete data.password;
+
+  // Si viene correo, verificar que no esté en uso por otro usuario
+  if (data.email) {
+    const emailLower = data.email.toLowerCase().trim();
+    const existe = await User.findOne({ email: emailLower, _id: { $ne: id } });
+    if (existe) {
+      throw new Error('El correo electrónico ya está registrado por otro usuario.');
+    }
+    data.email = emailLower;
+  }
 
   // RF-ADM-15 Verificación de estado activo para instructores asignados
   const instructorFields = ['instructorAsignado', 'instructorTecnico', 'instructorProyecto'];
@@ -175,6 +202,22 @@ const actualizar = async (id, data) => {
     enviarNotificacionAsignacion(usuario._id, nuevoInstructorId, motivo).catch(err => 
       console.error('Error al enviar notificación de asignación:', err)
     );
+  }
+
+  // Si es aprendiz, tiene ficha y no tiene programa asignado directamente,
+  // buscar el programa de la Ficha en la colección Batch
+  if (usuario.role === 'APRENDIZ' && usuario.ficha && !usuario.programa) {
+    try {
+      const Batch = require('../batches-dev1/batch.model');
+      const batch = await Batch.findOne({ codigo_ficha: usuario.ficha });
+      if (batch && batch.programa) {
+        const userObj = usuario.toObject();
+        userObj.programa = batch.programa;
+        return userObj;
+      }
+    } catch (err) {
+      console.error('Error al resolver programa de la ficha:', err.message);
+    }
   }
 
   return usuario;

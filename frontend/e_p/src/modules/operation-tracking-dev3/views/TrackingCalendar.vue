@@ -548,6 +548,7 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
 [data-theme="dark"] .tracking-row:hover { background: #1e2535; }
 [data-theme="dark"] .cell-date,
 [data-theme="dark"] .cell-lugar,
+[data-theme="dark"] .cell-cal {
   background: #2d3748;
   color: #f1f5f9;
 }

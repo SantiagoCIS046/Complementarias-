@@ -216,6 +216,10 @@ const handleSaveQuickEdit = async () => {
 
 <template>
   <header class="topbar">
+    <!-- Logo SENA para Móvil -->
+    <div class="header-logo-mobile mobile-only-inline">
+      <img src="/logoSena.png" alt="SENA Logo" class="sena-logo-img-header" />
+    </div>
     <slot name="title-area">
       <div class="header-title-container">
         <h2 class="page-title">{{ title }}</h2>
@@ -232,14 +236,10 @@ const handleSaveQuickEdit = async () => {
       <!-- Slot for custom actions per view -->
       <slot name="actions"></slot>
       
-      <!-- Botón de Salir para Móvil/Tablet en el centro del header -->
-      <button 
-        class="header-logout-btn mobile-only-inline" 
-        @click="handleLogout"
-        title="Cerrar Sesión"
-      >
-        <span class="material-symbols-outlined">logout</span>
-      </button>
+      <!-- Avatar de Usuario para Móvil (Esquina derecha) -->
+      <div class="header-user-mobile mobile-only-inline" @click.stop="toggleProfileMenu">
+        <AvatarDisplay :user="currentUser" size="sm" />
+      </div>
       
       <div class="divider"></div>
 
@@ -1034,40 +1034,97 @@ const handleSaveQuickEdit = async () => {
 @media (max-width: 780px) {
   .notif-dropdown {
     position: fixed;
-    top: 52px;
-    right: 8px;
-    left: 8px;
-    width: auto;
-    max-height: 70vh;
-    border-radius: 12px;
+    top: 60px;
+    right: 12px;
+    left: auto;
+    width: 300px;
+    max-width: calc(100vw - 24px);
+    max-height: 60vh;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-primary);
+  }
+  .notif-header {
+    padding: 10px 14px;
+  }
+  .notif-header h3 {
+    font-size: 0.85rem;
+  }
+  .mark-all-btn {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+  .notif-list {
+    max-height: 280px;
+  }
+  .notif-item {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .notif-icon-col {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+  .notif-type-icon {
+    font-size: 0.8rem;
+  }
+  .notif-msg {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+  .notif-time {
+    font-size: 0.62rem;
+  }
+  .notif-action-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+  }
+  .notif-action-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .notif-empty {
+    padding: 24px 16px;
+  }
+  .empty-icon {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+  .notif-empty p {
+    font-size: 0.78rem;
   }
   .profile-dropdown {
     position: absolute;
     top: calc(100% + 12px);
-    left: -16px;
-    right: auto;
+    left: auto !important;
+    right: 8px !important;
+    transform: none !important;
     width: 240px;
   }
 }
 
 @media (max-width: 480px) {
   .notif-dropdown {
-    top: 48px;
-    right: 4px;
-    left: 4px;
-    max-height: 65vh;
+    top: 60px;
+    right: 8px;
+    width: 280px;
+    max-width: calc(100vw - 16px);
+    max-height: 55vh;
   }
   .notif-item {
-    padding: 10px 14px;
+    padding: 8px 10px;
     gap: 8px;
   }
   .notif-msg {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
   }
   .profile-dropdown {
     top: calc(100% + 10px);
-    left: -16px;
-    right: auto;
+    left: auto !important;
+    right: 8px !important;
+    transform: none !important;
     width: 230px;
   }
 }

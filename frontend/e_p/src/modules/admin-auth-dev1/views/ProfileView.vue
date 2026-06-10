@@ -155,13 +155,21 @@ const photoShine = ref(false);
 /** Muestra u oculta el lightbox de la foto */
 const showLightbox = ref(false);
 
-/** Abre el lightbox si hay foto, si no abre el selector */
+/** Calcula las iniciales del usuario */
+const initials = computed(() => {
+  const name = user.value?.name || '';
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+});
+
+/** Abre el lightbox */
 const handleAvatarClick = () => {
-  if (user.value?.fotoPerfil) {
-    showLightbox.value = true;
-  } else {
-    openFilePicker();
-  }
+  showLightbox.value = true;
 };
 
 /** Cierra el lightbox */
@@ -424,7 +432,7 @@ const handleSelectAnother = () => {
   <!-- Lightbox: ver foto en pantalla completa -->
   <Transition name="lightbox-fade">
     <div
-      v-if="showLightbox && user?.fotoPerfil"
+      v-if="showLightbox"
       class="lightbox-overlay"
       @click.self="closeLightbox"
       @keydown.esc="closeLightbox"
@@ -436,11 +444,15 @@ const handleSelectAnother = () => {
       </button>
       <div class="lightbox-img-wrapper">
         <img
+          v-if="user?.fotoPerfil"
           :src="user.fotoPerfil"
           :alt="user?.name"
           class="lightbox-img"
           draggable="false"
         />
+        <div v-else class="lightbox-initials-placeholder">
+          {{ initials }}
+        </div>
         <p class="lightbox-caption">{{ user?.name }}</p>
       </div>
     </div>
@@ -788,14 +800,112 @@ const handleSelectAnother = () => {
 }
 
 @media (max-width: 640px) {
-  .profile-container { padding: 1rem; }
-  .profile-header {
-    flex-direction: column;
-    text-align: center;
-    padding: 2rem 1rem;
+  .profile-container {
+    padding: 0.5rem;
+    min-height: auto;
   }
-  .form-grid { grid-template-columns: 1fr; }
-  .submit-btn { width: 100%; }
+  
+  .profile-card {
+    border-radius: 16px;
+  }
+
+  .profile-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    text-align: left !important;
+    padding: 1.25rem 1rem !important;
+    gap: 1.25rem !important;
+    align-items: center !important;
+  }
+
+  .avatar-wrapper {
+    gap: 0.4rem !important;
+  }
+
+  .profile-header :deep(.avatar-display),
+  .profile-header :deep(.avatar-placeholder) {
+    width: 68px !important;
+    height: 68px !important;
+    font-size: 1.4rem !important;
+  }
+
+  .change-photo-btn {
+    padding: 4px 10px !important;
+    font-size: 0.65rem !important;
+  }
+
+  .header-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end !important;
+    text-align: right !important;
+    gap: 4px;
+  }
+
+  .header-info h1 {
+    font-size: 1.3rem !important;
+    line-height: 1.2;
+  }
+
+  .role-badge {
+    margin-top: 0 !important;
+    padding: 2px 8px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .photo-status {
+    margin-top: 0 !important;
+    font-size: 0.68rem !important;
+  }
+
+  .profile-body {
+    padding: 1.25rem 1rem;
+  }
+
+  .profile-form {
+    gap: 1.25rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .form-group {
+    gap: 0.2rem;
+  }
+
+  .form-group label {
+    font-size: 0.78rem;
+  }
+
+  .input-wrapper .material-symbols-outlined {
+    font-size: 1.1rem;
+    left: 10px;
+  }
+
+  .input-wrapper input {
+    padding: 8px 10px 8px 34px;
+    font-size: 0.85rem;
+    border-radius: 10px;
+  }
+
+  .form-group.readonly small {
+    font-size: 0.68rem;
+    margin-top: 1px;
+  }
+
+  .form-actions {
+    margin-top: 0.5rem;
+  }
+
+  .back-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 9px 18px;
+    font-size: 0.85rem;
+    border-radius: 10px;
+  }
 }
 
 /* ── Contact Modal ── */
@@ -987,4 +1097,20 @@ const handleSelectAnother = () => {
 /* Lightbox transition */
 .lightbox-fade-enter-active { animation: fadeIn 0.2s ease; }
 .lightbox-fade-leave-active { animation: fadeIn 0.15s ease reverse; }
+
+.lightbox-initials-placeholder {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color_button, #2e7d32) 0%, #1b5e20 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4.5rem;
+  font-weight: 800;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  user-select: none;
+}
 </style>

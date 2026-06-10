@@ -266,20 +266,29 @@ const goBackHome = () => {
 
 .input-wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
+  width: 100%;
+  display: block;
 }
 
-.input-wrapper .material-symbols-outlined {
+/* Ícono de candado — absolutamente dentro del input */
+.input-wrapper > .material-symbols-outlined {
   position: absolute;
   left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--text-muted);
-  font-size: 1.25rem;
+  font-size: 1.2rem;
+  pointer-events: none;
+  z-index: 2;
+  line-height: 1;
 }
 
+/* El input ocupa el 100% y tiene padding para dejar espacio a ambos íconos */
 .input-wrapper input {
+  display: block;
   width: 100%;
-  padding: 12px 42px 12px 42px;
+  box-sizing: border-box;
+  padding: 11px 44px 11px 40px;
   border: 1px solid var(--border-primary);
   background: var(--bg-secondary);
   border-radius: 12px;
@@ -287,28 +296,42 @@ const goBackHome = () => {
   color: var(--text-primary);
   font-weight: 600;
   transition: all 0.3s;
+  outline: none;
 }
 
 .input-wrapper input:focus {
-  outline: none;
   border-color: var(--color_button, #2e7d32);
   box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1);
 }
 
+/* Ojo — absolutamente posicionado DENTRO del borde del input, a la derecha */
 .eye-btn {
   position: absolute;
-  right: 12px;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
-  color: #94a3b8;
   cursor: pointer;
+  color: #94a3b8;
+  padding: 4px 6px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
-  padding: 0;
+  justify-content: center;
+  z-index: 3;
+  transition: color 0.2s;
+  line-height: 1;
 }
 
-.eye-btn span {
-  font-size: 1.25rem;
+.eye-btn:hover {
+  color: var(--text-secondary);
+}
+
+.eye-btn .material-symbols-outlined {
+  font-size: 1.2rem;
+  line-height: 1;
+  display: block;
 }
 
 .requirements {
@@ -377,9 +400,9 @@ const goBackHome = () => {
 }
 
 .cancel-btn {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-primary);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
   padding: 12px 24px;
   border-radius: 12px;
   font-weight: 700;
@@ -389,7 +412,8 @@ const goBackHome = () => {
 }
 
 .cancel-btn:hover:not(:disabled) {
-  background: var(--bg-active);
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 .save-btn {
@@ -430,12 +454,115 @@ const goBackHome = () => {
   to { transform: rotate(360deg); }
 }
 
-@media (max-width: 480px) {
-  .form-actions {
-    flex-direction: column-reverse;
+@media (max-width: 640px) {
+  .password-container {
+    padding: 0.5rem;
+    min-height: auto;
   }
-  .cancel-btn, .save-btn {
-    width: 100%;
+  
+  .password-card {
+    border-radius: 16px;
+  }
+
+  .password-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    padding: 1.25rem 1rem !important;
+    gap: 1.25rem !important;
+    align-items: center !important;
+  }
+
+  .icon-wrapper-large {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 14px !important;
+  }
+
+  .icon-wrapper-large span {
+    font-size: 1.6rem !important;
+  }
+
+  .header-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end !important;
+    text-align: right !important;
+  }
+
+  .header-info h1 {
+    font-size: 1.3rem !important;
+    line-height: 1.2;
+  }
+
+  .header-info .subtitle {
+    display: none; /* Ocultar para ahorrar espacio */
+  }
+
+  .password-body {
+    padding: 1.25rem 1rem !important;
+  }
+
+  .password-form {
+    gap: 1rem !important;
+  }
+
+  .form-group {
+    gap: 0.2rem !important;
+  }
+
+  .form-group label {
+    font-size: 0.78rem !important;
+  }
+
+  .input-wrapper > .material-symbols-outlined {
+    font-size: 1.05rem !important;
+    left: 9px !important;
+  }
+
+  .input-wrapper input {
+    padding: 9px 40px 9px 36px !important;
+    font-size: 0.85rem !important;
+    border-radius: 10px !important;
+  }
+
+  .eye-btn {
+    right: 6px !important;
+  }
+
+  .eye-btn .material-symbols-outlined {
+    font-size: 1.05rem !important;
+  }
+
+  .requirements {
+    padding: 12px !important;
+    font-size: 0.72rem !important;
+    border-radius: 10px !important;
+  }
+
+  .requirements h4 {
+    font-size: 0.78rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .requirements p {
+    margin: 4px 0 !important;
+    gap: 6px !important;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse !important;
+    gap: 0.75rem !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .cancel-btn,
+  .save-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 10px 18px !important;
+    font-size: 0.85rem !important;
+    border-radius: 10px !important;
+    min-width: 0 !important;
   }
 }
 </style>

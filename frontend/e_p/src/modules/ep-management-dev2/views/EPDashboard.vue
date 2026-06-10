@@ -14,6 +14,7 @@ const currentUser = computed(() => authStore.user || { name: 'Usuario', role: 'I
 const stage = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const showAllChecklist = ref(false)
 
 // Animated progress bar
 const animatedProgress = ref(0)
@@ -418,7 +419,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
             </div>
           </div>
           
-          <div v-if="!loading" class="checklist-grid">
+          <div v-if="!loading" class="checklist-grid" :class="{ 'is-expanded': showAllChecklist }">
             <div 
               v-for="item in checklist" 
               :key="item.semana" 
@@ -449,9 +450,21 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
               </div>
             </div>
           </div>
-          <div v-else class="checklist-grid">
+          <div v-else class="checklist-grid" :class="{ 'is-expanded': showAllChecklist }">
             <div v-for="i in 12" :key="i" class="checklist-card no_cargado skel-anim" style="min-height: 72px;"></div>
           </div>
+
+          <!-- Botón para ver más/menos en celular -->
+          <button 
+            v-if="!loading" 
+            class="checklist-toggle-btn mobile-only" 
+            @click="showAllChecklist = !showAllChecklist"
+          >
+            <span>{{ showAllChecklist ? 'Ver menos entregas' : 'Ver más entregas' }}</span>
+            <span class="material-symbols-outlined icon-chevron">
+              {{ showAllChecklist ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}
+            </span>
+          </button>
         </div>
 
         <!-- TABLA BITACORAS -->
@@ -517,10 +530,14 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
               <div class="card-body-mobile">
                 <div class="desc-row">
                   <span class="material-symbols-outlined mini">calendar_today</span>
-                  <span class="desc-text" :title="item.descripcion">{{ item.descripcion }}</span>
+                  <span class="desc-text" :title="item.descripcion">
+                    <strong style="color: var(--text-primary);">Fechas:</strong> {{ item.descripcion }}
+                  </span>
                 </div>
                 <div class="footer-row-mobile">
-                  <span class="hours-badge">{{ item.horasReportadas }}h</span>
+                  <span class="hours-badge">
+                    <strong style="color: var(--text-primary);">Horas:</strong> {{ item.horasReportadas }}h
+                  </span>
                   <div class="actions-mobile">
                     <button v-if="item.estado === 'APROBADA'" @click="openView(item)" class="action-mobile-btn view" title="Ver Detalle">
                       <span class="material-symbols-outlined">visibility</span> Ver Detalle
@@ -1764,7 +1781,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
   display: none;
 }
 
-@media (max-width: 430px) {
+@media (max-width: 780px) {
   .bitacora-table {
     display: none !important;
   }
@@ -1797,7 +1814,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
     padding-bottom: 8px;
   }
   .card-header-mobile .bold {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 800;
     color: var(--text-primary);
   }
@@ -1813,13 +1830,13 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
     color: var(--text-secondary);
   }
   .desc-row .mini {
-    font-size: 15px;
+    font-size: 16px;
     color: var(--text-muted);
     margin-top: 1px;
     flex-shrink: 0;
   }
   .desc-text {
-    font-size: 11.5px;
+    font-size: 12.5px;
     line-height: 1.4;
     color: var(--text-secondary);
     word-break: break-word;
@@ -1842,13 +1859,13 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 8px;
-    padding: 6px 10px;
+    padding: 7px 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     transition: all 0.2s;
   }

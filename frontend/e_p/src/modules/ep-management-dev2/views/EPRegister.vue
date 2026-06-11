@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../core/store/auth.store'
 import { epService } from '../services/ep.service'
@@ -88,6 +88,23 @@ const showSuggestions = ref(false)
 const companies = ref([])
 const isLoadingCompanies = ref(false)
 const searchCompany = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 5
+
+const paginatedCompanies = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredCompaniesList.value.slice(start, end)
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredCompaniesList.value.length / itemsPerPage)
+})
+
+watch(searchCompany, () => {
+  currentPage.value = 1
+})
+
 const certData = ref(null)
 const isLoadingCert = ref(false)
 const eligibilityInfo = ref(null)
@@ -355,8 +372,7 @@ onMounted(loadData)
     <div class="main-wrapper">
       <Header>
         <template #title-area>
-          <div class="topbar-left" style="display:flex;align-items:center;gap:48px;">
-            <div class="top-logo">REPFORA</div>
+          <div class="topbar-left">
             <nav class="top-tabs">
               <span :class="['tab', { active: activeTab === 'EP' }]" @click="activeTab = 'EP'">Etapa Productiva</span>
               <span :class="['tab', { active: activeTab === 'Empresas' }]" @click="activeTab = 'Empresas'">Empresas</span>
@@ -592,8 +608,8 @@ onMounted(loadData)
           <!-- SECCIÓN: EMPRESAS -->
           <div v-if="activeTab === 'Empresas'" class="fade-in">
             <div class="page-header-text">
-              <h1>Directorio de Empresas Habilitadas</h1>
-              <p>Explora las organizaciones aliadas y postúlate directamente para iniciar tu proceso.</p>
+              <h1>Directorio de Empresas Autorizadas</h1>
+              <p>Explore las organizaciones con convenio vigente e inicie su postulación formal para el desarrollo de la Etapa Productiva.</p>
             </div>
             
             <div class="card table-card">
@@ -602,70 +618,150 @@ onMounted(loadData)
                 <input v-model="searchCompany" placeholder="Buscar por razón social, NIT o sector económico...">
               </div>
               
-              <div style="overflow-x: auto;">
-                <table class="modern-table">
-                  <thead>
-                    <tr>
-                      <th>Empresa</th>
-                      <th>NIT</th>
-                      <th>Sector</th>
-                      <th>Ubicación</th>
-                      <th style="text-align: center;">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-if="isLoadingCompanies">
-                      <td colspan="5" style="padding: 0; border: none;">
-                        <SkeletonLoader variant="table" :rows="5" :columns="5" />
-                      </td>
-                    </tr>
-                    <tr v-else-if="filteredCompaniesList.length === 0">
-                      <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted); font-weight: 600;">
-                        No se encontraron empresas que coincidan con la búsqueda.
-                      </td>
-                    </tr>
-                    <tr v-for="c in filteredCompaniesList" :key="c._id">
-                      <td>
-                        <div class="company-name-cell">
-                          <div class="company-logo-badge">
-                            <span class="material-symbols-outlined">domain</span>
+              <!-- Vista de Escritorio: Tabla -->
+              <div class="desktop-only-table">
+                <div style="overflow-x: auto;">
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Empresa</th>
+                        <th>NIT</th>
+                        <th>Sector</th>
+                        <th>Ubicación</th>
+                        <th style="text-align: center;">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-if="isLoadingCompanies">
+                        <td colspan="5" style="padding: 0; border: none;">
+                          <SkeletonLoader variant="table" :rows="5" :columns="5" />
+                        </td>
+                      </tr>
+                      <tr v-else-if="filteredCompaniesList.length === 0">
+                        <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted); font-weight: 600;">
+                          No se encontraron empresas que coincidan con la búsqueda.
+                        </td>
+                      </tr>
+                      <tr v-for="c in paginatedCompanies" :key="c._id">
+                        <td>
+                          <div class="company-name-cell">
+                            <div class="company-logo-badge">
+                              <span class="material-symbols-outlined">domain</span>
+                            </div>
+                            <div>
+                              <strong style="font-size: 14px; font-weight: 800; color: var(--text-primary); display: block;">
+                                {{ c.razon_social || c.razonSocial }}
+                              </strong>
+                              <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                                Código: {{ c._id.substring(c._id.length - 6).toUpperCase() }}
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <strong style="font-size: 14px; font-weight: 800; color: var(--text-primary); display: block;">
-                              {{ c.razon_social || c.razonSocial }}
-                            </strong>
-                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
-                              Código: {{ c._id.substring(c._id.length - 6).toUpperCase() }}
-                            </span>
+                        </td>
+                        <td>
+                          <span class="nit-badge">{{ c.nit }}</span>
+                        </td>
+                        <td>
+                          <span class="sector-pill">{{ c.sector_economico || c.sector || 'General' }}</span>
+                        </td>
+                        <td>
+                          <div class="location-cell">
+                            <span class="material-symbols-outlined">location_on</span>
+                            <span>{{ c.direccion || 'Colombia' }}{{ c.municipio ? `, ${c.municipio}` : '' }}</span>
                           </div>
-                        </div>
-                      </td>
-                      <td>
+                        </td>
+                        <td style="text-align: center;">
+                          <button 
+                            class="btn-apply-company" 
+                            @click="postularseAEmpresa(c)"
+                            :disabled="activeEP || (eligibilityInfo && !eligibilityInfo.elegible)"
+                            :title="activeEP ? 'Ya tienes una Etapa Productiva registrada' : (eligibilityInfo && !eligibilityInfo.elegible ? 'No cumples con los requisitos de elegibilidad' : 'Postularse a esta empresa')"
+                          >
+                            <span class="material-symbols-outlined" style="font-size: 18px;">assignment_turned_in</span>
+                            Postularse
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Vista de Móvil: Tarjetas (Cards) -->
+              <div class="mobile-only-cards">
+                <div v-if="isLoadingCompanies" class="loading-cards">
+                  Cargando directorio de empresas...
+                </div>
+                <div v-else-if="filteredCompaniesList.length === 0" class="no-companies-card">
+                  No se encontraron empresas que coincidan con la búsqueda.
+                </div>
+                <div v-else class="company-cards-grid">
+                  <div v-for="c in paginatedCompanies" :key="c._id" class="company-mobile-card">
+                    <!-- Cabecera de la Tarjeta: Logo y Título -->
+                    <div class="company-card-header">
+                      <div class="company-logo-badge">
+                        <span class="material-symbols-outlined">domain</span>
+                      </div>
+                      <div class="company-card-title">
+                        <strong class="company-name-text">{{ c.razon_social || c.razonSocial }}</strong>
+                        <span class="company-code-text">Código: {{ c._id.substring(c._id.length - 6).toUpperCase() }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Datos y Detalles -->
+                    <div class="company-card-body">
+                      <div class="card-detail">
+                        <span class="detail-label">NIT</span>
                         <span class="nit-badge">{{ c.nit }}</span>
-                      </td>
-                      <td>
+                      </div>
+                      <div class="card-detail">
+                        <span class="detail-label">Sector</span>
                         <span class="sector-pill">{{ c.sector_economico || c.sector || 'General' }}</span>
-                      </td>
-                      <td>
+                      </div>
+                      <div class="card-detail">
+                        <span class="detail-label">Ubicación</span>
                         <div class="location-cell">
                           <span class="material-symbols-outlined">location_on</span>
                           <span>{{ c.direccion || 'Colombia' }}{{ c.municipio ? `, ${c.municipio}` : '' }}</span>
                         </div>
-                      </td>
-                      <td style="text-align: center;">
-                        <button 
-                          class="btn-apply-company" 
-                          @click="postularseAEmpresa(c)"
-                          :disabled="activeEP || (eligibilityInfo && !eligibilityInfo.elegible)"
-                          :title="activeEP ? 'Ya tienes una Etapa Productiva registrada' : (eligibilityInfo && !eligibilityInfo.elegible ? 'No cumples con los requisitos de elegibilidad' : 'Postularse a esta empresa')"
-                        >
-                          <span class="material-symbols-outlined" style="font-size: 18px;">assignment_turned_in</span>
-                          Postularse
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                      </div>
+                    </div>
+
+                    <!-- Botón de Postulación -->
+                    <div class="company-card-footer">
+                      <button 
+                        class="btn-apply-company-mobile" 
+                        @click="postularseAEmpresa(c)"
+                        :disabled="activeEP || (eligibilityInfo && !eligibilityInfo.elegible)"
+                        :title="activeEP ? 'Ya tienes una Etapa Productiva registrada' : (eligibilityInfo && !eligibilityInfo.elegible ? 'No cumples con los requisitos de elegibilidad' : 'Postularse a esta empresa')"
+                      >
+                        <span class="material-symbols-outlined">assignment_turned_in</span>
+                        Postularse
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Controles de Paginación -->
+              <div v-if="totalPages > 1" class="pagination-controls">
+                <button 
+                  v-if="currentPage > 1" 
+                  class="btn-pagination prev" 
+                  @click="currentPage--"
+                >
+                  <span class="material-symbols-outlined">chevron_left</span>
+                  Anterior
+                </button>
+                <span class="pagination-info">Página {{ currentPage }} de {{ totalPages }}</span>
+                <button 
+                  v-if="currentPage < totalPages" 
+                  class="btn-pagination next" 
+                  @click="currentPage++"
+                >
+                  Siguiente
+                  <span class="material-symbols-outlined">chevron_right</span>
+                </button>
               </div>
             </div>
           </div>
@@ -696,63 +792,6 @@ onMounted(loadData)
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
 
 .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-
-@media (max-width: 768px) {
-  .stepper-box {
-    padding: 20px 16px !important;
-    margin-bottom: 24px;
-  }
-  .stepper-line {
-    left: 30px;
-    right: 30px;
-    top: 36px;
-  }
-  .step-num {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    font-size: 12px;
-  }
-  .step-desc {
-    font-size: 8px;
-    margin-top: 6px;
-  }
-  .main-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .content-container {
-    padding: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .card {
-    padding: 16px;
-    border-radius: 16px;
-  }
-  .form-footer {
-    flex-direction: column-reverse;
-    gap: 12px;
-    padding-top: 20px;
-  }
-  .btn-primary {
-    width: 100%;
-    padding: 14px 24px;
-    border-radius: 12px;
-    font-size: 14px;
-    min-width: unset;
-  }
-  .btn-text {
-    width: 100%;
-    text-align: center;
-    padding: 10px;
-    font-size: 14px;
-  }
-  .content-container {
-    padding: 8px;
-  }
-}
 
 .content-scrollable { flex: 1; overflow-y: auto; background: var(--bg-app); }
 .content-container { padding: 24px; max-width: 1400px; width: 100%; box-sizing: border-box; margin: 0; }
@@ -1206,9 +1245,58 @@ onMounted(loadData)
   background: var(--bg-secondary);
 }
 
-.notification-center { position: fixed; top: 24px; right: 24px; z-index: 2000; }
-.toast-card { background: var(--color_button); color: var(--color_text_button); padding: 12px 24px; border-radius: 12px; margin-bottom: 8px; font-weight: 700; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
-.toast-card.error { background: #EF4444; }
+.notification-center {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast-card {
+  pointer-events: auto;
+  background: rgba(46, 125, 50, 0.95);
+  backdrop-filter: blur(8px);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  max-width: 320px;
+  width: auto;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  word-wrap: break-word;
+}
+
+.toast-card.error {
+  background: rgba(239, 68, 68, 0.95);
+}
+
+.toast-card.info {
+  background: rgba(37, 99, 235, 0.95);
+}
+
+/* Toast Transition Animation */
+.toast-enter-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.toast-leave-active {
+  transition: all 0.2s ease-in;
+}
+.toast-enter-from {
+  transform: translateY(-20px) scale(0.95);
+  opacity: 0;
+}
+.toast-leave-to {
+  transform: translateY(-20px) scale(0.95);
+  opacity: 0;
+}
 .fade-in { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
 .mt-32 { margin-top: 32px; }
@@ -1222,13 +1310,6 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 32px;
-}
-
-.top-logo {
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: var(--color_button);
-  letter-spacing: 0.5px;
 }
 
 .top-tabs {
@@ -1257,5 +1338,290 @@ onMounted(loadData)
   background: var(--bg-active);
   color: var(--color_button);
   border: 1px solid rgba(46, 125, 50, 0.15);
+}
+
+.page-header-text {
+  margin-bottom: 20px;
+}
+
+.page-header-text h1 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.page-header-text p {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+@media (max-width: 780px) {
+  .page-header-text {
+    margin-bottom: 16px;
+  }
+  .page-header-text h1 {
+    font-size: 1.15rem !important;
+  }
+  .page-header-text p {
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+  }
+  .topbar-left {
+    gap: 8px !important;
+  }
+  .top-tabs {
+    gap: 4px !important;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .top-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab {
+    font-size: 0.72rem !important;
+    padding: 6px 10px !important;
+    border-radius: 8px !important;
+    flex-shrink: 0;
+  }
+  .stepper-box {
+    padding: 20px 16px !important;
+    margin-bottom: 24px;
+  }
+  .stepper-line {
+    left: 30px;
+    right: 30px;
+    top: 36px;
+  }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .step-desc {
+    font-size: 8px;
+    margin-top: 6px;
+  }
+  .main-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .content-container {
+    padding: 16px;
+  }
+  .form-card {
+    padding: 24px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+  .form-footer {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding-top: 20px;
+  }
+  .btn-primary {
+    width: auto !important;
+    padding: 12px 24px !important;
+    border-radius: 14px !important;
+    font-size: 14px !important;
+    min-width: 120px !important;
+  }
+  .btn-text, .btn-text-danger {
+    width: auto !important;
+    padding: 10px !important;
+    font-size: 14px !important;
+    text-align: left !important;
+  }
+  .content-container {
+    padding: 8px;
+  }
+  .form-card {
+    padding: 16px !important;
+  }
+}
+
+.desktop-only-table {
+  display: block;
+}
+
+.mobile-only-cards {
+  display: none;
+}
+
+@media (max-width: 780px) {
+  .desktop-only-table {
+    display: none !important;
+  }
+  .mobile-only-cards {
+    display: block !important;
+  }
+  .company-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .company-mobile-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+  .company-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .company-card-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+  }
+  .company-name-text {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .company-code-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .company-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid var(--border-secondary);
+    border-bottom: 1px solid var(--border-secondary);
+    padding: 10px 0;
+  }
+  .card-detail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  .detail-label {
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+  .btn-apply-company-mobile {
+    background: var(--color_button);
+    color: var(--color_text_button);
+    border: none;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+  .btn-apply-company-mobile:hover:not(:disabled) {
+    filter: brightness(0.9);
+  }
+  .btn-apply-company-mobile:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    border: 1px solid var(--border-primary);
+  }
+  .loading-cards, .no-companies-card {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  :deep(.header-logo-mobile) {
+    display: none !important;
+  }
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-secondary);
+}
+
+.btn-pagination {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.btn-pagination:hover {
+  background: var(--bg-hover);
+  border-color: var(--color_button);
+}
+
+.pagination-info {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .pagination-controls {
+    gap: 12px;
+  }
+  .btn-pagination {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .pagination-info {
+    font-size: 12px;
+  }
+  .notification-center {
+    top: 16px !important;
+    right: 16px !important;
+    left: 16px !important;
+    align-items: center !important;
+  }
+  .toast-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+    text-align: center !important;
+  }
 }
 </style>

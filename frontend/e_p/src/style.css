@@ -1579,6 +1579,7 @@ input::-webkit-inner-spin-button {
 /* Firefox: Hide spin-buttons globally */
 input[type=number] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* ══════════════════════════════════════════════════════════════════

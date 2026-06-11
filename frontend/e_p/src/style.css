@@ -1004,8 +1004,15 @@ body,
     border-radius: 20px !important;
     z-index: 9999 !important; /* Asegurar que flote sobre todo */
     overflow: visible !important; /* Permitir que el botón + central sobresalga */
-    transition: none;
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
     padding: 0 !important;
+  }
+
+  html.chat-drawer-active .sidebar {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    transform: translate(-50%, 28px) !important;
   }
   
   .sidebar .logo-text,

@@ -52,7 +52,7 @@ describe('Enums - Definiciones correctas', () => {
     expect(c.MESES_MEDIO_TIEMPO).toBe(12);
   });
 
-  it('debe tener 7 tipos de documento', () => {
+  it('debe tener 10 tipos de documento', () => {
     const tipos = Object.keys(enums.TIPO_DOCUMENTO);
     expect(tipos).toContain('RUT');
     expect(tipos).toContain('CAMARA_COMERCIO');
@@ -60,7 +60,10 @@ describe('Enums - Definiciones correctas', () => {
     expect(tipos).toContain('EVALUACION_FINAL');
     expect(tipos).toContain('CERTIFICADO_EP');
     expect(tipos).toContain('SOPORTES_FINALES');
-    expect(tipos.length).toBe(7);
+    expect(tipos).toContain('CONTRATO_APRENDIZAJE');
+    expect(tipos).toContain('CERTIFICACION_LABORAL');
+    expect(tipos).toContain('CONVENIO_PASANTIA');
+    expect(tipos.length).toBe(10);
   });
 
   it('debe tener documentos de registro obligatorios: RUT y CAMARA_COMERCIO', () => {

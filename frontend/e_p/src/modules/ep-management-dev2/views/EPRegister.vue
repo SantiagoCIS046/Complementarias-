@@ -1378,15 +1378,26 @@ onMounted(loadData)
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 4px;
+    margin-bottom: -4px;
   }
   .top-tabs::-webkit-scrollbar {
     display: none;
+    width: 0;
+    height: 0;
+  }
+  .top-tabs::after {
+    content: "";
+    width: 12px;
+    flex-shrink: 0;
   }
   .tab {
     font-size: 0.72rem !important;
     padding: 6px 10px !important;
     border-radius: 8px !important;
     flex-shrink: 0;
+    white-space: nowrap;
   }
   .stepper-box {
     padding: 20px 16px !important;

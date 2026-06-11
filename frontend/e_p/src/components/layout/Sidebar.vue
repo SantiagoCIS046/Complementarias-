@@ -17,15 +17,7 @@ const userRole        = computed(() => authStore.user?.role || 'APRENDIZ');
 const tipoInstructor  = computed(() => authStore.tipoInstructor);
 
 const handleItemClick = (item, navigate) => {
-  if (item.path === '/certificacion' && userRole.value === 'APRENDIZ' && window.innerWidth <= 780) {
-    if (route.path === '/mi-ep') {
-      window.dispatchEvent(new CustomEvent('open-new-bitacora'));
-    } else {
-      router.push({ path: '/mi-ep', query: { openModal: '1' } });
-    }
-  } else {
-    navigate();
-  }
+  navigate();
 };
 
 const menuItems = computed(() => {

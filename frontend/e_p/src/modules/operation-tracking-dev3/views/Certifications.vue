@@ -139,55 +139,106 @@ onMounted(fetchCerts)
           </div>
 
           <div class="ins-table-card">
-            <div class="table-responsive">
-              <div v-if="isLoading" class="p-12 text-center text-gray-500" style="padding: 3rem 0;">
-                <div class="spin-ring-lg mx-auto mb-4"></div>
-                Cargando aprendices...
-              </div>
-              <table v-else class="ins-table">
-                <thead>
-                  <tr>
-                    <th>APRENDIZ</th>
-                    <th>FICHA</th>
-                    <th>ESTADO</th>
-                    <th>FECHA CERT.</th>
-                    <th>ACCIONES</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="cert in filteredCerts" :key="cert.id">
-                    <td>
-                      <div class="ins-apprentice-cell">
-                        <div class="ins-apprentice-avatar">{{ cert.name.substring(0, 2).toUpperCase() }}</div>
-                        <div>
-                          <div class="ins-apprentice-name">{{ cert.name }}</div>
-                          <div class="ins-apprentice-doc">Doc: {{ cert.doc }}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span class="ins-ficha-chip">#{{ cert.ficha }}</span>
-                    </td>
-                    <td>
-                      <span :class="['ins-status-badge', cert.status === 'CERTIFICADO' ? 'status-certificado' : 'status-revision']">
-                        {{ cert.status }}
-                      </span>
-                    </td>
-                    <td>
-                      <span style="font-size: 0.82rem; color: var(--text-secondary);">{{ cert.date }}</span>
-                    </td>
-                    <td>
-                      <button class="ins-btn-primary" @click="openCertifyModal(cert)" style="height: 30px; font-size: 0.75rem; padding: 0 0.85rem;">
-                        Gestionar
-                      </button>
-                    </td>
-                  </tr>
-                  <tr v-if="filteredCerts.length === 0">
-                    <td colspan="5" class="text-center py-12 text-gray-400 italic" style="padding: 2rem 0; text-align: center; font-style: italic; color: var(--text-muted);">No se encontraron resultados</td>
-                  </tr>
-                </tbody>
-              </table>
+            <!-- Loading -->
+            <div v-if="isLoading" class="p-12 text-center text-gray-500" style="padding: 3rem 0;">
+              <div class="spin-ring-lg mx-auto mb-4"></div>
+              Cargando aprendices...
             </div>
+
+            <template v-else>
+              <!-- Vista de Escritorio (Tabla) -->
+              <div class="table-responsive desktop-only-table">
+                <table class="ins-table">
+                  <thead>
+                    <tr>
+                      <th>APRENDIZ</th>
+                      <th>FICHA</th>
+                      <th>ESTADO</th>
+                      <th>FECHA CERT.</th>
+                      <th>ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="cert in filteredCerts" :key="cert.id">
+                      <td>
+                        <div class="ins-apprentice-cell">
+                          <div class="ins-apprentice-avatar">{{ cert.name.substring(0, 2).toUpperCase() }}</div>
+                          <div>
+                            <div class="ins-apprentice-name">{{ cert.name }}</div>
+                            <div class="ins-apprentice-doc">Doc: {{ cert.doc }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="ins-ficha-chip">#{{ cert.ficha }}</span>
+                      </td>
+                      <td>
+                        <span :class="['ins-status-badge', cert.status === 'CERTIFICADO' ? 'status-certificado' : 'status-revision']">
+                          {{ cert.status }}
+                        </span>
+                      </td>
+                      <td>
+                        <span style="font-size: 0.82rem; color: var(--text-secondary);">{{ cert.date }}</span>
+                      </td>
+                      <td>
+                        <button class="ins-btn-primary" @click="openCertifyModal(cert)" style="height: 30px; font-size: 0.75rem; padding: 0 0.85rem;">
+                          Gestionar
+                        </button>
+                      </td>
+                    </tr>
+                    <tr v-if="filteredCerts.length === 0">
+                      <td colspan="5" class="text-center py-12 text-gray-400 italic" style="padding: 2rem 0; text-align: center; font-style: italic; color: var(--text-muted);">No se encontraron resultados</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Vista de Móvil (Tarjetas / Cards) -->
+              <div class="mobile-only-cards">
+                <div v-if="filteredCerts.length === 0" class="text-center py-8 text-gray-400 italic" style="padding: 2rem; text-align: center; font-style: italic; color: var(--text-muted);">
+                  No se encontraron resultados
+                </div>
+                <div v-else v-for="cert in filteredCerts" :key="cert.id" class="mobile-cert-card">
+                  <div class="card-header">
+                    <div class="apprentice-info">
+                      <div class="avatar">{{ cert.name.substring(0, 2).toUpperCase() }}</div>
+                      <div class="apprentice-details">
+                        <div class="name">{{ cert.name }}</div>
+                        <div class="doc">Doc: {{ cert.doc }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="card-body">
+                    <div class="info-row">
+                      <div class="info-col">
+                        <span class="info-label">Ficha</span>
+                        <span class="ins-ficha-chip" style="width: fit-content; margin-top: 2px;">#{{ cert.ficha }}</span>
+                      </div>
+                      <div class="info-col">
+                        <span class="info-label">Estado</span>
+                        <span :class="['ins-status-badge', cert.status === 'CERTIFICADO' ? 'status-certificado' : 'status-revision']" style="width: fit-content; margin-top: 2px;">
+                          {{ cert.status }}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div class="info-row">
+                      <div class="info-col">
+                        <span class="info-label">Fecha Certificación</span>
+                        <span class="info-value" style="margin-top: 2px;">{{ cert.date }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="card-actions">
+                    <button class="ins-btn-primary" @click="openCertifyModal(cert)" style="width: 100%; height: 36px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; justify-content: center; display: flex; align-items: center;">
+                      Gestionar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </main>
@@ -319,7 +370,7 @@ onMounted(fetchCerts)
 <style scoped>
 /* --- Filter Tabs --- */
 .filter-tabs { display: flex; gap: 8px; }
-.filter-btn { background: transparent; border: 1px solid transparent; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: 0.2s; }
+.filter-btn { background: transparent; border: 1px solid transparent; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: 0.2s; white-space: nowrap; }
 .filter-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .filter-btn.active { 
   background: var(--bg-active); 
@@ -351,19 +402,155 @@ onMounted(fetchCerts)
 @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.97); } to { opacity: 1; transform: none; } }
 
 /* --- Responsive fixes --- */
+.mobile-only-cards {
+  display: none;
+}
+.desktop-only-table {
+  display: block;
+}
+
 @media (max-width: 768px) {
-  .ins-filters-bar { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .ins-filters-bar { flex-direction: column; align-items: stretch; gap: 12px; }
   .table-search { width: 100% !important; justify-content: flex-start !important; }
   .table-search > div { max-width: 100% !important; }
-  .filter-tabs { flex-wrap: wrap; }
-  
-  .table-responsive {
-    width: 100%;
+  .filter-tabs {
+    flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 8px;
+    margin-bottom: -4px;
   }
-  .ins-table {
-    min-width: 700px;
+  .filter-tabs::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .filter-tabs::after {
+    content: "";
+    width: 16px;
+    flex-shrink: 0;
+  }
+  .filter-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  
+  .desktop-only-table {
+    display: none !important;
+  }
+  
+  .ins-table-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  
+  .mobile-only-cards {
+    display: flex !important;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0;
+  }
+  
+  .mobile-cert-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: 20px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .mobile-cert-card:active {
+    transform: scale(0.98);
+  }
+  
+  .mobile-cert-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .mobile-cert-card .apprentice-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .mobile-cert-card .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--bg-active);
+    color: var(--color_button);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+    border: 1.5px solid var(--border-primary);
+  }
+  
+  .mobile-cert-card .name {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+  
+  .mobile-cert-card .doc {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  
+  .mobile-cert-card .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border-primary);
+    border-bottom: 1px solid var(--border-primary);
+  }
+  
+  .mobile-cert-card .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .mobile-cert-card .info-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+  
+  .mobile-cert-card .info-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .mobile-cert-card .info-value {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+  
+  .mobile-cert-card .card-actions {
+    margin-top: 4px;
   }
 }
 

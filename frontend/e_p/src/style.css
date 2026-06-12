@@ -19,6 +19,32 @@ body,
   color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 16px;
+  /* Previene el ajuste automático de tamaño de fuente en iOS */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ══ Anti-zoom iOS Safari ══
+   iOS hace zoom automático en inputs con font-size < 16px.
+   Forzamos 16px mínimo en TODOS los campos interactivos. */
+input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+textarea,
+select {
+  font-size: 16px !important;
+  /* Evita zoom en tap en iOS */
+  touch-action: manipulation;
 }
 
 /* Light Theme Variables */

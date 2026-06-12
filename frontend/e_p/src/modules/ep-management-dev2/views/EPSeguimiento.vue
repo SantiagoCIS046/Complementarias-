@@ -149,6 +149,15 @@ const sendMessage = () => {
 const showChatDrawer = ref(false)
 const chatMessageText = ref('')
 const isSendingChatMessage = ref(false)
+const chatTextareaRef = ref(null)
+
+// Auto-resize del textarea tipo WhatsApp
+const autoResizeTextarea = () => {
+  const el = chatTextareaRef.value
+  if (!el) return
+  el.style.height = 'auto'         // colapsa a 1 línea
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px'  // max 5 líneas (~120px)
+}
 
 const openChatDrawer = () => {
   showChatDrawer.value = true
@@ -172,6 +181,10 @@ const sendChatMessage = async () => {
     // Recargar datos para ver el mensaje de inmediato
     await loadData()
     chatMessageText.value = ''
+    // Resetear altura del textarea al enviar
+    if (chatTextareaRef.value) {
+      chatTextareaRef.value.style.height = 'auto'
+    }
     notify('Mensaje enviado al chat de observaciones.', 'success')
   } catch (err) {
     console.error('Error al enviar mensaje de chat:', err)
@@ -889,11 +902,14 @@ onUnmounted(() => {
           <!-- Formulario de envío -->
           <div class="chat-drawer-footer">
             <textarea 
+              ref="chatTextareaRef"
               v-model="chatMessageText" 
               placeholder="Escribe tu mensaje o aclaración..." 
               class="chat-input"
               rows="1"
-              @keydown.enter.prevent="sendChatMessage"
+              @keydown.enter.exact.prevent="sendChatMessage"
+              @keydown.enter.shift.exact="() => {}"
+              @input="autoResizeTextarea"
             ></textarea>
             <button 
               class="btn-send-message" 
@@ -1445,7 +1461,7 @@ onUnmounted(() => {
   border-top: 1px solid var(--border-primary);
   display: flex;
   gap: 12px;
-  align-items: center;
+  align-items: flex-end;
   box-sizing: border-box;
 }
 
@@ -1455,15 +1471,22 @@ onUnmounted(() => {
   border: 1px solid var(--border-primary);
   border-radius: 14px;
   padding: 10px 14px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   font-family: inherit;
   color: var(--text-primary);
   resize: none;
   outline: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  /* Auto-resize: empieza en 1 linea, crece hasta 5 */
+  min-height: 42px;
+  max-height: 120px;
+  overflow-y: auto;
+  line-height: 1.45;
+  word-break: break-word;
+  scrollbar-width: thin;
 }
 
 .chat-input:focus {

@@ -1024,7 +1024,7 @@ body,
     flex-shrink: 0 !important;
   }
 
-  /* Barra de Navegación Móvil */
+  /* ── Liquid Glass Nav (Apple-style) ── */
   .sidebar {
     position: fixed !important;
     bottom: 14px !important;
@@ -1033,20 +1033,79 @@ body,
     width: calc(100% - 40px) !important;
     max-width: 420px !important;
     margin: 0 !important;
-    height: 50px !important;
+    height: 54px !important;
     display: flex !important;
     flex-direction: row !important;
     justify-content: center !important;
     align-items: center !important;
-    border: 1px solid rgba(255, 255, 255, 0.10) !important;
-    background: rgba(17, 24, 39, 0.97) !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
-    border-radius: 16px !important;
+    /* Liquid Glass: fondo más transparente para ver la página de fondo */
+    background:
+      linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.28) 0%,
+        rgba(255, 255, 255, 0.18) 40%,
+        rgba(210, 230, 255, 0.14) 70%,
+        rgba(190, 220, 255, 0.10) 100%
+      ) !important;
+    /* Borde visible que define el nav claramente */
+    border: 1.5px solid rgba(148, 163, 184, 0.45) !important;
+    outline: none !important;
+    /* Sombra con profundidad y borde exterior definido */
+    box-shadow:
+      0 2px 0 0 rgba(255, 255, 255, 0.70) inset,
+      0 -1px 0 0 rgba(0, 0, 0, 0.06) inset,
+      0 0 0 0.5px rgba(100, 116, 139, 0.20),
+      0 12px 40px rgba(0, 0, 0, 0.12),
+      0 4px 16px rgba(0, 0, 0, 0.08),
+      0 1px 3px rgba(0, 0, 0, 0.06) !important;
+    border-radius: 20px !important;
     z-index: 9999 !important;
     overflow: visible !important;
-    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition:
+      opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
     padding: 0 !important;
-    backdrop-filter: blur(12px) !important;
+    /* Blur + saturación para efecto cristal */
+    backdrop-filter: blur(40px) saturate(180%) brightness(1.04) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.04) !important;
+    isolation: isolate !important;
+  }
+
+  /* Highlight especular superior (línea de luz) */
+  .sidebar::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 10% !important;
+    width: 80% !important;
+    height: 1.5px !important;
+    border-radius: 100px !important;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.95) 30%,
+      rgba(255, 255, 255, 1) 50%,
+      rgba(255, 255, 255, 0.95) 70%,
+      transparent 100%
+    ) !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+  }
+
+  /* Brillo interno suave (reflejo difuso) */
+  .sidebar::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    border-radius: 20px !important;
+    background: radial-gradient(
+      ellipse 70% 55% at 50% 0%,
+      rgba(255, 255, 255, 0.45) 0%,
+      transparent 70%
+    ) !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
   }
 
   html.chat-drawer-active .sidebar {
@@ -1069,7 +1128,6 @@ body,
     width: 100% !important;
     height: 100% !important;
     padding: 0 16px !important;
-    /* Symmetric padding on left/right edges */
     margin: 0 !important;
     gap: 4px !important;
   }
@@ -1094,24 +1152,34 @@ body,
     height: 100% !important;
     flex: 1 !important;
     min-width: 0 !important;
-    color: #94a3b8 !important;
+    color: #334155 !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    transition: all 0.2s ease !important;
+    transition: color 0.22s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1) !important;
     margin: 0 !important;
+    position: relative !important;
+    z-index: 2 !important;
   }
 
   .sidebar .nav-item .material-symbols-outlined,
   .sidebar .logout-btn .material-symbols-outlined {
-    font-size: 18px !important;
+    font-size: 20px !important;
     margin-bottom: 0 !important;
-    transition: transform 0.2s ease !important;
+    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), filter 0.22s ease !important;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.10)) !important;
   }
 
   .sidebar .nav-item:hover,
   .sidebar .logout-btn:hover {
-    color: #f3f4f6 !important;
+    color: #0f172a !important;
+    transform: translateY(-2px) !important;
+  }
+
+  .sidebar .nav-item:hover .material-symbols-outlined,
+  .sidebar .logout-btn:hover .material-symbols-outlined {
+    transform: scale(1.18) !important;
+    filter: drop-shadow(0 2px 6px rgba(22,163,74,0.25)) !important;
   }
 
   .sidebar .nav-item.active,
@@ -1122,9 +1190,16 @@ body,
     border-left: none !important;
     border-top: none !important;
     background: transparent !important;
-    color: #10b981 !important;
-    /* active emerald green */
+    color: #15803d !important;
     border-radius: 0 !important;
+  }
+
+  .sidebar .router-link-exact-active .nav-item .material-symbols-outlined,
+  .sidebar .nav-item.active .material-symbols-outlined {
+    filter:
+      drop-shadow(0 0 6px rgba(22, 163, 74, 0.55))
+      drop-shadow(0 2px 4px rgba(22, 163, 74, 0.30)) !important;
+    transform: scale(1.10) !important;
   }
 
   /* Redirección e Iconos mediante Reordenamiento CSS Flex y Ligaduras */
@@ -1409,6 +1484,98 @@ body,
 
   .head-premium h2 {
     font-size: 1.2rem;
+  }
+
+  /* ══ Liquid Glass Dark Mode — Nav Móvil ══ */
+  [data-theme="dark"] .sidebar {
+    /* Fondo oscuro nacarado: negro azulado con tinte verde-esmeralda */
+    background:
+      linear-gradient(
+        160deg,
+        rgba(15, 25, 40, 0.82) 0%,
+        rgba(10, 18, 30, 0.75) 40%,
+        rgba(8, 28, 20, 0.70) 70%,
+        rgba(5, 20, 15, 0.65) 100%
+      ) !important;
+    /* Borde cristal oscuro: highlight sutil plateado */
+    outline: 1px solid rgba(255, 255, 255, 0.10) !important;
+    /* Sombra profunda con glow verde esmeralda */
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.12) inset,
+      0 -1px 0 0 rgba(0, 0, 0, 0.40) inset,
+      1px 0 0 0 rgba(255, 255, 255, 0.06) inset,
+      -1px 0 0 0 rgba(255, 255, 255, 0.06) inset,
+      0 0 0 1px rgba(16, 185, 129, 0.08),
+      0 16px 48px rgba(0, 0, 0, 0.55),
+      0 6px 20px rgba(0, 0, 0, 0.40),
+      0 2px 6px rgba(0, 0, 0, 0.30),
+      0 0 40px rgba(16, 185, 129, 0.06) !important;
+    /* Blur más intenso en dark — el contraste es mayor */
+    backdrop-filter: blur(48px) saturate(180%) brightness(0.92) !important;
+    -webkit-backdrop-filter: blur(48px) saturate(180%) brightness(0.92) !important;
+  }
+
+  /* Highlight especular oscuro: plateado-helado en vez de blanco puro */
+  [data-theme="dark"] .sidebar::before {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(180, 210, 255, 0.22) 30%,
+      rgba(200, 225, 255, 0.35) 50%,
+      rgba(180, 210, 255, 0.22) 70%,
+      transparent 100%
+    ) !important;
+  }
+
+  /* Reflejo difuso oscuro: tinte verde muy sutil */
+  [data-theme="dark"] .sidebar::after {
+    background: radial-gradient(
+      ellipse 70% 55% at 50% 0%,
+      rgba(16, 185, 129, 0.08) 0%,
+      rgba(100, 160, 255, 0.04) 50%,
+      transparent 100%
+    ) !important;
+  }
+
+  /* Iconos: gris claro visible sobre oscuro */
+  [data-theme="dark"] .sidebar .nav-item,
+  [data-theme="dark"] .sidebar .logout-btn {
+    color: #94a3b8 !important;
+  }
+
+  /* Hover en dark: blanco suave */
+  [data-theme="dark"] .sidebar .nav-item:hover,
+  [data-theme="dark"] .sidebar .logout-btn:hover {
+    color: #e2e8f0 !important;
+  }
+
+  [data-theme="dark"] .sidebar .nav-item:hover .material-symbols-outlined,
+  [data-theme="dark"] .sidebar .logout-btn:hover .material-symbols-outlined {
+    filter: drop-shadow(0 2px 8px rgba(16, 185, 129, 0.35)) !important;
+  }
+
+  /* Activo en dark: verde esmeralda brillante con glow */
+  [data-theme="dark"] .sidebar .nav-item.active,
+  [data-theme="dark"] .sidebar .router-link-active .nav-item,
+  [data-theme="dark"] .sidebar .router-link-exact-active .nav-item {
+    color: #34d399 !important;
+  }
+
+  [data-theme="dark"] .sidebar .router-link-exact-active .nav-item .material-symbols-outlined,
+  [data-theme="dark"] .sidebar .nav-item.active .material-symbols-outlined {
+    filter:
+      drop-shadow(0 0 8px rgba(52, 211, 153, 0.70))
+      drop-shadow(0 0 20px rgba(16, 185, 129, 0.40))
+      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.50)) !important;
+    transform: scale(1.10) !important;
+  }
+
+  /* Botón central (+) Certificación en dark */
+  [data-theme="dark"] .sidebar a.nav-certificacion .material-symbols-outlined {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    box-shadow:
+      0 4px 16px rgba(16, 185, 129, 0.50),
+      0 0 0 1px rgba(255, 255, 255, 0.10) inset !important;
   }
 }
 

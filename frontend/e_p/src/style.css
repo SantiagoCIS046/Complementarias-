@@ -862,51 +862,36 @@ body,
     display: inline-flex !important;
   }
 
-  /* ── Cabecera Móvil Responsive ── */
-
-  /* Topbar compacto */
-  .topbar {
-    height: 52px !important;
-    padding: 0 16px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 0 !important;
-  }
-
+  /* Cabecera Móvil (mockup) */
   .topbar .header-title-container {
     display: none !important;
   }
 
   .header-logo-mobile {
     display: inline-flex !important;
-    align-items: center !important;
-    flex-shrink: 0 !important;
+    align-items: center;
   }
 
   .sena-logo-img-header {
-    width: 30px !important;
-    height: 30px !important;
-    object-fit: contain !important;
+    width: 32px !important;
+    height: 32px !important;
+    object-fit: contain;
   }
 
   .header-user-mobile {
     display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    flex-shrink: 0 !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   }
 
-  /* Acciones alineadas a la derecha */
   .topbar-actions {
     display: flex !important;
     flex-direction: row !important;
-    justify-content: flex-end !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
     align-items: center !important;
-    gap: 8px !important;
-    flex: 1 !important;
-    min-width: 0 !important;
+    gap: 12px !important;
   }
 
   .topbar-actions .notification-wrapper {
@@ -1042,7 +1027,7 @@ body,
   /* ── Liquid Glass Nav (Apple-style) ── */
   .sidebar {
     position: fixed !important;
-    bottom: 14px !important;
+    bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 10px)) !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     width: calc(100% - 40px) !important;
@@ -1474,8 +1459,8 @@ body,
   .content,
   .content-scrollable {
     padding: 16px !important;
-    padding-bottom: 110px !important;
-    /* Espacio para que el contenido pase por detrás del nav y sea completamente legible */
+    padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important;
+    /* Espacio para el nav flotante + safe area del dispositivo */
   }
 
   .form-grid-2 {
@@ -1596,21 +1581,6 @@ body,
 
 /* ── Mobile (≤480px) ── */
 @media (max-width: 480px) {
-
-  /* Topbar aún más compacto en pantallas pequeñas */
-  .topbar {
-    height: 48px !important;
-    padding: 0 12px !important;
-  }
-
-  .sena-logo-img-header {
-    width: 28px !important;
-    height: 28px !important;
-  }
-
-  .topbar-actions {
-    gap: 6px !important;
-  }
 
   /* Main Company Card container compression */
   .company-card-body {
@@ -2412,33 +2382,4 @@ input[type=number] {
   background: var(--bg-active);
   color: #4ade80;
   border-color: var(--border-primary);
-}
-
-/* ── Móviles muy pequeños (≤380px) ── */
-@media (max-width: 380px) {
-  .topbar {
-    height: 44px !important;
-    padding: 0 10px !important;
-  }
-
-  .sena-logo-img-header {
-    width: 26px !important;
-    height: 26px !important;
-  }
-
-  .topbar-actions {
-    gap: 4px !important;
-  }
-
-  /* Campanita más compacta */
-  .notification-bell {
-    padding: 4px !important;
-  }
-
-  /* Avatar usuario más pequeño */
-  .header-user-mobile .user-avatar,
-  .header-user-mobile [class*="avatar"] {
-    width: 28px !important;
-    height: 28px !important;
-  }
 }

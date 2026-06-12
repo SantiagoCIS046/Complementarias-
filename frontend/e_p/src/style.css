@@ -1474,8 +1474,11 @@ select {
   }
 
   .topbar {
-    padding: 0 16px;
-    height: 56px;
+    padding: env(safe-area-inset-top, 0) 16px 0;
+    min-height: calc(56px + env(safe-area-inset-top, 0));
+    height: auto;
+    display: flex;
+    align-items: center;
   }
 
   .page-title {

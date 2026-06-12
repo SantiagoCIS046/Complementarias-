@@ -441,19 +441,19 @@ onMounted(loadData)
             </div>
 
             <!-- BANNER DE ELEGIBILIDAD (No Elegible) -->
-            <div v-else-if="eligibilityInfo && !eligibilityInfo.elegible" class="card mt-16" style="border: 2px solid #EF4444; background: #FEF2F2; color: #991B1B; margin-bottom: 24px; border-radius: 16px; padding: 28px; display: flex; align-items: flex-start; gap: 20px;">
-              <span class="material-symbols-outlined" style="font-size: 40px; color: #EF4444; margin-top: 2px; flex-shrink: 0;">
+            <div v-else-if="eligibilityInfo && !eligibilityInfo.elegible" class="card mt-16 eligibility-error-card">
+              <span class="material-symbols-outlined eligibility-icon">
                 {{ eligibilityInfo.mensaje?.includes('Ficha') ? 'badge' : eligibilityInfo.mensaje?.includes('activa') ? 'lock' : 'gpp_maybe' }}
               </span>
-              <div style="flex:1;">
-                <h3 style="font-weight: 800; font-size: 17px; margin: 0 0 8px 0; color: #991B1B;">
+              <div class="eligibility-content">
+                <h3 class="eligibility-title">
                   {{ eligibilityInfo.mensaje?.includes('Ficha') ? 'Sin Ficha de Formación Asignada' :
                      eligibilityInfo.mensaje?.includes('activa') ? 'Registro Bloqueado — EP Activa' :
                      'Registro Bloqueado por Elegibilidad' }}
                 </h3>
-                <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; line-height: 1.6; color: #7F1D1D;">{{ eligibilityInfo.mensaje }}</p>
-                <div style="background: rgba(239,68,68,0.1); border-radius: 10px; padding: 12px 16px; font-size: 13px; font-weight: 500; color: #991B1B; display: flex; align-items: center; gap: 8px;">
-                  <span class="material-symbols-outlined" style="font-size: 16px;">support_agent</span>
+                <p class="eligibility-desc">{{ eligibilityInfo.mensaje }}</p>
+                <div class="eligibility-help">
+                  <span class="material-symbols-outlined">support_agent</span>
                   Comunícate con la coordinación académica o tu instructor asignado para resolver esta situación.
                 </div>
               </div>
@@ -827,6 +827,55 @@ onMounted(loadData)
 .step-desc { font-size: 11px; font-weight: 800; text-align: center; margin-top: 8px; color: var(--text-muted); }
 .step-item.active .step-desc { color: var(--text-primary); font-weight: 800; }
 .step-item.completed .step-desc { color: var(--color_button); }
+
+/* Banner de Elegibilidad (Error) */
+.eligibility-error-card {
+  border: 2px solid #EF4444;
+  background: #FEF2F2;
+  color: #991B1B;
+  margin-bottom: 24px;
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.eligibility-icon {
+  font-size: 40px;
+  color: #EF4444;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.eligibility-content {
+  flex: 1;
+}
+.eligibility-title {
+  font-weight: 800;
+  font-size: 17px;
+  margin: 0 0 8px 0;
+  color: #991B1B;
+}
+.eligibility-desc {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: #7F1D1D;
+}
+.eligibility-help {
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #991B1B;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eligibility-help .material-symbols-outlined {
+  font-size: 16px;
+}
 
 .main-grid {
   display: grid;
@@ -1434,6 +1483,30 @@ onMounted(loadData)
   .card {
     padding: 16px;
     border-radius: 16px;
+  }
+  .eligibility-error-card {
+    padding: 16px !important;
+    gap: 12px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .eligibility-icon {
+    font-size: 32px;
+    margin-bottom: -4px;
+  }
+  .eligibility-title {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .eligibility-desc {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .eligibility-help {
+    padding: 8px 12px;
+    font-size: 11px;
+    text-align: left;
   }
   .form-footer {
     flex-direction: row !important;

@@ -266,7 +266,20 @@ const viewFile = async (req, res) => {
     const path = require('path');
     const fs = require('fs');
     const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
-    const filePath = path.join(uploadsDir, filename);
+
+    // Decodificar dos veces para manejar codificación simple (%20) y doble (%2520)
+    let decodedFilename = filename;
+    try {
+      decodedFilename = decodeURIComponent(decodeURIComponent(filename));
+    } catch (e) {
+      try {
+        decodedFilename = decodeURIComponent(filename);
+      } catch (err) {
+        console.error('Error al decodificar nombre de archivo:', err);
+      }
+    }
+
+    const filePath = path.join(uploadsDir, decodedFilename);
 
     if (fs.existsSync(filePath)) {
       res.setHeader('Content-Type', 'application/pdf');
@@ -275,7 +288,7 @@ const viewFile = async (req, res) => {
     }
 
     // Retrocompatibilidad: Generar un PDF simulado si no existe en disco
-    generateMockPdf(res, filename);
+    generateMockPdf(res, decodedFilename);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -294,10 +307,23 @@ const downloadFile = async (req, res) => {
     const path = require('path');
     const fs = require('fs');
     const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
-    const filePath = path.join(uploadsDir, filename);
 
-    let originalName = filename;
-    const match = filename.match(/^dev_(?:od_)?file_\d+_[a-z0-9]+_(.+)$/);
+    // Decodificar dos veces para manejar codificación simple (%20) y doble (%2520)
+    let decodedFilename = filename;
+    try {
+      decodedFilename = decodeURIComponent(decodeURIComponent(filename));
+    } catch (e) {
+      try {
+        decodedFilename = decodeURIComponent(filename);
+      } catch (err) {
+        console.error('Error al decodificar nombre de archivo en descarga:', err);
+      }
+    }
+
+    const filePath = path.join(uploadsDir, decodedFilename);
+
+    let originalName = decodedFilename;
+    const match = decodedFilename.match(/^dev_(?:od_)?file_\d+_[a-z0-9]+_(.+)$/);
     if (match && match[1]) {
       originalName = match[1];
     }

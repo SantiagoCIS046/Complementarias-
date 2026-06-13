@@ -49,6 +49,26 @@ const getAll = async (filtros = {}) => {
   if (filtros.role)     query.role = filtros.role;
   if (filtros.status)   query.status = filtros.status;
   if (filtros.programa) query.programa = filtros.programa;
+
+  if (filtros.activo !== undefined) {
+    query.activo = filtros.activo === 'true' || filtros.activo === true;
+  }
+
+  if (filtros.tipoInstructor) {
+    if (filtros.tipoInstructor === 'SEGUIMIENTO') {
+      query.$and = query.$and || [];
+      query.$and.push({
+        $or: [
+          { tipoInstructor: 'SEGUIMIENTO' },
+          { tipoInstructor: { $exists: false } },
+          { tipoInstructor: null }
+        ]
+      });
+    } else {
+      query.tipoInstructor = filtros.tipoInstructor;
+    }
+  }
+
   if (filtros.busqueda) {
     query.$or = [
       { name:  { $regex: filtros.busqueda, $options: 'i' } },
@@ -60,6 +80,18 @@ const getAll = async (filtros = {}) => {
   }
 
   const usuarios = await User.find(query).sort({ name: 1 });
+
+  if (filtros.role === 'INSTRUCTOR') {
+    const results = [];
+    for (const inst of usuarios) {
+      const count = await User.countDocuments({ instructorAsignado: inst._id, role: 'APRENDIZ' });
+      const instObj = inst.toObject();
+      instObj.apprenticeCount = count;
+      results.push(instObj);
+    }
+    return results;
+  }
+
   return usuarios;
 };
 

@@ -184,8 +184,11 @@ const getById = async (id) => {
   const stage = await ProductiveStage.findById(id)
     .populate({
       path: 'apprenticeId',
-      select: 'name email role documento ficha modalidades historialInstructores fotoPerfil',
-      populate: { path: 'historialInstructores.instructorId', select: 'name email' }
+      select: 'name email role documento ficha modalidades historialInstructores fotoPerfil instructorAsignado fechaAsignacionInstructor',
+      populate: [
+        { path: 'historialInstructores.instructorId', select: 'name email' },
+        { path: 'instructorAsignado', select: 'name email areaConocimiento' }
+      ]
     })
     .populate('companyId', 'razon_social nit jefe_inmediato')
     .populate('historialEstados.realizadoPor', 'name email')
@@ -391,28 +394,31 @@ const enviarARevision = async (stageId, userId) => {
     'EP enviada a revision por el aprendiz'
   );
 
-  // --- Notificar al instructor de seguimiento ---
+  // --- Notificar a los administradores activos ---
   try {
     const Notification = require('../system-config-dev1/Notification.model');
     const User = require('../users-dev1/user.model');
     const aprendiz = await User.findById(stage.apprenticeId);
-    if (aprendiz && aprendiz.instructorAsignado) {
-      await Notification.create({
-        usuario: aprendiz.instructorAsignado,
-        mensaje: `El aprendiz ${aprendiz.name} ha enviado su Etapa Productiva (${stageActualizada.radicado}) a revisión. Por favor revisa los documentos adjuntos.`,
-        tipo: 'WARNING',
-        referencia: stageActualizada._id,
-        referenciaModelo: 'ProductiveStage'
-      });
+    const admins = await User.find({ role: 'ADMIN', activo: true });
+    if (aprendiz && admins.length > 0) {
+      for (const admin of admins) {
+        await Notification.create({
+          usuario: admin._id,
+          mensaje: `El aprendiz ${aprendiz.name} ha enviado su Etapa Productiva (${stageActualizada.radicado}) a revisión. Por favor revisa los documentos adjuntos y asigna un instructor.`,
+          tipo: 'WARNING',
+          referencia: stageActualizada._id,
+          referenciaModelo: 'ProductiveStage'
+        });
+      }
     }
   } catch (notifErr) {
-    console.error('[NOTIF] Error al notificar al instructor en enviarARevision:', notifErr.message);
+    console.error('[NOTIF] Error al notificar a los administradores en enviarARevision:', notifErr.message);
   }
 
   return {
     stage: stageActualizada,
     estado: 'EN_REVISION',
-    mensaje: 'La EP ha sido enviada a revision. El instructor evaluara tus documentos.',
+    mensaje: 'La EP ha sido enviada a revisión. El administrador evaluará tus documentos.',
     documentosSubidos: documentos.length,
   };
 };
@@ -432,7 +438,7 @@ const enviarARevision = async (stageId, userId) => {
  * @param {Array}  evaluacion.documentosRevisados - [{docId, estado, observacion}]
  * @param {string} userId    - ID del instructor que evalua
  */
-const evaluarEP = async (stageId, { decision, comentario, documentosRevisados }, userId) => {
+const evaluarEP = async (stageId, { decision, comentario, documentosRevisados, instructorId }, userId) => {
   const stage = await ProductiveStage.findById(stageId)
     .populate('apprenticeId', 'name email documento');
   if (!stage) {
@@ -480,6 +486,54 @@ const evaluarEP = async (stageId, { decision, comentario, documentosRevisados },
   if (decision === 'APROBADA') {
     nuevoEstado = ESTADO_EP.APROBADO;
     mensajeResultado = 'La EP ha sido APROBADA. El aprendiz puede continuar con el proceso.';
+
+    // Validar y asignar instructor
+    if (!instructorId) {
+      throw new Error('Debe asignar un instructor para aprobar la Etapa Productiva.');
+    }
+    const User = require('../users-dev1/user.model');
+    const inst = await User.findById(instructorId);
+    if (!inst) {
+      throw new Error('El instructor asignado no existe.');
+    }
+    if (inst.role !== 'INSTRUCTOR') {
+      throw new Error('El usuario asignado debe tener el rol de INSTRUCTOR.');
+    }
+    if (inst.activo === false || inst.status === 'INACTIVO') {
+      throw new Error(`El instructor asignado (${inst.name}) debe estar en estado activo.`);
+    }
+    if (inst.tipoInstructor && inst.tipoInstructor !== 'SEGUIMIENTO') {
+      throw new Error(
+        `El instructor ${inst.name} es de tipo ${inst.tipoInstructor} y no puede ser asignado como instructor de seguimiento.`
+      );
+    }
+
+    // Actualizar el aprendiz con el instructor asignado
+    const apprentice = await User.findById(stage.apprenticeId?._id || stage.apprenticeId);
+    if (apprentice) {
+      const oldInstructorId = apprentice.instructorAsignado ? apprentice.instructorAsignado.toString() : null;
+      if (instructorId.toString() !== oldInstructorId) {
+        apprentice.fechaAsignacionInstructor = new Date();
+        if (apprentice.instructorAsignado) {
+          const oldInst = await User.findById(apprentice.instructorAsignado);
+          apprentice.historialInstructores = apprentice.historialInstructores || [];
+          apprentice.historialInstructores.push({
+            instructorId: apprentice.instructorAsignado,
+            nombre: oldInst ? oldInst.name : 'Instructor Anterior',
+            fechaAsignacion: apprentice.fechaAsignacionInstructor || apprentice.createdAt,
+            fechaFin: new Date()
+          });
+        }
+        apprentice.instructorAsignado = instructorId;
+        await apprentice.save();
+
+        // Enviar correo y alerta interna de asignación
+        const { enviarNotificacionAsignacion } = require('../../core/utils/notifications');
+        enviarNotificacionAsignacion(apprentice._id, instructorId).catch(err => 
+          console.error('[NOTIF] Error al enviar notificación de asignación en evaluarEP:', err)
+        );
+      }
+    }
 
     // Marcar todos los documentos como APROBADOS (si no se revisaron individualmente)
     if (!documentosRevisados || documentosRevisados.length === 0) {

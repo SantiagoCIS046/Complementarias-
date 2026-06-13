@@ -5,5 +5,8 @@ export default defineConfig({
   test: {
     globals: true,
     testTimeout: 10000,
+    env: {
+      SMTP_ENABLED: 'false',
+    },
   },
 });

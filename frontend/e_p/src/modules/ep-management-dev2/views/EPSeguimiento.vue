@@ -86,6 +86,57 @@ const stats = computed(() => {
   return { aprobadas, pendientes }
 })
 
+const nextBitacoraInfo = computed(() => {
+  if (!stage.value || !stage.value.fechaInicio) {
+    return { label: 'Mes 1', daysText: 'No iniciada', dateText: 'Pendiente' }
+  }
+
+  // 1. Encontrar el siguiente mes de bitácora pendiente (1 a 6)
+  let nextMonth = 1
+  for (let i = 1; i <= 6; i++) {
+    const found = bitacoras.value.find(b => b.semana === i)
+    if (!found || found.estado === 'RECHAZADA') {
+      nextMonth = i
+      break
+    }
+  }
+
+  // 2. Calcular la fecha límite de ese mes (cada mes son 30 días adicionales)
+  const fechaInicio = new Date(stage.value.fechaInicio)
+  const dueDate = new Date(fechaInicio.getTime())
+  dueDate.setDate(dueDate.getDate() + (nextMonth * 30))
+
+  // 3. Calcular la diferencia en días con la fecha actual
+  const today = new Date()
+  today.setHours(0,0,0,0)
+  const dueZeroHours = new Date(dueDate.getTime())
+  dueZeroHours.setHours(0,0,0,0)
+
+  const diffTime = dueZeroHours.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  let daysText = ''
+  if (diffDays < 0) {
+    daysText = `Vencida hace ${Math.abs(diffDays)} ${Math.abs(diffDays) === 1 ? 'día' : 'días'}`
+  } else if (diffDays === 0) {
+    daysText = 'Hoy'
+  } else if (diffDays === 1) {
+    daysText = 'Mañana'
+  } else {
+    daysText = `En ${diffDays} días`
+  }
+
+  // Formato de fecha del badge (ej: "30 May", "14 Jun", etc.)
+  const options = { day: 'numeric', month: 'short' }
+  const dateText = dueDate.toLocaleDateString('es-ES', options)
+
+  return {
+    label: `Mes ${nextMonth}`,
+    daysText,
+    dateText
+  }
+})
+
 const loadData = async (silent = false) => {
   if (!silent) {
     loading.value = true
@@ -510,10 +561,10 @@ onUnmounted(() => {
                   </div>
                   <div class="date-box red">
                     <div class="date-main">
-                      <label>Próxima Bitácora</label>
-                      <p>En 2 días</p>
+                      <label>Próxima Bitácora ({{ nextBitacoraInfo.label }})</label>
+                      <p>{{ nextBitacoraInfo.daysText }}</p>
                     </div>
-                    <span class="days-pill">30 May</span>
+                    <span class="days-pill">{{ nextBitacoraInfo.dateText }}</span>
                   </div>
                   <div class="date-box gray">
                     <label>Finalización</label>
@@ -619,10 +670,10 @@ onUnmounted(() => {
                 </div>
                 <div class="date-box red" style="padding: 10px 12px; border-radius: 8px; border-left: 4px solid #E11D48; background: var(--bg-secondary); display: flex; justify-content: space-between; align-items: center;">
                   <div style="display: flex; flex-direction: column;">
-                    <label style="font-size: 8px; font-weight: 900; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">Próxima Bitácora</label>
-                    <p style="font-size: 11px; font-weight: 800; color: var(--text-primary); margin: 0;">En 2 días</p>
+                    <label style="font-size: 8px; font-weight: 900; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">Próxima Bitácora ({{ nextBitacoraInfo.label }})</label>
+                    <p style="font-size: 11px; font-weight: 800; color: var(--text-primary); margin: 0;">{{ nextBitacoraInfo.daysText }}</p>
                   </div>
-                  <span class="days-pill" style="font-size: 8px; font-weight: 900; background: #FFE4E6; color: #E11D48; padding: 2px 6px; border-radius: 4px;">30 May</span>
+                  <span class="days-pill" style="font-size: 8px; font-weight: 900; background: #FFE4E6; color: #E11D48; padding: 2px 6px; border-radius: 4px;">{{ nextBitacoraInfo.dateText }}</span>
                 </div>
                 <div class="date-box gray" style="padding: 10px 12px; border-radius: 8px; border-left: 4px solid var(--border-primary); background: var(--bg-secondary); display: flex; justify-content: space-between; align-items: center;">
                   <div style="display: flex; flex-direction: column;">

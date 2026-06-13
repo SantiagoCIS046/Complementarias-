@@ -178,13 +178,14 @@ const validarPdfIA = async (req, res) => {
     const fakeId = 'dev_file_tracking_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const path = require('path');
     const fs = require('fs');
+    const sanitizedFileName = req.file.originalname.replace(/\s+/g, '_');
     try {
       const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
-      fs.writeFileSync(path.join(uploadsDir, `${fakeId}_${req.file.originalname}`), req.file.buffer);
-      console.log(`[TRACKINGS-DEV] Acta de visita guardada localmente: ${fakeId}_${req.file.originalname}`);
+      fs.writeFileSync(path.join(uploadsDir, `${fakeId}_${sanitizedFileName}`), req.file.buffer);
+      console.log(`[TRACKINGS-DEV] Acta de visita guardada localmente: ${fakeId}_${sanitizedFileName}`);
     } catch (err) {
       console.error('[TRACKINGS-DEV] Error guardando acta de visita localmente:', err);
     }
@@ -195,7 +196,7 @@ const validarPdfIA = async (req, res) => {
       signatures,
       valid,
       message,
-      evidenciaUrl: `/api/documents/view/${fakeId}_${req.file.originalname}`
+      evidenciaUrl: `/api/documents/view/${fakeId}_${sanitizedFileName}`
     });
   } catch (error) {
     res.status(500).json({

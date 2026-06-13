@@ -118,12 +118,13 @@ const subirArchivo = async (fileContent, fileName, mimeType, folderId) => {
     const fakeId = 'dev_file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     console.log('[DRIVE-DEV] Archivo simulado: ' + fileName + ' -> carpeta ' + folderId);
     
+    const sanitizedFileName = fileName.replace(/\s+/g, '_');
     try {
       const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
-      const filePath = path.join(uploadsDir, `${fakeId}_${fileName}`);
+      const filePath = path.join(uploadsDir, `${fakeId}_${sanitizedFileName}`);
       fs.writeFileSync(filePath, fileContent);
       console.log(`[DRIVE-DEV] Archivo guardado localmente en: ${filePath}`);
     } catch (err) {
@@ -133,8 +134,8 @@ const subirArchivo = async (fileContent, fileName, mimeType, folderId) => {
     return {
       id: fakeId,
       name: fileName,
-      webViewLink: `/api/documents/view/${fakeId}_${fileName}`,
-      webContentLink: `/api/documents/download/${fakeId}_${fileName}`,
+      webViewLink: `/api/documents/view/${fakeId}_${sanitizedFileName}`,
+      webContentLink: `/api/documents/download/${fakeId}_${sanitizedFileName}`,
     };
   }
 

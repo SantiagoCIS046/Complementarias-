@@ -306,7 +306,7 @@ const enviarARevision = async (req, res) => {
  */
 const evaluarEP = async (req, res) => {
   try {
-    const { decision, comentario, documentosRevisados } = req.body;
+    const { decision, comentario, documentosRevisados, instructorId } = req.body;
 
     if (!decision) {
       return res.status(400).json({
@@ -317,7 +317,7 @@ const evaluarEP = async (req, res) => {
 
     const resultado = await service.evaluarEP(
       req.params.id,
-      { decision, comentario, documentosRevisados },
+      { decision, comentario, documentosRevisados, instructorId },
       req.user._id
     );
 

@@ -163,12 +163,13 @@ const subirArchivo = async (fileBuffer, fileName, folderId) => {
     const fakeId = 'dev_od_file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     console.log('[ONEDRIVE-DEV] Archivo simulado: ' + fileName + ' -> carpeta ' + parent);
     
+    const sanitizedFileName = fileName.replace(/\s+/g, '_');
     try {
       const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
-      const filePath = path.join(uploadsDir, `${fakeId}_${fileName}`);
+      const filePath = path.join(uploadsDir, `${fakeId}_${sanitizedFileName}`);
       fs.writeFileSync(filePath, fileBuffer);
       console.log(`[ONEDRIVE-DEV] Archivo guardado localmente en: ${filePath}`);
     } catch (err) {
@@ -178,7 +179,7 @@ const subirArchivo = async (fileBuffer, fileName, folderId) => {
     return {
       id: fakeId,
       name: fileName,
-      webViewLink: `/api/documents/view/${fakeId}_${fileName}`,
+      webViewLink: `/api/documents/view/${fakeId}_${sanitizedFileName}`,
     };
   }
 

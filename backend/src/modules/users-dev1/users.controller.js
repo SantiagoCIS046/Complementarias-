@@ -16,6 +16,7 @@ const getAll = async (req, res) => {
       busqueda: req.query.search || req.query.busqueda,
       status: req.query.status,
       programa: req.query.programa,
+      tipoInstructor: req.query.tipoInstructor,
     };
 
     const data = await service.getAll(filtros);

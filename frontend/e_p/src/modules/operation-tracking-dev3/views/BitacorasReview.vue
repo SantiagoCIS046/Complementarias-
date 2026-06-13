@@ -68,9 +68,6 @@
                 <p class="ficha-name" style="font-size: 0.72rem; font-weight: 700; margin: 0; color: var(--text-primary);">
                   {{ item.apprenticeId?.name || 'Aprendiz sin nombre' }}
                 </p>
-                <p style="font-size: 0.6rem; color: var(--text-muted); margin: 2px 0 0 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  {{ item.companySnapshot?.razonSocial || item.companyId?.razon_social || item.companyId?.razonSocial || 'Sin empresa' }}
-                </p>
               </div>
             </div>
           </div>
@@ -187,6 +184,23 @@
 
               <!-- Formulario de Evaluación -->
               <div class="evaluation-form">
+                <div v-if="currentUser.role === 'ADMIN'" class="form-group-premium" style="margin-bottom: 16px;">
+                  <label for="instructor-assign" class="comment-label" style="font-weight: 700; font-size: 0.75rem;">Asignar Instructor de Seguimiento *</label>
+                  <select 
+                    id="instructor-assign" 
+                    v-model="selectedInstructorId" 
+                    class="select-premium"
+                    style="margin-top: 4px; width: 100%;"
+                  >
+                    <option value="">-- Seleccionar Instructor --</option>
+                    <optgroup v-for="(instructors, area) in instructorsByArea" :key="area" :label="area">
+                      <option v-for="inst in instructors" :key="inst._id" :value="inst._id">
+                        {{ inst.name }} ({{ inst.apprenticeCount || 0 }} aprendices)
+                      </option>
+                    </optgroup>
+                  </select>
+                </div>
+
                 <label for="validation-comment" class="comment-label">Comentarios / Observaciones de Retroalimentación</label>
                 <textarea 
                   id="validation-comment" 
@@ -213,6 +227,67 @@
                   >
                     <span class="material-symbols-outlined">check_circle</span> Aprobar Etapa
                   </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD DE INFORMACIÓN / ESTADO DE ETAPA PRODUCTIVA (CUANDO YA ESTÁ VALIDADA) -->
+            <div v-else-if="stageDetails" class="validation-card-premium read-only-stage-info" style="border-left-color: var(--color_button); padding: 20px; margin-bottom: 16px;">
+              <div class="validation-header" style="border-bottom: 1px solid var(--border-primary); padding-bottom: 12px; margin-bottom: 12px; display: flex; gap: 12px; align-items: center;">
+                <span class="material-symbols-outlined" :style="{ color: stageDetails.estado === 'APROBADO' || stageDetails.estado === 'EN_CURSO' ? '#16a34a' : (stageDetails.estado === 'RECHAZADO' ? '#dc2626' : '#2563eb') }" style="font-size: 2rem;">
+                  {{ stageDetails.estado === 'APROBADO' || stageDetails.estado === 'EN_CURSO' ? 'check_circle' : (stageDetails.estado === 'RECHAZADO' ? 'cancel' : 'info') }}
+                </span>
+                <div>
+                  <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--text-primary); margin: 0;">Estado de Etapa Productiva</h4>
+                  <p style="font-size: 0.65rem; color: var(--text-muted); margin: 2px 0 0 0;">Información del proceso actual del aprendiz.</p>
+                </div>
+              </div>
+
+              <div class="stage-info-grid" style="display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 0.72rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-primary); padding-bottom: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">Estado del Proceso:</span>
+                  <span 
+                    class="state-indicator-badge" 
+                    style="font-size: 0.6rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;"
+                    :style="getStateBadgeStyle(stageDetails.estado)"
+                  >
+                    {{ stageDetails.estado }}
+                  </span>
+                </div>
+
+                <div v-if="stageDetails.apprenticeId?.instructorAsignado" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-primary); padding-bottom: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">Instructor de Seguimiento:</span>
+                  <span style="color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                    {{ stageDetails.apprenticeId.instructorAsignado.name }} 
+                    <span v-if="stageDetails.apprenticeId.instructorAsignado.areaConocimiento" style="font-size: 0.6rem; color: var(--text-muted); font-weight: normal; background: var(--bg-secondary); padding: 1px 5px; border-radius: 4px;">
+                      {{ stageDetails.apprenticeId.instructorAsignado.areaConocimiento }}
+                    </span>
+                  </span>
+                </div>
+
+                <div v-if="stageDetails.fechaInicio" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-primary); padding-bottom: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">Fecha de Inicio:</span>
+                  <span style="color: var(--text-primary); font-weight: 700;">{{ formatDateShort(stageDetails.fechaInicio) }}</span>
+                </div>
+
+                <div v-if="stageDetails.fechaFin" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-primary); padding-bottom: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">Fecha de Fin:</span>
+                  <span style="color: var(--text-primary); font-weight: 700;">{{ formatDateShort(stageDetails.fechaFin) }}</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-primary); padding-bottom: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">Horas Registradas:</span>
+                  <span style="color: var(--text-primary); font-weight: 700;">
+                    {{ stageDetails.horasCompletadas || 0 }} / {{ stageDetails.horasRequeridas || 0 }} horas
+                  </span>
+                </div>
+
+                <!-- Último Comentario de Evaluación en el historial -->
+                <div v-if="getLatestEvaluationComment()" style="background: var(--bg-secondary); padding: 10px; border-radius: 8px; border: 1px solid var(--border-primary); margin-top: 4px;">
+                  <span style="color: var(--text-secondary); font-weight: 700; font-size: 0.60rem; display: block; margin-bottom: 4px; text-transform: uppercase;">Última Observación de Evaluación:</span>
+                  <p style="margin: 0; color: var(--text-primary); font-style: italic; font-size: 0.68rem; line-height: 1.3;">
+                    "{{ getLatestEvaluationComment() }}"
+                  </p>
                 </div>
               </div>
             </div>
@@ -1546,6 +1621,30 @@ const documentosEP = ref([])
 const validationComment = ref('')
 const isSubmittingValidation = ref(false)
 
+const activeInstructors = ref([])
+const selectedInstructorId = ref('')
+
+const instructorsByArea = computed(() => {
+  const groups = {}
+  activeInstructors.value.forEach(inst => {
+    const area = inst.areaConocimiento || 'General'
+    if (!groups[area]) {
+      groups[area] = []
+    }
+    groups[area].push(inst)
+  })
+  return groups
+})
+
+const fetchActiveInstructors = async () => {
+  try {
+    const res = await http.get('/users?role=INSTRUCTOR&status=ACTIVO&tipoInstructor=SEGUIMIENTO')
+    activeInstructors.value = res.data.users || []
+  } catch (err) {
+    console.error('Error fetching active instructors:', err)
+  }
+}
+
 const fetchStageDetails = async () => {
   if (!stageId.value) return
   try {
@@ -1564,8 +1663,13 @@ const submitValidation = async (decision) => {
     return
   }
 
+  if (decision === 'APROBADA' && currentUser.value.role === 'ADMIN' && !selectedInstructorId.value) {
+    showWarning('Advertencia', 'Debe seleccionar un instructor de seguimiento para aprobar la etapa.')
+    return
+  }
+
   const confirmMsg = decision === 'APROBADA'
-    ? '¿Está seguro de que desea aprobar esta etapa productiva? Esto habilitará el cargue de bitácoras para el aprendiz.'
+    ? '¿Está seguro de que desea aprobar esta etapa productiva? Esto asignará al instructor seleccionado y habilitará el cargue de bitácoras.'
     : '¿Está seguro de que desea rechazar esta etapa productiva?'
   
   showConfirm(
@@ -1577,6 +1681,7 @@ const submitValidation = async (decision) => {
         const payload = {
           decision,
           comentario: validationComment.value.trim(),
+          instructorId: currentUser.value.role === 'ADMIN' ? selectedInstructorId.value : undefined,
           documentosRevisados: documentosEP.value.map(doc => ({
             docId: doc._id,
             estado: decision === 'APROBADA' ? 'APROBADO' : 'RECHAZADO',
@@ -1587,6 +1692,7 @@ const submitValidation = async (decision) => {
         await trackingService.evaluarEP(stageId.value, payload)
         showSuccess('Éxito', `¡Etapa productiva ${decision === 'APROBADA' ? 'aprobada' : 'rechazada'} con éxito!`)
         validationComment.value = ''
+        selectedInstructorId.value = ''
         
         // Recargar los detalles de la etapa, documentos y bitácoras
         await fetchStageDetails()
@@ -1604,6 +1710,13 @@ const submitValidation = async (decision) => {
 const apprenticeInstructorsHistory = computed(() => {
   return stageDetails.value?.apprenticeId?.historialInstructores || []
 })
+
+const getLatestEvaluationComment = () => {
+  if (!stageDetails.value || !stageDetails.value.historialEstados) return ''
+  const reversedHistory = [...stageDetails.value.historialEstados].reverse()
+  const found = reversedHistory.find(h => ['APROBADO', 'RECHAZADO'].includes(h.estadoNuevo) && h.motivo)
+  return found ? found.motivo : ''
+}
 
 const historialModalidades = computed(() => {
   const list = []
@@ -1709,10 +1822,14 @@ watch(() => route.query.id, async (newId) => {
   selectedBitacora.value = null
   selectedTracking.value = null
   observaciones.value = ''
+  selectedInstructorId.value = ''
   
   await fetchBitacoras()
   await fetchTrackings()
   await fetchStageDetails()
+  if (currentUser.value.role === 'ADMIN') {
+    await fetchActiveInstructors()
+  }
   
   if (route.query.openChat === 'true') {
     showGeneralChatDrawer.value = true
@@ -1765,6 +1882,9 @@ onMounted(async () => {
   await fetchBitacoras()
   await fetchTrackings()
   await fetchStageDetails()
+  if (currentUser.value.role === 'ADMIN') {
+    await fetchActiveInstructors()
+  }
   if (route.query.openChat === 'true') {
     showGeneralChatDrawer.value = true
   }

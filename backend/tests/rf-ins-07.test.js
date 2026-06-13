@@ -31,7 +31,7 @@ describe('RF-INS-07: Alertas por bitácoras pendientes', () => {
     hoy.setHours(0, 0, 0, 0);
 
     const fechaInicio = new Date(hoy);
-    fechaInicio.setDate(fechaInicio.getDate() - 10);
+    fechaInicio.setDate(fechaInicio.getDate() - 26);
 
     const mockStage = {
       _id: new mongoose.Types.ObjectId(),
@@ -88,7 +88,7 @@ describe('RF-INS-07: Alertas por bitácoras pendientes', () => {
     hoy.setHours(0, 0, 0, 0);
 
     const fechaInicio = new Date(hoy);
-    fechaInicio.setDate(fechaInicio.getDate() - 15);
+    fechaInicio.setDate(fechaInicio.getDate() - 31);
 
     const mockStage = {
       _id: new mongoose.Types.ObjectId(),
@@ -135,7 +135,7 @@ describe('RF-INS-07: Alertas por bitácoras pendientes', () => {
     hoy.setHours(0, 0, 0, 0);
 
     const fechaInicio = new Date(hoy);
-    fechaInicio.setDate(fechaInicio.getDate() - 10);
+    fechaInicio.setDate(fechaInicio.getDate() - 26);
 
     const mockStage = {
       _id: new mongoose.Types.ObjectId(),

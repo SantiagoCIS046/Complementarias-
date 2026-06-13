@@ -13,6 +13,7 @@ vi.spyOn(mailer, 'sendEmail').mockResolvedValue({ success: true, messageId: 'moc
 const User = require('../src/modules/users-dev1/user.model');
 vi.spyOn(User, 'findById');
 vi.spyOn(User, 'findByIdAndUpdate');
+vi.spyOn(User, 'findOne');
 
 // Helper to mock mongoose chainable query interfaces
 const makeChainableMock = (val) => {
@@ -34,6 +35,7 @@ describe('Profile and Password Change Features for All Roles', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    User.findOne.mockImplementation(() => makeChainableMock(null));
   });
 
   describe('Contact Details Update (usersService.actualizar)', () => {

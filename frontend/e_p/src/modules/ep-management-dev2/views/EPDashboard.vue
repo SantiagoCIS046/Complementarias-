@@ -69,7 +69,7 @@ const bitacoras = ref([])
 
 const checklist = computed(() => {
   const list = []
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 6; i++) {
     const found = bitacoras.value.find(b => b.semana === i)
     list.push({
       semana: i,
@@ -402,13 +402,13 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
             <div class="checklist-title-group">
               <span class="material-symbols-outlined icon-checklist">checklist</span>
               <div>
-                <h3>Estado de Mis Entregas Quincenales</h3>
-                <p class="checklist-subtitle">Estado y control de tus 12 bitácoras de Etapa Productiva</p>
+                <h3>Estado de Mis Entregas Mensuales</h3>
+                <p class="checklist-subtitle">Estado y control de tus 6 bitácoras de Etapa Productiva</p>
               </div>
             </div>
             <div class="checklist-summary" v-if="!loading">
               <span class="summary-pill total">
-                Entregadas: <strong>{{ bitacoras.length }} / 12</strong>
+                Entregadas: <strong>{{ bitacoras.length }} / 6</strong>
               </span>
               <span class="summary-pill aprobadas">
                 Aprobadas: <strong>{{ bitacoras.filter(b => b.estado === 'APROBADA').length }}</strong>
@@ -429,7 +429,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
               :title="item.cargado ? 'Ver detalle de Bitácora' : 'Bitácora no cargada aún'"
             >
               <div class="card-top">
-                <span class="week-number">Quincena {{ item.semana }}</span>
+                <span class="week-number">Mes {{ item.semana }}</span>
                 <span class="material-symbols-outlined status-icon">
                   {{ 
                     item.estado === 'APROBADA' ? 'check_circle' : 
@@ -451,7 +451,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
             </div>
           </div>
           <div v-else class="checklist-grid" :class="{ 'is-expanded': showAllChecklist }">
-            <div v-for="i in 12" :key="i" class="checklist-card no_cargado skel-anim" style="min-height: 72px;"></div>
+            <div v-for="i in 6" :key="i" class="checklist-card no_cargado skel-anim" style="min-height: 72px;"></div>
           </div>
 
           <!-- Botón para ver más/menos en celular -->
@@ -470,7 +470,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
         <!-- TABLA BITACORAS -->
         <div class="table-container">
           <div class="table-header">
-            <h3>Mis Bitácoras Quincenales</h3>
+            <h3>Mis Bitácoras Mensuales</h3>
             <div class="table-icons" style="display:flex;align-items:center;gap:12px">
               <div class="search-bar-container">
                 <span class="material-symbols-outlined search-icon">search</span>
@@ -494,7 +494,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
                 <td colspan="5" class="empty-row">No tienes bitácoras que coincidan con la búsqueda.</td>
               </tr>
               <tr v-for="item in paginatedBitacoras" :key="item._id">
-                <td class="bold">Semana {{ item.semana }}</td>
+                <td class="bold">Mes {{ item.semana }}</td>
                 <td class="faded">
                   <span class="material-symbols-outlined mini">calendar_today</span> <span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" :title="item.descripcion">{{ item.descripcion }}</span>
                 </td>
@@ -522,7 +522,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
             </div>
             <div v-for="item in paginatedBitacoras" :key="item._id" class="bitacora-mobile-card">
               <div class="card-header-mobile">
-                <span class="bold">Semana {{ item.semana }}</span>
+                <span class="bold">Mes {{ item.semana }}</span>
                 <span class="badge" :class="item.estado === 'APROBADA' ? 'success' : 'pending'">
                   <span class="dot"></span> {{ item.estado }}
                 </span>
@@ -599,7 +599,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
             <div class="lamp-icon"><span class="material-symbols-outlined">lightbulb</span></div>
             <div class="reminder-text">
               <span class="rtitle">Recordatorio de Cierre</span>
-              <p class="rdesc">Recuerda que las bitácoras deben ser firmadas digitalmente por tu jefe inmediato antes de la fecha de corte quincenal.</p>
+              <p class="rdesc">Recuerda que las bitácoras deben ser firmadas digitalmente por tu jefe inmediato antes de la fecha de corte mensual.</p>
             </div>
           </div>
           <button @click="showCalendarModal = true" class="btn-cal">Ver Calendario de Fechas</button>
@@ -622,7 +622,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
         </div>
         <div class="modal-body">
           <div class="modal-form-group">
-            <label class="modal-label">Número de Semana</label>
+            <label class="modal-label">Número de Mes</label>
             <input v-model="form.semana" type="number" min="1" placeholder="Ej: 1" class="modal-input" />
           </div>
           <div class="modal-form-group">
@@ -651,7 +651,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
         </div>
         <div class="modal-body">
           <div class="modal-form-group">
-            <label class="modal-label">Número de Semana</label>
+            <label class="modal-label">Número de Mes</label>
             <input v-model="editForm.semana" type="number" min="1" placeholder="Ej: 1" class="modal-input" />
           </div>
           <div class="modal-form-group">
@@ -676,7 +676,7 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
         <div class="modal-header-view">
           <div>
             <span class="modal-view-badge" :class="selectedBitacora.estado.toLowerCase()">BITÁCORA {{ selectedBitacora.estado }}</span>
-            <h3 class="modal-view-title">Semana {{ selectedBitacora.semana }}</h3>
+            <h3 class="modal-view-title">Mes {{ selectedBitacora.semana }}</h3>
           </div>
           <button @click="showViewModal = false" class="modal-close-btn-view"><span class="material-symbols-outlined">close</span></button>
         </div>
@@ -707,8 +707,8 @@ watch(() => router.currentRoute.value.query.openModal, (newVal) => {
         <div class="calendar-icon-wrapper">
           <span class="material-symbols-outlined">event</span>
         </div>
-        <h3 class="modal-title">Fechas de Corte Quincenales</h3>
-        <p class="modal-message">Las bitácoras deben enviarse los días 15 y 30 de cada mes. Asegúrate de tenerlas firmadas por tu jefe inmediato antes de la fecha límite.</p>
+        <h3 class="modal-title">Fechas de Corte Mensuales</h3>
+        <p class="modal-message">Las bitácoras deben enviarse los días 30 de cada mes. Asegúrate de tenerlas firmadas por tu jefe inmediato antes de la fecha límite.</p>
         <div class="modal-footer-actions single-action">
           <button @click="showCalendarModal = false" class="modal-btn-confirm wide">Entendido</button>
         </div>

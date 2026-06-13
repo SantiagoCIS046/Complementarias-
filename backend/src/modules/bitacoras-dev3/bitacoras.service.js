@@ -22,7 +22,7 @@ const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportad
   }
 
   const SystemConfig = require('../system-config-dev1/system-config.model');
-  let maxBitacoras = 13;
+  let maxBitacoras = 7;
   try {
     const config = await SystemConfig.findOne({ clave: 'MAX_BITACORAS' });
     if (config && typeof config.valor === 'number') {
@@ -41,7 +41,7 @@ const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportad
     if (semana !== undefined && semana !== null) {
       const existeBitacora = await Bitacora.findOne({ stageId, semana: Number(semana), esAdicional: { $ne: true } });
       if (existeBitacora) {
-        throw new Error(`Ya existe una bitácora registrada para la semana ${semana}. Recuerda que la entrega de bitácoras es cada 15 días.`);
+        throw new Error(`Ya existe una bitácora registrada para el mes ${semana}. Recuerda que la entrega de bitácoras es cada 30 días (mensual).`);
       }
     }
   }
@@ -74,7 +74,7 @@ const crear = async ({ stageId, apprenticeId, semana, descripcion, horasReportad
     });
   } catch (error) {
     if (error.code === 11000 || error.message.includes('E11000')) {
-      throw new Error(`Ya existe una bitácora registrada para la semana ${semana}. Recuerda que la entrega de bitácoras es cada 15 días.`);
+      throw new Error(`Ya existe una bitácora registrada para el mes ${semana}. Recuerda que la entrega de bitácoras es cada 30 días (mensual).`);
     }
     throw error;
   }
@@ -206,7 +206,7 @@ const actualizar = async (bitacoraId, data) => {
         _id: { $ne: bitacoraId }
       });
       if (existeBitacora) {
-        throw new Error(`Ya existe una bitácora registrada para la semana ${targetSemana}. Recuerda que la entrega de bitácoras es cada 15 días.`);
+        throw new Error(`Ya existe una bitácora registrada para el mes ${targetSemana}. Recuerda que la entrega de bitácoras es cada 30 días (mensual).`);
       }
     }
     bitacora.semana = data.semana;
@@ -221,7 +221,7 @@ const actualizar = async (bitacoraId, data) => {
     await bitacora.save();
   } catch (error) {
     if (error.code === 11000 || error.message.includes('E11000')) {
-      throw new Error(`Ya existe una bitácora registrada para la semana ${bitacora.semana}. Recuerda que la entrega de bitácoras es cada 15 días.`);
+      throw new Error(`Ya existe una bitácora registrada para el mes ${bitacora.semana}. Recuerda que la entrega de bitácoras es cada 30 días (mensual).`);
     }
     throw error;
   }

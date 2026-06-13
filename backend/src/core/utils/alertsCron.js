@@ -1,6 +1,6 @@
 // alertsCron.js 🕐 Cron Job para alertas automáticas de seguimiento y bitácoras
 // =============================================
-// Escanea Trackings PROGRAMADOS y Bitácoras pendientes quincenales,
+// Escanea Trackings PROGRAMADOS y Bitácoras pendientes mensuales,
 // genera alertas internas y envía correos premium a instructores,
 // aprendices y coordinadores.
 // Se ejecuta todos los días a las 7:00 AM.
@@ -158,9 +158,9 @@ const ejecutarEscaneoBitacoras = async () => {
       const fechaInicio = new Date(stage.fechaInicio);
       fechaInicio.setHours(0, 0, 0, 0);
 
-      for (let i = 1; i <= 12; i++) {
+      for (let i = 1; i <= 6; i++) {
         const fechaVencimiento = new Date(fechaInicio);
-        fechaVencimiento.setDate(fechaVencimiento.getDate() + (i * 14));
+        fechaVencimiento.setDate(fechaVencimiento.getDate() + (i * 30));
         fechaVencimiento.setHours(0, 0, 0, 0);
 
         const bitacoraEntregada = await Bitacora.findOne({
@@ -177,7 +177,7 @@ const ejecutarEscaneoBitacoras = async () => {
         if (diasParaVencer === 4) {
           const alertaEnviada = await Notification.findOne({
             usuario: aprendiz._id,
-            mensaje: new RegExp(`Bitácora Quincenal ${i}.*vence en 4 días`, 'i')
+            mensaje: new RegExp(`Bitácora Mensual ${i}.*vence en 4 días`, 'i')
           });
 
           if (!alertaEnviada) {
@@ -188,7 +188,7 @@ const ejecutarEscaneoBitacoras = async () => {
               day: 'numeric'
             });
 
-            const mensaje = `⚠️ Recordatorio: Tu Bitácora Quincenal ${i} vence el ${fechaVencFormateada} (en 4 días). Por favor, realiza la entrega a tiempo.`;
+            const mensaje = `⚠️ Recordatorio: Tu Bitácora Mensual ${i} vence el ${fechaVencFormateada} (en 4 días). Por favor, realiza la entrega a tiempo.`;
 
             await Notification.create({
               usuario: aprendiz._id,
@@ -209,11 +209,11 @@ const ejecutarEscaneoBitacoras = async () => {
                     Estimado(a) aprendiz <strong>${aprendiz.name}</strong>,
                   </p>
                   <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-                    Te recordamos que tu <strong>Bitácora Quincenal ${i}</strong> tiene su fecha límite de entrega en los próximos 4 días:
+                    Te recordamos que tu <strong>Bitácora Mensual ${i}</strong> tiene su fecha límite de entrega en los próximos 4 días:
                   </p>
                   <div style="background: #fff8e1; border-left: 4px solid #e65100; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
                     <table style="width: 100%; font-size: 0.9rem; color: #334155;">
-                      <tr><td style="padding: 4px 0; font-weight: 700; width: 150px;">Entrega:</td><td>Bitácora Quincenal ${i}</td></tr>
+                      <tr><td style="padding: 4px 0; font-weight: 700; width: 150px;">Entrega:</td><td>Bitácora Mensual ${i}</td></tr>
                       <tr><td style="padding: 4px 0; font-weight: 700;">Fecha Límite:</td><td style="color: #e65100; font-weight: 800;">${fechaVencFormateada}</td></tr>
                     </table>
                   </div>
@@ -231,24 +231,24 @@ const ejecutarEscaneoBitacoras = async () => {
 
             await sendEmail({
               to: aprendiz.email,
-              subject: `⚠️ Recordatorio: Entrega de Bitácora Quincenal ${i} — Límite en 4 días`,
+              subject: `⚠️ Recordatorio: Entrega de Bitácora Mensual ${i} — Límite en 4 días`,
               html: htmlCorreo
             });
 
             alertasVencimientoEnviadas++;
-            console.log(`🔔 [CRON] Alerta de vencimiento quincena ${i} enviada al aprendiz ${aprendiz.name}`);
+            console.log(`🔔 [CRON] Alerta de vencimiento mensual ${i} enviada al aprendiz ${aprendiz.name}`);
           }
         }
 
         if (diasParaVencer < 0) {
           const alertaRetrasoEnviada = await Notification.findOne({
-            mensaje: new RegExp(`no ha entregado la Bitácora Quincenal ${i} a tiempo`, 'i'),
+            mensaje: new RegExp(`no ha entregado la Bitácora Mensual ${i} a tiempo`, 'i'),
             referencia: stage._id
           });
 
           if (!alertaRetrasoEnviada) {
             for (const coordinador of coordinadores) {
-              const mensajeCoordinador = `🚨 Alerta de Retraso: El aprendiz ${aprendiz.name} (Ficha: ${aprendiz.ficha || 'S/N'}) no ha entregado la Bitácora Quincenal ${i} a tiempo (Venció el ${fechaVencimiento.toLocaleDateString('es-CO')}).`;
+              const mensajeCoordinador = `🚨 Alerta de Retraso: El aprendiz ${aprendiz.name} (Ficha: ${aprendiz.ficha || 'S/N'}) no ha entregado la Bitácora Mensual ${i} a tiempo (Venció el ${fechaVencimiento.toLocaleDateString('es-CO')}).`;
 
               await Notification.create({
                 usuario: coordinador._id,
@@ -276,7 +276,7 @@ const ejecutarEscaneoBitacoras = async () => {
                         <tr><td style="padding: 4px 0; font-weight: 700; width: 150px;">Aprendiz:</td><td>${aprendiz.name}</td></tr>
                         <tr><td style="padding: 4px 0; font-weight: 700;">Ficha:</td><td>${aprendiz.ficha || 'N/A'}</td></tr>
                         <tr><td style="padding: 4px 0; font-weight: 700;">Documento:</td><td>${aprendiz.documento || 'N/A'}</td></tr>
-                        <tr><td style="padding: 4px 0; font-weight: 700;">Entrega Incumplida:</td><td style="color: #b71c1c; font-weight: 800;">Bitácora Quincenal ${i}</td></tr>
+                        <tr><td style="padding: 4px 0; font-weight: 700;">Entrega Incumplida:</td><td style="color: #b71c1c; font-weight: 800;">Bitácora Mensual ${i}</td></tr>
                         <tr><td style="padding: 4px 0; font-weight: 700;">Fecha de Vencimiento:</td><td>${fechaVencimiento.toLocaleDateString('es-CO')}</td></tr>
                       </table>
                     </div>
@@ -294,13 +294,13 @@ const ejecutarEscaneoBitacoras = async () => {
 
               await sendEmail({
                 to: coordinador.email,
-                subject: `🚨 Alerta de Retraso: Aprendiz ${aprendiz.name} — Bitácora Quincenal ${i} Incumplida`,
+                subject: `🚨 Alerta de Retraso: Aprendiz ${aprendiz.name} — Bitácora Mensual ${i} Incumplida`,
                 html: htmlCorreoCoordinador
               });
             }
 
             alertasRetrasoEnviadas++;
-            console.log(`🚨 [CRON] Alerta de retraso para quincena ${i} enviada a los coordinadores para el aprendiz ${aprendiz.name}`);
+            console.log(`🚨 [CRON] Alerta de retraso para mes ${i} enviada a los coordinadores para el aprendiz ${aprendiz.name}`);
           }
         }
       }
@@ -628,17 +628,17 @@ const enviarRecordatoriosRegistro = async () => {
 };
 
 /**
- * 3. Recordatorios de bitácoras quincenales (Días 15 y 30) (RF-APR-07)
+ * 3. Recordatorios de bitácoras mensuales (Día 30) (RF-APR-07)
  */
 const enviarRecordatoriosBitacoras = async () => {
   const hoy = new Date();
   const dia = hoy.getDate();
-  if (dia !== 15 && dia !== 30) {
-    console.log('🔔 [CRON] Hoy no es día 15 ni 30, se omite recordatorio de bitácoras.');
+  if (dia !== 30) {
+    console.log('🔔 [CRON] Hoy no es día 30, se omite recordatorio mensual de bitácoras.');
     return { recordatoriosEnviados: 0 };
   }
 
-  console.log('🔔 [CRON] Ejecutando recordatorios de bitácoras (Día 15/30)...');
+  console.log('🔔 [CRON] Ejecutando recordatorio mensual de bitácoras (Día 30)...');
   try {
     const ProductiveStage = require('../../modules/productive-stages-dev2/productive-stage.model');
     const activeStages = await ProductiveStage.find({ estado: 'EN_CURSO' })
@@ -652,7 +652,7 @@ const enviarRecordatoriosBitacoras = async () => {
 
       await sendEmail({
         to: apprentice.email,
-        subject: '⏰ Recordatorio: Fecha límite de entrega de Bitácora Quincenal',
+        subject: '⏰ Recordatorio: Fecha límite de entrega de Bitácora Mensual',
         html: `
           <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
             <div style="background: #1a4d2e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
@@ -664,7 +664,7 @@ const enviarRecordatoriosBitacoras = async () => {
                 Hola <strong>${apprentice.name}</strong>,
               </p>
               <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-                Te recordamos que hoy es <strong>fecha de corte quincenal</strong> (día ${dia} del mes) y debes subir tu bitácora de seguimiento quincenal firmada por tu jefe inmediato en la plataforma.
+                Te recordamos que hoy es <strong>fecha de corte mensual</strong> (día ${dia} del mes) y debes subir tu bitácora de seguimiento mensual firmada por tu jefe inmediato en la plataforma.
               </p>
             </div>
           </div>

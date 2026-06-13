@@ -82,7 +82,7 @@ const descargarPlantilla = async (type, format) => {
             <span class="material-symbols-outlined alert-banner-icon">info</span>
             <div class="alert-banner-text">
               <h4>Formatos Oficiales SENA</h4>
-              <p>Las bitácoras deben ser entregadas quincenalmente y los seguimientos deben concertarse en tres momentos clave de tu alternativa de etapa productiva. Los archivos <strong>Word (.docx)</strong> son completamente editables para tu facilidad de diligenciamiento, y los <strong>PDF (.pdf)</strong> son ideales para imprimir o visualizar.</p>
+              <p>Las bitácoras deben ser entregadas mensualmente y los seguimientos deben concertarse en tres momentos clave de tu alternativa de etapa productiva. Los archivos <strong>Word (.docx)</strong> son completamente editables para tu facilidad de diligenciamiento, y los <strong>PDF (.pdf)</strong> son ideales para imprimir o visualizar.</p>
             </div>
           </div>
 
@@ -98,13 +98,13 @@ const descargarPlantilla = async (type, format) => {
               
               <div class="card-body">
                 <div class="form-code-badge">F-GFPI-023 | Versión 03</div>
-                <h3 class="card-title">Bitácora Quincenal de Etapa Productiva</h3>
-                <p class="card-text">Formato oficial para la planeación y el reporte quincenal detallado de actividades y evidencias de aprendizaje desarrolladas en la empresa u organización.</p>
+                <h3 class="card-title">Bitácora Mensual de Etapa Productiva</h3>
+                <p class="card-text">Formato oficial para la planeación y el reporte mensual detallado de actividades y evidencias de aprendizaje desarrolladas en la empresa u organización.</p>
                 
                 <div class="card-features">
                   <div class="feature-item">
                     <span class="material-symbols-outlined f-icon">check_circle</span>
-                    <span>Reporte de 12 bitácoras en total</span>
+                    <span>Reporte de 6 bitácoras en total</span>
                   </div>
                   <div class="feature-item">
                     <span class="material-symbols-outlined f-icon">check_circle</span>

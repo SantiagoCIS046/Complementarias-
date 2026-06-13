@@ -114,7 +114,7 @@
                 <span class="material-symbols-outlined" style="font-size: 0.95rem;">star</span>
                 Bitácora Adicional (Especial)
               </p>
-              <p class="entrega-subject" v-else>Bitácora Semana {{ bit.semana }}</p>
+              <p class="entrega-subject" v-else>Bitácora Mes {{ bit.semana }}</p>
               <p class="entrega-preview" v-if="bit.esAdicional" style="font-size: 0.62rem; color: var(--text-secondary); margin-bottom: 2px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 Motivo: {{ bit.motivo }}
               </p>
@@ -272,15 +272,15 @@
                 <div class="instructor-checklist-header">
                   <div style="display:flex; align-items:center; gap:8px">
                     <span class="material-symbols-outlined icon-checklist-mini">playlist_add_check</span>
-                    <h3>Avance Quincenal del Aprendiz</h3>
+                    <h3>Avance Mensual del Aprendiz</h3>
                   </div>
                   <div class="summary-stats">
-                    <span class="stat-badge">Entregas: <strong>{{ bitacoras.length }} / 12</strong></span>
+                    <span class="stat-badge">Entregas: <strong>{{ bitacoras.length }} / 6</strong></span>
                     <span class="stat-badge approved">Aprobadas: <strong>{{ bitacoras.filter(b => b.estado === 'APROBADA').length }}</strong></span>
                   </div>
                 </div>
                 <div v-if="isLoading" class="instructor-checklist-grid">
-                  <div v-for="i in 12" :key="i" class="instructor-checklist-card skel-anim" style="height:36px; border-radius:8px"></div>
+                  <div v-for="i in 6" :key="i" class="instructor-checklist-card skel-anim" style="height:36px; border-radius:8px"></div>
                 </div>
                 <div v-else class="instructor-checklist-grid">
                   <div 
@@ -291,7 +291,7 @@
                     @click="item.cargado && selectBitacora(item.bitacora)"
                     :title="item.cargado ? `Bitácora ${item.semana}: ${item.estado}. Clic para ver.` : `Bitácora ${item.semana}: No Cargado`"
                   >
-                    <span class="week-num-badge">Q{{ item.semana }}</span>
+                    <span class="week-num-badge">M{{ item.semana }}</span>
                     <span class="material-symbols-outlined mini-icon">
                       {{ 
                         item.estado === 'APROBADA' ? 'check' : 
@@ -317,7 +317,7 @@
                       <div class="pills">
                         <span class="pill gray">ETAPA PRODUCTIVA</span>
                         <span v-if="selectedBitacora.esAdicional" class="pill" style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a;">CASO ESPECIAL</span>
-                        <span v-else class="pill green">SEMANA {{ selectedBitacora.semana }}</span>
+                        <span v-else class="pill green">MES {{ selectedBitacora.semana }}</span>
                       </div>
                     </div>
                   </div>
@@ -632,8 +632,8 @@
 
           <!-- Semana (oculta si es adicional) -->
           <div v-if="!newBitacoraForm.esAdicional" class="form-group-premium">
-            <label class="label-premium">Semana de Formación</label>
-            <input type="number" v-model="newBitacoraForm.semana" class="input-premium" min="1" max="24" />
+            <label class="label-premium">Mes de Formación</label>
+            <input type="number" v-model="newBitacoraForm.semana" class="input-premium" min="1" max="6" />
           </div>
 
           <!-- Campos especiales si es adicional -->
@@ -1152,7 +1152,7 @@ const observaciones = ref('')
 
 const checklist = computed(() => {
   const list = []
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 6; i++) {
     const found = bitacoras.value.find(b => b.semana === i)
     list.push({
       semana: i,

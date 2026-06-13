@@ -195,7 +195,7 @@ const sendChatMessage = async () => {
 }
 
 const openBitacora = (b) => {
-  openDialog(`Bitácora Semana ${b.semana}`, b.descripcion || 'No se registraron observaciones detalladas para esta quincena.', 'info')
+  openDialog(`Bitácora Mes ${b.semana}`, b.descripcion || 'No se registraron observaciones detalladas para este mes.', 'info')
 }
 
 let intervalId = null
@@ -411,7 +411,7 @@ onUnmounted(() => {
                       </tr>
                       <tr v-for="b in bitacoras" :key="b._id">
                         <td class="bold">Bitácora #{{ b.semana }}</td>
-                        <td class="faded">{{ b.periodo || 'Semana ' + b.semana }}</td>
+                        <td class="faded">{{ b.periodo || 'Mes ' + b.semana }}</td>
                         <td class="center">
                           <span class="status-chip" :class="b.estado.toLowerCase().replace(' ', '-')">
                             {{ b.estado }}
@@ -735,8 +735,8 @@ onUnmounted(() => {
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <span style="font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Periodo / Semana</span>
-                    <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">{{ b.periodo || 'Semana ' + b.semana }}</span>
+                    <span style="font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Periodo / Mes</span>
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">{{ b.periodo || 'Mes ' + b.semana }}</span>
                   </div>
                   <button class="icon-btn" @click="openBitacora(b)" style="background: var(--bg-primary); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-primary); cursor: pointer; transition: all 0.2s;">
                     <span class="material-symbols-outlined" style="font-size: 18px; color: var(--text-primary);">visibility</span>

@@ -1454,7 +1454,7 @@ select {
   }
 
   .checklist-subtitle::after {
-    content: "Control de tus 12 bitácoras" !important;
+    content: "Control de tus 6 bitácoras" !important;
     font-size: 11px !important;
     font-weight: 500 !important;
   }

@@ -86,10 +86,10 @@ const generarPdf = async (type) => {
 
       if (isBitacora) {
         // --- Contenido Específico: Bitácora ---
-        doc.fillColor(senaGreen).font('Helvetica-Bold').fontSize(9.5).text('2. PLANEACIÓN Y REPORTE DE ACTIVIDADES DE ETAPA PRODUCTIVA (QUINCENAL)');
+        doc.fillColor(senaGreen).font('Helvetica-Bold').fontSize(9.5).text('2. PLANEACIÓN Y REPORTE DE ACTIVIDADES DE ETAPA PRODUCTIVA (MENSUAL)');
         doc.moveDown(0.4);
 
-        // Tabla de Actividades Quincenales
+        // Tabla de Actividades Mensuales
         const tableY = doc.y;
         doc.rect(40, tableY, 515, 20).fill('#f1f5f9');
         doc.rect(40, tableY, 515, 20).strokeColor(borderGray).stroke();
@@ -212,7 +212,7 @@ const generarDoc = (type) => {
   const isBitacora = type === 'bitacora';
   const code = isBitacora ? 'F-GFPI-023' : 'F-GFPI-024';
   const title = isBitacora 
-    ? 'BITACORA QUINCENAL DE ETAPA PRODUCTIVA (F-GFPI-023)'
+    ? 'BITACORA MENSUAL DE ETAPA PRODUCTIVA (F-GFPI-023)'
     : 'PLANEACION, SEGUIMIENTO Y EVALUACION DE ETAPA PRODUCTIVA (F-GFPI-024)';
 
   // Plantilla en formato RTF (Rich Text Format)
@@ -243,13 +243,13 @@ ${title}\\par
 
   if (isBitacora) {
     rtf += `\\b INSTRUCCIONES PARA EL REGISTRO DE LA BITACORA:\\b0\\par
-Por cada quincena laborada, el aprendiz debera detallar en la siguiente estructura las actividades realizadas y adjuntar los soportes necesarios.\\par
+Por cada mes laborado, el aprendiz debera detallar en la siguiente estructura las actividades realizadas y adjuntar los soportes necesarios.\\par
 \\par
 -------------------------------------------------------------------------\\par
-\\b REGISTRO QUINCENAL N\'ba [ ___ ]\\b0\\par
+\\b REGISTRO MENSUAL N\'ba [ ___ ]\\b0\\par
 -------------------------------------------------------------------------\\par
 - Rango de Fechas del Periodo: Desde: [ DD/MM/AAAA ] Hasta: [ DD/MM/AAAA ]\\par
-- Total de Horas Reportadas en esta Quincena: [ ______ ] horas.\\par
+- Total de Horas Reportadas en este Mes: [ ______ ] horas.\\par
 \\par
 \\b Actividades Desarrolladas en la Empresa:\\b0\\par
 [Detalle aqui las funciones formativas realizadas. Ej. Soporte en el area de desarrollo de software, creacion de manuales de usuario, pruebas de control de calidad, etc.]\\par

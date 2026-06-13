@@ -51,7 +51,7 @@
                     <input type="number" min="0" v-model="formFormativo.horasRevisionBitacoras" class="input-premium" />
                     <span class="suffix-text">Horas</span>
                   </div>
-                  <small class="help-text">Tiempo asignado al instructor para revisar y retroalimentar cada bitácora quincenal.</small>
+                  <small class="help-text">Tiempo asignado al instructor para revisar y retroalimentar cada bitácora mensual.</small>
                 </div>
 
                 <div class="form-group-premium mb-4">
@@ -176,7 +176,7 @@
                     <input type="number" min="1" v-model="formAlertas.maxBitacoras" class="input-premium" />
                     <span class="suffix-text">Bitácoras</span>
                   </div>
-                  <small class="help-text">Cantidad máxima de reportes semanales permitidos por aprendiz (defecto 13).</small>
+                  <small class="help-text">Cantidad máxima de reportes mensuales permitidos por aprendiz (defecto 7).</small>
                 </div>
 
                 <div class="form-group-premium mb-4">
@@ -262,7 +262,7 @@ const formActividades = ref({
 const isSavingAlertas = ref(false);
 const formAlertas = ref({
   cloudStorageProvider: 'GOOGLE_DRIVE',
-  maxBitacoras: 13,
+  maxBitacoras: 7,
   seguimientosObligatorios: 3,
   diasAnticipacion: 5
 });

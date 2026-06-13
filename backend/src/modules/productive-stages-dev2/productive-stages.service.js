@@ -568,7 +568,7 @@ const evaluarEP = async (stageId, { decision, comentario, documentosRevisados },
       if (decision === 'APROBADA') {
         await Notification.create({
           usuario: aprendizId,
-          mensaje: `¡Tu Etapa Productiva (${stageActualizada.radicado}) ha sido APROBADA! Ya puedes comenzar a registrar tus bitácoras quincenales.`,
+          mensaje: `¡Tu Etapa Productiva (${stageActualizada.radicado}) ha sido APROBADA! Ya puedes comenzar a registrar tus bitácoras mensuales.`,
           tipo: 'SUCCESS',
           referencia: stageActualizada._id,
           referenciaModelo: 'ProductiveStage'

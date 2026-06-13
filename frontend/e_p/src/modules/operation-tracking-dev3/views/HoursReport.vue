@@ -115,7 +115,7 @@ const estadoBadgeClass = (estado) => ({
   'bit-badge-rechazada':  estado === 'RECHAZADA',
   'bit-badge-borrador':   !estado || estado === 'BORRADOR',
 })
-const quincena = (idx) => `Q${idx + 1}`
+const quincena = (idx) => `M${idx + 1}`
 </script>
 
 <template>
@@ -131,7 +131,7 @@ const quincena = (idx) => `Q${idx + 1}`
           <header class="ins-page-header">
             <div class="header-info">
               <h1 class="ins-page-title">Informe de Horas de Aprendices</h1>
-              <p class="ins-page-description">Consulta consolidada de horas reportadas por aprendiz en sus bitácoras quincenales.</p>
+              <p class="ins-page-description">Consulta consolidada de horas reportadas por aprendiz en sus bitácoras mensuales.</p>
             </div>
             <button id="btn-sincronizar-horas" class="ins-btn-sync" @click="fetchData" :disabled="isLoading">
               <span class="material-symbols-outlined" :class="{ 'ins-spin': isLoading }">sync</span>
@@ -277,7 +277,7 @@ const quincena = (idx) => `Q${idx + 1}`
                           <table v-else class="subtable">
                             <thead>
                               <tr>
-                                <th>Quincena</th>
+                                <th>Mes</th>
                                 <th>Fecha de Envío</th>
                                 <th class="text-right">Horas Reportadas</th>
                                 <th>Estado</th>

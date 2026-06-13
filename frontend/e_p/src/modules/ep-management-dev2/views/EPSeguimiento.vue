@@ -932,6 +932,19 @@ onUnmounted(() => {
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
 
+/* ── Hide Chat Scrollbars ── */
+.chat-feed,
+.chat-drawer-body,
+.chat-input {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.chat-feed::-webkit-scrollbar,
+.chat-drawer-body::-webkit-scrollbar,
+.chat-input::-webkit-scrollbar {
+  display: none !important;
+}
+
 /* --- Responsiveness & Actions bar --- */
 .desktop-actions-only {
   display: flex;
@@ -1486,7 +1499,8 @@ onUnmounted(() => {
   overflow-y: auto;
   line-height: 1.45;
   word-break: break-word;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .chat-input:focus {

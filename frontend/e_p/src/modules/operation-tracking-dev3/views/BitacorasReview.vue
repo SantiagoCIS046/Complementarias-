@@ -1779,6 +1779,19 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ── Hide Chat Scrollbars ── */
+.chat-feed,
+.chat-drawer-body,
+.chat-input {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.chat-feed::-webkit-scrollbar,
+.chat-drawer-body::-webkit-scrollbar,
+.chat-input::-webkit-scrollbar {
+  display: none !important;
+}
+
 .bitacoras-layout { display: flex; height: 100vh; background: var(--bg-secondary); overflow: hidden; }
 .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; height: 100vh; }
 .content { flex: 1; display: flex; flex-direction: column; height: calc(100vh - 64px); padding: 0 !important; overflow: hidden; }

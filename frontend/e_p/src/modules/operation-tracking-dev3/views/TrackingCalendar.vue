@@ -203,6 +203,11 @@ const saveTracking = async () => {
 
 // ── Helpers ───────────────────────────────────────────────────────
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digit', month:'2-digit', year:'numeric' }) : '---'
+
+const formatEstado = (estado) => {
+  if (!estado) return ''
+  return estado.replace(/_/g, ' ')
+}
 </script>
 
 <template>
@@ -317,7 +322,7 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
                   </td>
                   <td>
                     <span :class="['ins-status-badge', badgeClass(t.estadoVisita)]">
-                      {{ t.estadoVisita }}
+                      {{ formatEstado(t.estadoVisita) }}
                     </span>
                   </td>
                   <td class="cell-ia">
@@ -386,10 +391,10 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CO', { day:'2-digi
               <div class="form-group">
                 <label class="form-label">Estado de Visita</label>
                 <select id="select-estado-visita" v-model="form.estadoVisita" class="form-input">
-                  <option value="PROGRAMADO">PROGRAMADO</option>
-                  <option value="REALIZADO">REALIZADO</option>
-                  <option value="REPROGRAMADO">REPROGRAMADO</option>
-                  <option value="NO_REALIZADO">NO_REALIZADO</option>
+                  <option value="PROGRAMADO">Programado</option>
+                  <option value="REALIZADO">Realizado</option>
+                  <option value="REPROGRAMADO">Reprogramado</option>
+                  <option value="NO_REALIZADO">No Realizado</option>
                 </select>
               </div>
               <div class="form-group">

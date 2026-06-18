@@ -94,7 +94,7 @@
                     </td>
                     <td>
                       <span class="status-pill" :class="getStatusClass(c.estado)">
-                        {{ c.estado }}
+                        {{ formatEstado(c.estado) }}
                       </span>
                     </td>
                     <td>
@@ -483,6 +483,11 @@ const getStatusClass = (estado) => {
   if (estado === 'EN_REVISION') return 'contract_ended';
   if (estado === 'RECHAZADA') return 'inactivo';
   return '';
+};
+
+const formatEstado = (estado) => {
+  if (!estado) return '';
+  return estado.replace(/_/g, ' ');
 };
 
 // Modales

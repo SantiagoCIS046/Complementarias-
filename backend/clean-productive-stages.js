@@ -5,6 +5,9 @@ require('dotenv').config();
 const User = require('./src/modules/users-dev1/user.model');
 const ProductiveStage = require('./src/modules/productive-stages-dev2/productive-stage.model');
 const Document = require('./src/modules/documents-dev2/document.model');
+const Hour = require('./src/modules/hours-dev3/hour.model');
+const Novelty = require('./src/modules/novelties-dev3/novelty.model');
+const Notification = require('./src/modules/system-config-dev1/Notification.model');
 
 async function main() {
   console.log('🔄 Conectando a la base de datos...');
@@ -18,6 +21,18 @@ async function main() {
   console.log('🗑️ Eliminando todos los documentos de EP...');
   const docRes = await Document.deleteMany({});
   console.log(`✅ ${docRes.deletedCount} documentos de EP eliminados.`);
+
+  console.log('🗑️ Eliminando todos los registros de horas de EP...');
+  const hourRes = await Hour.deleteMany({});
+  console.log(`✅ ${hourRes.deletedCount} registros de horas eliminados.`);
+
+  console.log('🗑️ Eliminando todas las novedades de EP...');
+  const noveltyRes = await Novelty.deleteMany({});
+  console.log(`✅ ${noveltyRes.deletedCount} novedades eliminadas.`);
+
+  console.log('🗑️ Eliminando todas las notificaciones...');
+  const notificationRes = await Notification.deleteMany({});
+  console.log(`✅ ${notificationRes.deletedCount} notificaciones eliminadas.`);
 
   // Eliminar de forma dinámica las colecciones de seguimientos y bitácoras si están registradas
   try {
@@ -56,7 +71,11 @@ async function main() {
         instructorProyecto: null,
         fechaAsignacionInstructor: null,
         historialInstructores: [],
-        modalidades: []
+        modalidades: [],
+        tipoProyecto: null,
+        onedriveFolderId: null,
+        driveFolderId: null,
+        status: 'ACTIVO'
       }
     }
   );

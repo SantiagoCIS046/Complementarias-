@@ -25,8 +25,8 @@ describe('RF-INS-07: Alertas por bitácoras pendientes', () => {
       role: 'APRENDIZ'
     };
 
-    // La fechaInicio es hace exactamente 10 días.
-    // La bitácora 1 vence en 14 días a partir de fechaInicio (es decir, en 4 días a partir de hoy).
+    // La fechaInicio es hace exactamente 26 días.
+    // La bitácora 1 vence en 30 días a partir de fechaInicio (es decir, en 4 días a partir de hoy).
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
@@ -82,8 +82,8 @@ describe('RF-INS-07: Alertas por bitácoras pendientes', () => {
       role: 'ADMIN'
     };
 
-    // La fechaInicio es hace exactamente 15 días.
-    // La bitácora 1 vence en 14 días a partir de fechaInicio (es decir, venció hace 1 día).
+    // La fechaInicio es hace exactamente 31 días.
+    // La bitácora 1 vence en 30 días a partir de fechaInicio (es decir, venció hace 1 día).
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 

@@ -105,7 +105,7 @@
                     </td>
                     <td>
                       <span class="status-pill" :class="getStatusClass(ficha.estado)">
-                        {{ ficha.estado }}
+                        {{ formatEstado(ficha.estado) }}
                       </span>
                     </td>
                     <td>
@@ -149,7 +149,7 @@
               <tr v-for="apr in currentAprendices" :key="apr._id">
                 <td>{{ apr.name }}</td>
                 <td>{{ apr.documento }}</td>
-                <td><span class="status-pill active">{{ apr.status }}</span></td>
+                <td><span class="status-pill active">{{ formatEstado(apr.status) }}</span></td>
               </tr>
               <tr v-if="currentAprendices.length === 0">
                 <td colspan="3" class="empty-state">No hay aprendices vinculados a esta ficha.</td>
@@ -407,6 +407,11 @@ const getStatusClass = (estado) => {
   if (estado === 'PENDIENTE_INSTRUCTOR') return 'contract_ended';
   if (estado === 'TERMINADA') return 'inactivo';
   return '';
+};
+
+const formatEstado = (estado) => {
+  if (!estado) return '';
+  return estado.replace(/_/g, ' ');
 };
 
 const showViewModal = ref(false);

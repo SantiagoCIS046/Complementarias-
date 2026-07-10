@@ -123,6 +123,13 @@ const getCellWidth = (col) => {
   border-radius: 6px;
 }
 
+/* ── Container base: siempre respeta el ancho del padre ── */
+.skeleton-container {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
 /* ── Table Skeleton ── */
 .skel-table-header {
   display: flex;
@@ -130,23 +137,31 @@ const getCellWidth = (col) => {
   align-items: center;
   padding: 12px 16px;
   border-bottom: 1px solid #f1f5f9;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .skel-filters {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .skel-pill {
   width: 64px;
+  max-width: 18%;
   height: 28px;
   border-radius: 6px;
+  flex-shrink: 1;
 }
 
 .skel-search {
-  width: 200px;
+  width: min(200px, 35%);
   height: 30px;
   border-radius: 6px;
+  flex-shrink: 1;
 }
 
 .skel-table-head {
@@ -154,10 +169,13 @@ const getCellWidth = (col) => {
   gap: 0;
   padding: 0;
   background: #e8f5e9;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .skel-th {
   flex: 1;
+  min-width: 0;
   height: 40px;
   margin: 0;
   border-radius: 0;
@@ -168,6 +186,8 @@ const getCellWidth = (col) => {
 
 .skel-row {
   display: flex;
+  width: 100%;
+  box-sizing: border-box;
   padding: 14px 16px;
   border-bottom: 1px solid #f8fafc;
   gap: 16px;
